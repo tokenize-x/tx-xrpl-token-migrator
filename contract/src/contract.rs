@@ -115,7 +115,7 @@ pub fn threshold_bank_send(
             to_address: recipient.clone().into(),
             amount: vec![amount.clone()],
         }
-        .into();
+            .into();
         SENT_TRANSACTIONS.save(deps.storage, id, &tx)?;
         PENDING_TRANSACTIONS.remove(deps.storage, evidence_id.clone());
         let res = Response::new()
@@ -147,7 +147,7 @@ pub fn withdraw(env: Env, info: MessageInfo, deps: DepsMut) -> Result<Response, 
         to_address: owner.clone().into(),
         amount: contract_balances,
     }
-    .into();
+        .into();
 
     let res = Response::new()
         .add_attribute("method", "withdraw")
@@ -461,7 +461,7 @@ mod tests {
             to_address: recipient.clone().into(),
             amount: vec![amount.clone()],
         }
-        .into();
+            .into();
         assert_eq!(bank_send_msg, res_msgs[0].msg);
         // check that tx not pending now
         let pending_tx = get_pending_transaction(deps.as_ref(), evidence_id).unwrap();
@@ -545,7 +545,7 @@ mod tests {
             to_address: TEST_OWNER.to_string(),
             amount,
         }
-        .into();
+            .into();
         assert_eq!(bank_send_msg, res_msgs[0].msg);
     }
 }

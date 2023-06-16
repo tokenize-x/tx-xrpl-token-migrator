@@ -4,6 +4,17 @@ CONTRACT_DIR:=$(ROOT_DIR)/contract
 SCAN_FILES := $(shell find . -type f -name '*.go' -not -name '*mock.go' -not -name '*_gen.go' -not -path "*/vendor/*")
 
 ###############################################################################
+###                                 Build                                  ###
+###############################################################################
+
+DATE=$(shell date)
+VERSION=$(shell git describe --abbrev=0 --tags ${TAG_COMMIT} 2>/dev/null || true)
+
+.PHONY: build
+build:
+	CGO_ENABLED=0 go build --trimpath --ldflags="-X 'main.BuildDate=${DATE}' -X 'main.BuildVersion=${VERSION}' -w -s" -o build/relayer relayer/cmd/main.go
+
+###############################################################################
 ###                               Development                               ###
 ###############################################################################
 

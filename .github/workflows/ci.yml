@@ -20,7 +20,7 @@ jobs:
         ]
         include:
           - ci_step: "lint"
-            command: "make lint"
+            command: "make build-contract && make lint"
             go-cache: true
             wasm-cache: false
             linter-cache: true
@@ -52,7 +52,6 @@ jobs:
         with:
           repository: CoreumFoundation/crust
           path: crust
-          ref: dzmitryhil/crust-lint-current-dir # TODO(dzmitryhil) remove once we merge to the master
       - name: Checkout coreum
         uses: actions/checkout@v3
         with:
