@@ -19,13 +19,13 @@ type RPCTxProvider interface {
 
 // TxScannerConfig is the TxScanner config.
 type TxScannerConfig struct {
-	RetryTimeout time.Duration
+	RetryDelay time.Duration
 }
 
 // DefaultTxScannerConfig returns the default TxScannerConfig.
 func DefaultTxScannerConfig() TxScannerConfig {
 	return TxScannerConfig{
-		RetryTimeout: 10 * time.Second,
+		RetryDelay: 10 * time.Second,
 	}
 }
 
@@ -139,13 +139,13 @@ func (t *TxScanner) doWithResubscribe(
 	f func() error,
 ) {
 	log := logger.Get(ctx)
-	err := retry.Do(ctx, t.cfg.RetryTimeout, func() error {
+	err := retry.Do(ctx, t.cfg.RetryDelay, func() error {
 		if err := f(); err != nil {
 			log.Error("Error on scan subscription", zap.Error(err))
 			return retry.Retryable(err)
 		}
 		if repeat {
-			log.Info("Waiting before the execution.", zap.String("timeout", t.cfg.RetryTimeout.String()))
+			log.Info("Waiting before the next execution.", zap.String("delay", t.cfg.RetryDelay.String()))
 			return retry.Retryable(errors.New("repeat scan"))
 		}
 

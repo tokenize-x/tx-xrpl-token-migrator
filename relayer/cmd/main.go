@@ -3,16 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/logger"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/http"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/xrpl"
+	"github.com/CoreumFoundation/coreum-tools/pkg/run"
+	"github.com/CoreumFoundation/coreum/pkg/config/constant"
+	"github.com/CoreumFoundation/xrpl-bridge/relayer/service"
 )
 
 // Build options.
@@ -23,101 +22,74 @@ var (
 
 // temporary constants.
 const (
-	mainnetXRPLRPCURL                   = "https://s2.ripple.com:51234/"
-	mainnetXRPLWSURL                    = "wss://s2.ripple.com/"
-	mainnetXRPLCoreAccount              = "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D"
-	mainnetXRPLInitialBridgeLedgerIndex = 80175264
+	testnetXRPLRPCURL                 = "https://s.altnet.rippletest.net:51234/"
+	testnetXRPLHistoryScanStartLedger = 0
+	testnetXRPLRecentScanIndexesBack  = 30_000
+	testnetXRPLAccount                = "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA"
+	testnetXRPLCurrency               = "434F524500000000000000000000000000000000"
+	testnetXRPLIssuer                 = "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA"
+	testnetXRPLMemoSuffix             = "+coreum"
+
+	testnetCoreumGRPCURL      = "full-node.testnet-1.coreum.dev:9090"
+	testnetCoreumGRPCIsSecure = true
+	testnetCoreumChainID      = constant.ChainIDTest
+
+	testnetCoreumMnemonic        = "witness crouch lecture dish there because prevent garlic position illness poverty oven filter tongue choose hole valid quote tattoo physical cliff breeze insane leave"
+	testnetCoreumContractAddress = "testcore1z8ed6e8j9ega7z0enadeeaz5f47zzge85ra33gzn75pgtyxyn5xqgyy9uu"
 )
 
-type servicesConfig struct {
-	XRPLRPCURL string
-	XRPLWSURL  string
-}
-
-type services struct {
-	XRPLTxScanner *xrpl.TxScanner
-}
-
-func newServices(cfg servicesConfig) *services {
-	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
-
-	rpcClientConfig := xrpl.DefaultRPCClientConfig(cfg.XRPLRPCURL)
-	rpcClient := xrpl.NewRPCClient(rpcClientConfig, httpClient)
-
-	xrplTxScanner := xrpl.NewTxScanner(xrpl.DefaultTxScannerConfig(), rpcClient)
-	return &services{
-		XRPLTxScanner: xrplTxScanner,
-	}
-}
-
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-	c := make(chan os.Signal, 1)
-	signal.Notify(c,
-		os.Interrupt,
-		syscall.SIGTERM,
-		syscall.SIGINT,
-	)
-	defer func() {
-		signal.Stop(c)
-		cancel()
-	}()
-	go func() {
-		<-c
-		cancel()
-	}()
+	run.Service("bridge", func(ctx context.Context) error {
+		services, err := service.NewServices(service.Config{
+			XRPLRPCURL:                 testnetXRPLRPCURL,
+			XRPLHistoryScanStartLedger: testnetXRPLHistoryScanStartLedger,
+			XRPLRecentScanIndexesBack:  testnetXRPLRecentScanIndexesBack,
+			XRPLAccount:                testnetXRPLAccount,
+			XRPLCurrency:               testnetXRPLCurrency,
+			XRPLIssuer:                 testnetXRPLIssuer,
+			XRPLMemoSuffix:             testnetXRPLMemoSuffix,
 
-	log := logger.New(logger.ConfigureWithCLI(logger.ServiceDefaultConfig))
-	log.Info(fmt.Sprintf("Build date: %s, version: %s", BuildDate, BuildVersion))
-	ctx = logger.WithLogger(ctx, log)
-	services := newServices(servicesConfig{
-		XRPLRPCURL: mainnetXRPLRPCURL,
-		XRPLWSURL:  mainnetXRPLWSURL,
+			CoreumGRPCURL:         testnetCoreumGRPCURL,
+			CoreumGRPCIsSecure:    testnetCoreumGRPCIsSecure,
+			CoreumChainID:         string(testnetCoreumChainID),
+			CoreumMnemonic:        testnetCoreumMnemonic,
+			CoreumContractAddress: testnetCoreumContractAddress,
+		}, true)
+		if err != nil {
+			return err
+		}
+		log := logger.Get(ctx)
+		log.Info(fmt.Sprintf("Build date: %s, version: %s", BuildDate, BuildVersion))
+		rootCmd := RootCmd(ctx, services)
+		if err := rootCmd.Execute(); err != nil && !errors.Is(err, context.Canceled) {
+			log.Error("Error executing root cmd.", zap.Error(err))
+			return err
+		}
+
+		return nil
 	})
-	rootCmd := RootCmd(services)
-	if err := rootCmd.ExecuteContext(ctx); err != nil {
-		log.Error("Error executing root cmd.", zap.Error(err))
-		cancel()
-		os.Exit(1) //nolint:gocritic // we cancel the context manually.
-	}
 }
 
 // RootCmd returns the root cmd.
-func RootCmd(services *services) *cobra.Command {
+func RootCmd(ctx context.Context, services *service.Services) *cobra.Command {
 	cmd := &cobra.Command{
 		Short: "XRPL relayer.",
 	}
 
-	cmd.AddCommand(StartCmd(services))
+	cmd.AddCommand(StartCmd(ctx, services))
 
 	return cmd
 }
 
 // StartCmd returns the start cmd.
-func StartCmd(services *services) *cobra.Command {
+func StartCmd(ctx context.Context, services *service.Services) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start xrpl to coreum relayer.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log := logger.Get(cmd.Context())
+			log := logger.Get(ctx)
 			log.Info("Starting xrpl relayer.")
-
-			ch := make(chan xrpl.Transaction)
-			if err := services.XRPLTxScanner.Subscribe(
-				cmd.Context(),
-				mainnetXRPLCoreAccount,
-				mainnetXRPLInitialBridgeLedgerIndex,
-				30_000, // about a day
-				ch,
-			); err != nil {
-				return err
-			}
-
-			for tx := range ch {
-				log.Info("Received transaction from scanner.", zap.Any("transaction", tx))
-			}
-
-			return nil
+			return services.Executor.Start(ctx)
 		},
 	}
 
