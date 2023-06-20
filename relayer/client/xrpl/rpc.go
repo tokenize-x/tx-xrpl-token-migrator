@@ -222,7 +222,7 @@ func (c *RPCClient) SubscribeAccountTransactions(
 	ch chan<- Transaction,
 ) (int64, error) {
 	log := logger.Get(ctx)
-	log.Info(
+	log.Debug(
 		"Subscribing RPC account transactions",
 		zap.String("account", account),
 		zap.Int64("startLedger", startLedger),
@@ -230,12 +230,6 @@ func (c *RPCClient) SubscribeAccountTransactions(
 	)
 
 	var marker *PageMarker
-	if startLedger > 0 {
-		marker = &PageMarker{
-			Ledger: startLedger,
-			Seq:    0,
-		}
-	}
 	for {
 		nextMarker, latestIndex, err := c.GetAccountTransactions(ctx, account, startLedger, endLedger, marker, ch)
 		if err != nil {
@@ -252,7 +246,7 @@ func (c *RPCClient) SubscribeAccountTransactions(
 // GetAccountTransactions returns the list account transactions with fully filled delivery amount using pagination.
 func (c *RPCClient) GetAccountTransactions(ctx context.Context, account string, startLedger, endLedger int64, marker *PageMarker, ch chan<- Transaction) (*PageMarker, int64, error) {
 	log := logger.Get(ctx)
-	log.Info(
+	log.Debug(
 		"Getting account transactions",
 		append(convertMarkerToZapFields(marker), zap.String("account", account))...,
 	)
@@ -313,7 +307,7 @@ func (c *RPCClient) GetAccountTransactions(ctx context.Context, account string, 
 		Ledger: accountTxRPCRes.Result.Marker.Ledger,
 		Seq:    accountTxRPCRes.Result.Marker.Seq,
 	}
-	log.Info("Got account transactions, and received next marker", convertMarkerToZapFields(marker)...)
+	log.Debug("Got account transactions, and received next marker", convertMarkerToZapFields(marker)...)
 
 	return marker, latestIndex - 1, nil
 }

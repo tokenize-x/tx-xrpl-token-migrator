@@ -2,6 +2,7 @@ package service
 
 import (
 	"crypto/tls"
+	"net/url"
 
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -33,9 +34,8 @@ type Config struct {
 	XRPLIssuer                 string
 	XRPLMemoSuffix             string
 
-	CoreumGRPCURL         string
-	CoreumGRPCIsSecure    bool
 	CoreumChainID         string
+	CoreumGRPCURL         string
 	CoreumMnemonic        string
 	CoreumContractAddress string
 
@@ -67,14 +67,7 @@ func NewServices(cfg Config, setSDKConfig bool) (*Services, error) {
 		network.SetSDKConfig()
 	}
 
-	var grpcDialOpts []grpc.DialOption
-	if cfg.CoreumGRPCIsSecure {
-		grpcDialOpts = append(grpcDialOpts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
-	} else {
-		grpcDialOpts = append(grpcDialOpts, grpc.WithInsecure())
-	}
-
-	coreumGRPCClient, err := grpc.Dial(cfg.CoreumGRPCURL, grpcDialOpts...)
+	coreumGRPCClient, err := getGRPCClientConn(cfg.CoreumGRPCURL)
 	if err != nil {
 		return nil, err
 	}
@@ -126,4 +119,27 @@ func importMnemonic(kr keyring.Keyring, coinType uint32, mnemonic string) (sdk.A
 	}
 
 	return keyInfo.GetAddress(), nil
+}
+
+func getGRPCClientConn(grpcURL string) (*grpc.ClientConn, error) {
+	parsedURL, err := url.Parse(grpcURL)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed parse grpc URL")
+	}
+
+	// tls grpc
+	if parsedURL.Scheme == "https" {
+		grpcClient, err := grpc.Dial(parsedURL.Host, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to dial grpc")
+		}
+		return grpcClient, nil
+	}
+
+	grpcClient, err := grpc.Dial(parsedURL.Host, grpc.WithInsecure())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to dial grpc")
+	}
+
+	return grpcClient, nil
 }

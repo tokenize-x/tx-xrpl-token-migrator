@@ -133,8 +133,7 @@ func buildTestingServices(t *testing.T, chainID, mnemonic, contractAddress strin
 		XRPLCurrency:               "434F524500000000000000000000000000000000",
 		XRPLIssuer:                 "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
 		XRPLMemoSuffix:             "/integration-test",
-		CoreumGRPCURL:              "localhost:9090", // we don't use the chain ctx here intentionally to fully check the client initialisation
-		CoreumGRPCIsSecure:         false,
+		CoreumGRPCURL:              "http://localhost:9090", // we don't use the chain ctx here intentionally to fully check the client initialisation
 		CoreumChainID:              chainID,
 		CoreumMnemonic:             mnemonic,
 		CoreumContractAddress:      contractAddress,

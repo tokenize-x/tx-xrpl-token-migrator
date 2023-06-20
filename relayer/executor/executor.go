@@ -34,7 +34,7 @@ type Config struct {
 func DefaultConfig(senderAddress sdk.AccAddress) Config {
 	return Config{
 		SenderAddress: senderAddress,
-		RetryDelay:    10 * time.Second,
+		RetryDelay:    30 * time.Second,
 	}
 }
 
@@ -88,7 +88,7 @@ func (e *Executor) Start(ctx context.Context) error {
 						return nil
 					}
 					if coreum.IsEvidenceProvidedError(err) {
-						log.Info(
+						log.Debug(
 							"Evidence has been already submitted.",
 							zap.String("senderAddress", e.cfg.SenderAddress.String()),
 							zap.String("xrplTxHash", tx.XRPLTxHash),
@@ -96,7 +96,7 @@ func (e *Executor) Start(ctx context.Context) error {
 						return nil
 					}
 					if coreum.IsTransferSentError(err) {
-						log.Info(
+						log.Debug(
 							"Transfer has been already sent.",
 							zap.String("senderAddress", e.cfg.SenderAddress.String()),
 							zap.String("xrplTxHash", tx.XRPLTxHash),

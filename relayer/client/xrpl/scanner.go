@@ -25,7 +25,7 @@ type TxScannerConfig struct {
 // DefaultTxScannerConfig returns the default TxScannerConfig.
 func DefaultTxScannerConfig() TxScannerConfig {
 	return TxScannerConfig{
-		RetryDelay: 10 * time.Second,
+		RetryDelay: 30 * time.Second,
 	}
 }
 
@@ -104,16 +104,8 @@ func (t *TxScanner) Subscribe(
 		// to sync latest transactions faster than the full history scan does it
 		prevEndLedger := initialLedger - recentScanIndexesBack
 		t.doWithResubscribe(ctx, true, func() error {
-			currentLedger, err := t.rpcTxProvider.GetCurrentLedger(ctx)
-			if err != nil {
-				return err
-			}
 			startLedger := prevEndLedger + 1
-			log.Info(
-				"Scanning recent history",
-				zap.Int64("startLedger", startLedger),
-				zap.Int64("currentLedger", currentLedger),
-			)
+			log.Info("Scanning recent history", zap.Int64("startLedger", startLedger))
 			latestIndex, err := t.rpcTxProvider.SubscribeAccountTransactions(
 				ctx,
 				account,
