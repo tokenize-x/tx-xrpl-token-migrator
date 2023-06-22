@@ -6,8 +6,8 @@ The XRPL bridge is one way XRPL to coreum bridge.
 
 ### Use binary sources (linux only)
 
-Download binary from the [releases](https://github.com/CoreumFoundation/xrpl-bridge/releases) page to you remove
-machine. Pay attention that repo is private so the binary should be downloaded form the trusted machine.
+Download binary from the [releases](https://github.com/CoreumFoundation/xrpl-bridge/releases) page to your machine. Pay
+attention that repo is private so the binary should be downloaded from the trusted machine.
 
 ### Build from sources
 
@@ -26,9 +26,9 @@ Run to build in docker (linux only)
 make build-in-docker
 ```
 
-## Inti pass as a mnemonic storage
+## Init pass as a mnemonic storage
 
-* Install the `pass` or you OS
+* Install the `pass` on you OS
 
 * Set up the `gpg` key (at least `Real name` must be filled).
 
@@ -95,7 +95,7 @@ $PWD/relayer start --coreum-chain-id $COREUM_CHAIN_ID --coreum-contract-address 
 chmod +x run.sh
 ```
 
-* Check that you don't use password in the sript
+* Check that you don't use password in the script
 
 ```bash
 cat run.sh
@@ -125,8 +125,8 @@ echo "
     " > "/etc/systemd/system/relayer.service"
     
     systemctl daemon-reload
-    systemctl start relayer
     systemctl enable relayer
+    systemctl start relayer
     systemctl status relayer --no-pager
 ```
 
@@ -140,13 +140,13 @@ journalctl -u relayer -f
 
 ### Load keys after reboot
 
-Call the command add the key session cache to let the service take it in the next restart.
+Call the command to add the key to session cache to let the service take it at the next restart.
 
 ```bash
 pass xrpl-bridge/coreum-contract-relayer-mnemonic > /dev/null
 ```
 
-### Read errors 
+### Read errors
 
 ```bash
 journalctl -u relayer -n 100000 --no-pager | grep "error"
