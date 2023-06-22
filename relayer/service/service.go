@@ -9,10 +9,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/logger"
 	"github.com/CoreumFoundation/coreum/app"
 	"github.com/CoreumFoundation/coreum/pkg/client"
 	"github.com/CoreumFoundation/coreum/pkg/config"
@@ -22,6 +22,8 @@ import (
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/xrpl"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/executor"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/finder"
+	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
+	"github.com/CoreumFoundation/xrpl-bridge/relayer/metric"
 )
 
 // Config is services config.
@@ -38,26 +40,36 @@ type Config struct {
 	CoreumGRPCURL         string
 	CoreumMnemonic        string
 	CoreumContractAddress string
-
-	LoggerFormat logger.Format
 }
 
 // Services is the struct which aggregates application service.
 type Services struct {
-	XRPLTxScanner        *xrpl.TxScanner
-	CoreumSenderAddress  sdk.AccAddress
-	CoreumContractClient *coreum.ContractClient
-	Finder               *finder.Finder
-	Executor             *executor.Executor
+	Logger                logger.Logger
+	XRPLTxScanner         *xrpl.TxScanner
+	CoreumSenderAddress   sdk.AccAddress
+	CoreumContractClient  *coreum.ContractClient
+	Finder                *finder.Finder
+	Executor              *executor.Executor
+	MetricRecorder        *metric.Recorder
+	MetricServer          *metric.Server
+	CoreumMetricCollector *metric.CoreumCollector
 }
 
 // NewServices returns new instance on the services.
-func NewServices(cfg Config, setSDKConfig bool) (*Services, error) {
+func NewServices(cfg Config, zapLogger *zap.Logger, setSDKConfig bool) (*Services, error) {
+	metricRecorder, err := metric.NewRecorder()
+	if err != nil {
+		return nil, err
+	}
+
+	log := logger.NewZapLogger(zapLogger, metricRecorder)
+
 	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
 	rpcClientConfig := xrpl.DefaultRPCClientConfig(cfg.XRPLRPCURL)
-	rpcClient := xrpl.NewRPCClient(rpcClientConfig, httpClient)
 
-	xrplTxScanner := xrpl.NewTxScanner(xrpl.DefaultTxScannerConfig(), rpcClient)
+	rpcClient := xrpl.NewRPCClient(rpcClientConfig, log, httpClient)
+
+	xrplTxScanner := xrpl.NewTxScanner(xrpl.DefaultTxScannerConfig(), log, rpcClient, metricRecorder)
 
 	network, err := config.NetworkConfigByChainID(constant.ChainID(cfg.CoreumChainID))
 	if err != nil {
@@ -93,16 +105,29 @@ func NewServices(cfg Config, setSDKConfig bool) (*Services, error) {
 		XRPLMemoSuffix:             cfg.XRPLMemoSuffix,
 		CoreumDenom:                network.Denom(),
 		CoreumDecimals:             6,
-	}, xrplTxScanner)
+	}, log, xrplTxScanner)
 
-	txExecutor := executor.NewExecutor(executor.DefaultConfig(coreumSenderAddress), coreumContractClient, txFinder)
+	txExecutor := executor.NewExecutor(executor.DefaultConfig(coreumSenderAddress), log, coreumContractClient, txFinder)
+
+	metricServer := metric.NewServer(metric.DefaultServerConfig(), log, metricRecorder.GetRegistry())
+
+	coreumMetricCollector := metric.NewCoreumCollector(
+		metric.DefaultCoreumRecorderConfig(cfg.CoreumContractAddress, coreumSenderAddress.String(), network.Denom()),
+		log,
+		clientCtx,
+		metricRecorder,
+	)
 
 	return &Services{
-		XRPLTxScanner:        xrplTxScanner,
-		CoreumSenderAddress:  coreumSenderAddress,
-		CoreumContractClient: coreumContractClient,
-		Finder:               txFinder,
-		Executor:             txExecutor,
+		Logger:                log,
+		XRPLTxScanner:         xrplTxScanner,
+		CoreumSenderAddress:   coreumSenderAddress,
+		CoreumContractClient:  coreumContractClient,
+		Finder:                txFinder,
+		Executor:              txExecutor,
+		MetricRecorder:        metricRecorder,
+		MetricServer:          metricServer,
+		CoreumMetricCollector: coreumMetricCollector,
 	}, nil
 }
 

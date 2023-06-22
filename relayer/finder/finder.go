@@ -8,8 +8,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"go.uber.org/zap"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/logger"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/xrpl"
+	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
 )
 
 // PendingCoreumSendTransaction represents the pending transaction to be sent to the coreum.
@@ -39,13 +39,15 @@ type Config struct {
 // Finder is a finder for the valid transactions.
 type Finder struct {
 	cfg         Config
+	log         logger.Logger
 	xrplScanner XRPLScanner
 }
 
 // NewFinder returns a new instance of the Finder.
-func NewFinder(cfg Config, xrplScanner XRPLScanner) *Finder {
+func NewFinder(cfg Config, log logger.Logger, xrplScanner XRPLScanner) *Finder {
 	return &Finder{
 		cfg:         cfg,
+		log:         log,
 		xrplScanner: xrplScanner,
 	}
 }
@@ -64,13 +66,12 @@ func (f *Finder) SubscribeCoreumSendTransactions(ctx context.Context, ch chan<- 
 	}
 
 	go func() {
-		log := logger.Get(ctx)
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case xrplTx := <-xrplTxsCh:
-				pendingTx, matches := f.buildPendingTransaction(log, xrplTx)
+				pendingTx, matches := f.buildPendingTransaction(xrplTx)
 				if !matches {
 					continue
 				}
@@ -82,7 +83,7 @@ func (f *Finder) SubscribeCoreumSendTransactions(ctx context.Context, ch chan<- 
 	return nil
 }
 
-func (f *Finder) buildPendingTransaction(log *zap.Logger, tx xrpl.Transaction) (PendingCoreumSendTransaction, bool) {
+func (f *Finder) buildPendingTransaction(tx xrpl.Transaction) (PendingCoreumSendTransaction, bool) {
 	if !tx.Validated ||
 		tx.TransactionResult != xrpl.TransactionResultSuccess ||
 		tx.TransactionType != xrpl.TransactionTypePayment {
@@ -103,7 +104,7 @@ func (f *Finder) buildPendingTransaction(log *zap.Logger, tx xrpl.Transaction) (
 
 	coreumCoin := f.convertXRPLAmountToCoreumCoin(tx.DeliveryAmount.Value)
 	if coreumCoin.IsZero() {
-		log.Info("Zero amount to send", zap.String("xrplTxHash", tx.Hash))
+		f.log.Info("Zero amount to send", zap.String("xrplTxHash", tx.Hash))
 		return PendingCoreumSendTransaction{}, false
 	}
 

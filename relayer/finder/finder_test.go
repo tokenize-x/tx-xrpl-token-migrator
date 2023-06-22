@@ -15,6 +15,8 @@ import (
 	"github.com/CoreumFoundation/coreum/pkg/config"
 	"github.com/CoreumFoundation/coreum/pkg/config/constant"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/xrpl"
+	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
+	"github.com/CoreumFoundation/xrpl-bridge/relayer/metric"
 )
 
 var (
@@ -34,8 +36,6 @@ func TestBuildPendingTransaction(t *testing.T) { //nolint:funlen // a lot of tes
 	t.Parallel()
 
 	setSDKConfig()
-
-	log := zaptest.NewLogger(t)
 
 	cfg := Config{
 		XRPLIssuer:                 "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
@@ -174,8 +174,10 @@ func TestBuildPendingTransaction(t *testing.T) { //nolint:funlen // a lot of tes
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			finder := NewFinder(cfg, nil)
-			pendingTx, matches := finder.buildPendingTransaction(log, tt.xrplTxFunc(validXRPLTransaction))
+			metricRecorder, err := metric.NewRecorder()
+			require.NoError(t, err)
+			finder := NewFinder(cfg, logger.NewZapLogger(zaptest.NewLogger(t), metricRecorder), nil)
+			pendingTx, matches := finder.buildPendingTransaction(tt.xrplTxFunc(validXRPLTransaction))
 			require.Equal(t, tt.want, pendingTx)
 			require.Equal(t, tt.wantMatches, matches)
 		})
