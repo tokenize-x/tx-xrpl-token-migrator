@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -19,7 +20,6 @@ import (
 
 // Build options.
 var (
-	BuildDate    = ""
 	BuildVersion = ""
 )
 
@@ -55,6 +55,8 @@ var (
 
 		CoreumChainID: string(constant.ChainIDTest),
 		CoreumGRPCURL: "https://full-node.testnet-1.coreum.dev:9090",
+
+		CoreumContractAddress: "testcore1wt8hmu6yzrdaq030cp7pxa6asdrtc7ltvlzpat99dgust8g6w73qkqy8s5",
 	}
 
 	defaultMainnnetCfg = service.Config{
@@ -74,7 +76,7 @@ var (
 func main() {
 	run.Tool("bridge", func(ctx context.Context) error {
 		log := logger.Get(ctx)
-		log.Info(fmt.Sprintf("Build date: %s, version: %s", BuildDate, BuildVersion))
+		log.Info(fmt.Sprintf("Build version: %s", BuildVersion))
 		rootCmd := RootCmd(ctx)
 		if err := rootCmd.Execute(); err != nil && !errors.Is(err, context.Canceled) {
 			log.Error("Error executing root cmd.", zap.Error(err))
@@ -91,8 +93,25 @@ func RootCmd(ctx context.Context) *cobra.Command {
 		Short: "XRPL relayer.",
 	}
 
+	cmd.AddCommand(VersionCmd(ctx))
 	cmd.AddCommand(StartCmd(ctx))
 	cmd.AddCommand(DeployCmd(ctx))
+
+	return cmd
+}
+
+// VersionCmd returns the version cmd.
+func VersionCmd(ctx context.Context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "version",
+		Short: "Print the relayer version.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			logger.Get(ctx).Info(fmt.Sprintf("version:%s", BuildVersion))
+			return nil
+		},
+	}
+
+	addDefaultFlags(cmd)
 
 	return cmd
 }
@@ -133,9 +152,6 @@ func DeployCmd(ctx context.Context) *cobra.Command {
 		Use:   "deploy",
 		Short: "Deploy contract to coreum chain.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log := logger.Get(ctx)
-			log.Info("Deploying contract.")
-
 			cfg, err := readDefaultConfig(cmd)
 			if err != nil {
 				return err
@@ -145,13 +161,15 @@ func DeployCmd(ctx context.Context) *cobra.Command {
 				return err
 			}
 
-			trustedAddresses, err := cmd.Flags().GetStringArray(flagCoreumContractTrustedAddresses)
+			trustedAddressesString, err := cmd.Flags().GetString(flagCoreumContractTrustedAddresses)
 			if err != nil {
 				return err
 			}
-			if len(trustedAddresses) == 0 {
+			if len(trustedAddressesString) == 0 {
 				return errors.New("at least one trusted address must be specified")
 			}
+
+			trustedAddresses := strings.Split(trustedAddressesString, ",")
 			for _, address := range trustedAddresses {
 				if err := validateAccAddress(address); err != nil {
 					return err
@@ -174,17 +192,23 @@ func DeployCmd(ctx context.Context) *cobra.Command {
 				return errors.New("threshold must be greater than zero")
 			}
 
+			deployCfg := coreum.DeployAndInstantiateConfig{
+				Owner:            ownerAddress,
+				Admin:            ownerAddress,
+				TrustedAddresses: trustedAddresses,
+				Threshold:        threshold,
+				AccessType:       wasmtypes.AccessTypeUnspecified,
+				Label:            "bank_threshold_send",
+			}
+
+			log := logger.Get(ctx)
+			log.Info("Deploying contract.", zap.Any("config", deployCfg))
+
 			contractAddress, err := services.CoreumContractClient.DeployAndInstantiate(
 				ctx,
 				services.CoreumSenderAddress,
-				coreum.DeployAndInstantiateConfig{
-					Owner:            ownerAddress,
-					Admin:            ownerAddress,
-					TrustedAddresses: trustedAddresses,
-					Threshold:        threshold,
-					AccessType:       wasmtypes.AccessTypeUnspecified,
-					Label:            "bank_threshold_send",
-				})
+				deployCfg,
+			)
 			if err != nil {
 				return err
 			}
