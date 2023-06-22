@@ -70,6 +70,8 @@ func doJSON(ctx context.Context, method, url string, reqBody any, resDecoder fun
 		return errors.Errorf("can't build the request, err: %v", err)
 	}
 
+	// fix for the EOF error
+	req.Close = true
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)

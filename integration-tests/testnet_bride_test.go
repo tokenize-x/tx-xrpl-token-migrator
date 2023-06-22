@@ -13,9 +13,9 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/logger"
 	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
 	integrationtests "github.com/CoreumFoundation/coreum/integration-tests"
 	"github.com/CoreumFoundation/coreum/pkg/client"
@@ -89,11 +89,10 @@ func TestWASMTestnetBridging(t *testing.T) {
 	requireT.NoError(contractClient.SetContractAddress(contractAddr))
 	t.Logf("Contract deployed and instantiated, address:%s.", contractAddr)
 
-	trustedAddress1Service := buildTestingServices(t, chain.ChainSettings.ChainID, mnemonic1, contractAddr)
-	trustedAddress2Service := buildTestingServices(t, chain.ChainSettings.ChainID, mnemonic2, contractAddr)
-	trustedAddress3Service := buildTestingServices(t, chain.ChainSettings.ChainID, mnemonic3, contractAddr)
-
-	ctx = logger.WithLogger(ctx, zaptest.NewLogger(t))
+	log := zaptest.NewLogger(t)
+	trustedAddress1Service := buildTestingServices(t, log, chain.ChainSettings.ChainID, mnemonic1, contractAddr)
+	trustedAddress2Service := buildTestingServices(t, log, chain.ChainSettings.ChainID, mnemonic2, contractAddr)
+	trustedAddress3Service := buildTestingServices(t, log, chain.ChainSettings.ChainID, mnemonic3, contractAddr)
 
 	startFunctions := []func(context.Context) error{
 		trustedAddress1Service.Executor.Start,
@@ -124,10 +123,10 @@ func TestWASMTestnetBridging(t *testing.T) {
 	requireT.Empty(executionErrors)
 }
 
-func buildTestingServices(t *testing.T, chainID, mnemonic, contractAddress string) *service.Services {
+func buildTestingServices(t *testing.T, zapLogger *zap.Logger, chainID, mnemonic, contractAddress string) *service.Services {
 	services, err := service.NewServices(service.Config{
 		XRPLRPCURL:                 "https://s.altnet.rippletest.net:51234/",
-		XRPLHistoryScanStartLedger: 0,
+		XRPLHistoryScanStartLedger: 38500000,
 		XRPLRecentScanIndexesBack:  30_000,
 		XRPLAccount:                "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
 		XRPLCurrency:               "434F524500000000000000000000000000000000",
@@ -137,8 +136,7 @@ func buildTestingServices(t *testing.T, chainID, mnemonic, contractAddress strin
 		CoreumChainID:              chainID,
 		CoreumMnemonic:             mnemonic,
 		CoreumContractAddress:      contractAddress,
-		LoggerFormat:               "console",
-	}, false)
+	}, zapLogger, false)
 	require.NoError(t, err)
 
 	return services

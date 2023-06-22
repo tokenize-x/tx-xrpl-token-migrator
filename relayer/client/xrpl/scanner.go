@@ -7,14 +7,19 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/logger"
 	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
+	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
 )
 
 // RPCTxProvider is RPC transactions provider.
 type RPCTxProvider interface {
 	SubscribeAccountTransactions(ctx context.Context, account string, startLedger, endLedger int64, ch chan<- Transaction) (int64, error)
 	GetCurrentLedger(ctx context.Context) (int64, error)
+}
+
+// MetricRecorder is coreum metric recorder interface.
+type MetricRecorder interface {
+	SetXRPLLatestAccountLedgerIndex(v int64)
 }
 
 // TxScannerConfig is the TxScanner config.
@@ -31,15 +36,19 @@ func DefaultTxScannerConfig() TxScannerConfig {
 
 // TxScanner is XRPL transactions scanner.
 type TxScanner struct {
-	cfg           TxScannerConfig
-	rpcTxProvider RPCTxProvider
+	cfg            TxScannerConfig
+	log            logger.Logger
+	rpcTxProvider  RPCTxProvider
+	metricRecorder MetricRecorder
 }
 
 // NewTxScanner returns a nw instance of the TxScanner.
-func NewTxScanner(cfg TxScannerConfig, rpcTxScanner RPCTxProvider) *TxScanner {
+func NewTxScanner(cfg TxScannerConfig, log logger.Logger, rpcTxScanner RPCTxProvider, metricRecorder MetricRecorder) *TxScanner {
 	return &TxScanner{
-		cfg:           cfg,
-		rpcTxProvider: rpcTxScanner,
+		cfg:            cfg,
+		log:            log,
+		rpcTxProvider:  rpcTxScanner,
+		metricRecorder: metricRecorder,
 	}
 }
 
@@ -55,11 +64,9 @@ func (t *TxScanner) Subscribe(
 		return errors.New("recentScanIndexesBack must be greater than zero")
 	}
 
-	log := logger.Get(ctx)
-
 	var initialLedger int64
 	t.doWithResubscribe(ctx, false, func() error {
-		log.Info("Fetching initial ledger")
+		t.log.Info("Fetching initial ledger")
 		var err error
 		initialLedger, err = t.rpcTxProvider.GetCurrentLedger(ctx)
 		if err != nil {
@@ -69,7 +76,7 @@ func (t *TxScanner) Subscribe(
 		return nil
 	})
 
-	log.Info(
+	t.log.Info(
 		"Subscribing xrpl scanner",
 		zap.String("account", account),
 		zap.Int64("historyScanStartLedger", historyScanStartLedger),
@@ -82,7 +89,7 @@ func (t *TxScanner) Subscribe(
 		startHistoricalScanIndex := historyScanStartLedger - 1
 		t.doWithResubscribe(ctx, false, func() error {
 			endLedger := initialLedger - recentScanIndexesBack
-			log.Info("Scanning full history", zap.Int64("endLedger", endLedger))
+			t.log.Info("Scanning full history", zap.Int64("endLedger", endLedger))
 			var err error
 			startHistoricalScanIndex, err = t.rpcTxProvider.SubscribeAccountTransactions(
 				ctx,
@@ -94,6 +101,7 @@ func (t *TxScanner) Subscribe(
 			if err != nil {
 				return err
 			}
+			t.log.Info("Scanning of full history is done")
 
 			return nil
 		})
@@ -105,18 +113,20 @@ func (t *TxScanner) Subscribe(
 		prevEndLedger := initialLedger - recentScanIndexesBack
 		t.doWithResubscribe(ctx, true, func() error {
 			startLedger := prevEndLedger + 1
-			log.Info("Scanning recent history", zap.Int64("startLedger", startLedger))
-			latestIndex, err := t.rpcTxProvider.SubscribeAccountTransactions(
+			t.log.Info("Scanning recent history", zap.Int64("startLedger", startLedger))
+			latestProcessedLedger, err := t.rpcTxProvider.SubscribeAccountTransactions(
 				ctx,
 				account,
 				startLedger,
 				0,
 				ch,
 			)
-			prevEndLedger = latestIndex
+			t.metricRecorder.SetXRPLLatestAccountLedgerIndex(latestProcessedLedger)
+			prevEndLedger = latestProcessedLedger
 			if err != nil {
 				return err
 			}
+			t.log.Info("Scanning of the recent history done", zap.Int64("latestProcessedLedger", latestProcessedLedger))
 
 			return nil
 		})
@@ -130,14 +140,13 @@ func (t *TxScanner) doWithResubscribe(
 	repeat bool,
 	f func() error,
 ) {
-	log := logger.Get(ctx)
 	err := retry.Do(ctx, t.cfg.RetryDelay, func() error {
 		if err := f(); err != nil {
-			log.Error("Error on scan subscription", zap.Error(err))
+			t.log.Error("Error on scan subscription", zap.Error(err))
 			return retry.Retryable(err)
 		}
 		if repeat {
-			log.Info("Waiting before the next execution.", zap.String("delay", t.cfg.RetryDelay.String()))
+			t.log.Info("Waiting before the next execution.", zap.String("delay", t.cfg.RetryDelay.String()))
 			return retry.Retryable(errors.New("repeat scan"))
 		}
 

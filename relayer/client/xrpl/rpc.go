@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/logger"
+	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
 )
 
 // ******************** RPC transport objects ********************
@@ -203,13 +203,15 @@ func DefaultRPCClientConfig(url string) RPCClientConfig {
 // RPCClient implement the XRPL RPC client.
 type RPCClient struct {
 	cfg        RPCClientConfig
+	log        logger.Logger
 	httpClient HTTPClient
 }
 
 // NewRPCClient returns new instance of the RPCClient.
-func NewRPCClient(cfg RPCClientConfig, httpClient HTTPClient) *RPCClient {
+func NewRPCClient(cfg RPCClientConfig, log logger.Logger, httpClient HTTPClient) *RPCClient {
 	return &RPCClient{
 		cfg:        cfg,
+		log:        log,
 		httpClient: httpClient,
 	}
 }
@@ -221,8 +223,7 @@ func (c *RPCClient) SubscribeAccountTransactions(
 	startLedger, endLedger int64,
 	ch chan<- Transaction,
 ) (int64, error) {
-	log := logger.Get(ctx)
-	log.Debug(
+	c.log.Debug(
 		"Subscribing RPC account transactions",
 		zap.String("account", account),
 		zap.Int64("startLedger", startLedger),
@@ -245,8 +246,7 @@ func (c *RPCClient) SubscribeAccountTransactions(
 
 // GetAccountTransactions returns the list account transactions with fully filled delivery amount using pagination.
 func (c *RPCClient) GetAccountTransactions(ctx context.Context, account string, startLedger, endLedger int64, marker *PageMarker, ch chan<- Transaction) (*PageMarker, int64, error) {
-	log := logger.Get(ctx)
-	log.Debug(
+	c.log.Debug(
 		"Getting account transactions",
 		append(convertMarkerToZapFields(marker), zap.String("account", account))...,
 	)
@@ -307,7 +307,7 @@ func (c *RPCClient) GetAccountTransactions(ctx context.Context, account string, 
 		Ledger: accountTxRPCRes.Result.Marker.Ledger,
 		Seq:    accountTxRPCRes.Result.Marker.Seq,
 	}
-	log.Debug("Got account transactions, and received next marker", convertMarkerToZapFields(marker)...)
+	c.log.Debug("Got account transactions, and received next marker", convertMarkerToZapFields(marker)...)
 
 	return marker, latestIndex - 1, nil
 }

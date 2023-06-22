@@ -103,20 +103,21 @@ func StartCmd(ctx context.Context) *cobra.Command {
 		Use:   "start",
 		Short: "Start xrpl to coreum relayer.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log := logger.Get(ctx)
-			log.Info("Starting xrpl relayer.")
 			cfg, err := readDefaultConfig(cmd)
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(cfg, true)
+			services, err := service.NewServices(cfg, logger.Get(ctx), true)
 			if err != nil {
 				return err
 			}
 			if err := validateAccAddress(cfg.CoreumContractAddress); err != nil {
 				return errors.Wrapf(err, "invalid contract address")
 			}
-			log.Info("Bridge contract address is valid", zap.String("address", cfg.CoreumContractAddress))
+
+			services.Logger.Info("Starting relayer.", zap.String("contract-address", cfg.CoreumContractAddress))
+			services.CoreumMetricCollector.Start(ctx)
+			services.MetricServer.Start(ctx)
 
 			return services.Executor.Start(ctx)
 		},
@@ -133,14 +134,11 @@ func DeployCmd(ctx context.Context) *cobra.Command {
 		Use:   "deploy",
 		Short: "Deploy contract to coreum chain.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log := logger.Get(ctx)
-			log.Info("Deploying contract.")
-
 			cfg, err := readDefaultConfig(cmd)
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(cfg, true)
+			services, err := service.NewServices(cfg, logger.Get(ctx), true)
 			if err != nil {
 				return err
 			}
@@ -174,6 +172,8 @@ func DeployCmd(ctx context.Context) *cobra.Command {
 				return errors.New("threshold must be greater than zero")
 			}
 
+			log := services.Logger
+			log.Info("Deploying contract.")
 			contractAddress, err := services.CoreumContractClient.DeployAndInstantiate(
 				ctx,
 				services.CoreumSenderAddress,

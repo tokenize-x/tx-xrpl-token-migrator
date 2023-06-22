@@ -11,8 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/logger"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/http"
+	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
+	"github.com/CoreumFoundation/xrpl-bridge/relayer/metric"
 )
 
 const (
@@ -28,10 +29,9 @@ func TestRPCClient_SubscribeAccountTransactions(t *testing.T) {
 	t.Cleanup(cancel)
 
 	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
-	ctx = logger.WithLogger(ctx, zaptest.NewLogger(t))
 
 	rpcClientConfig := DefaultRPCClientConfig(mainnetRPCURL)
-	rpcClient := NewRPCClient(rpcClientConfig, httpClient)
+	rpcClient := NewRPCClient(rpcClientConfig, logger.NewZapLogger(zaptest.NewLogger(t), nil), httpClient)
 
 	txsCh := make(chan Transaction)
 
@@ -82,10 +82,11 @@ func TestRPCClient_GetAccountTransactions(t *testing.T) {
 	t.Cleanup(cancel)
 
 	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
-	ctx = logger.WithLogger(ctx, zaptest.NewLogger(t))
 
 	rpcClientConfig := DefaultRPCClientConfig(mainnetRPCURL)
-	rpcClient := NewRPCClient(rpcClientConfig, httpClient)
+	metricRecorder, err := metric.NewRecorder()
+	require.NoError(t, err)
+	rpcClient := NewRPCClient(rpcClientConfig, logger.NewZapLogger(zaptest.NewLogger(t), metricRecorder), httpClient)
 
 	// get core payment transaction
 	markerPtr := &PageMarker{
@@ -162,10 +163,11 @@ func TestRPCClient_GetCurrentLedger(t *testing.T) {
 	t.Cleanup(cancel)
 
 	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
-	ctx = logger.WithLogger(ctx, zaptest.NewLogger(t))
 
 	rpcClientConfig := DefaultRPCClientConfig(mainnetRPCURL)
-	rpcClient := NewRPCClient(rpcClientConfig, httpClient)
+	metricRecorder, err := metric.NewRecorder()
+	require.NoError(t, err)
+	rpcClient := NewRPCClient(rpcClientConfig, logger.NewZapLogger(zaptest.NewLogger(t), metricRecorder), httpClient)
 
 	currentLedger, err := rpcClient.GetCurrentLedger(ctx)
 	require.NoError(t, err)

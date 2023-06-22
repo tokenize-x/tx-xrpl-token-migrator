@@ -8,10 +8,10 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/logger"
 	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/finder"
+	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
 )
 
 // ContractClient is coreum contract client interface.
@@ -41,14 +41,16 @@ func DefaultConfig(senderAddress sdk.AccAddress) Config {
 // Executor is coreum transaction executor.
 type Executor struct {
 	cfg            Config
+	log            logger.Logger
 	contractClient ContractClient
 	finder         Finder
 }
 
 // NewExecutor returns a new instance of the Executor.
-func NewExecutor(cfg Config, contractClient ContractClient, finder Finder) *Executor {
+func NewExecutor(cfg Config, log logger.Logger, contractClient ContractClient, finder Finder) *Executor {
 	return &Executor{
 		cfg:            cfg,
+		log:            log,
 		contractClient: contractClient,
 		finder:         finder,
 	}
@@ -56,8 +58,7 @@ func NewExecutor(cfg Config, contractClient ContractClient, finder Finder) *Exec
 
 // Start starts an executor.
 func (e *Executor) Start(ctx context.Context) error {
-	log := logger.Get(ctx)
-	log.Info("Starting executor.")
+	e.log.Info("Starting executor.")
 
 	txsCh := make(chan finder.PendingCoreumSendTransaction)
 	if err := e.finder.SubscribeCoreumSendTransactions(ctx, txsCh); err != nil {
@@ -73,6 +74,10 @@ func (e *Executor) Start(ctx context.Context) error {
 				return
 			case tx := <-txsCh:
 				err := retry.Do(ctx, e.cfg.RetryDelay, func() error {
+					e.log.Info(
+						"Found valid transaction.",
+						zap.Any("tx", tx),
+					)
 					sendReq := coreum.ThresholdBankSendRequest{
 						ID:        tx.XRPLTxHash,
 						Amount:    tx.CoreumAmount,
@@ -80,7 +85,7 @@ func (e *Executor) Start(ctx context.Context) error {
 					}
 					_, err := e.contractClient.ThresholdBankSend(ctx, e.cfg.SenderAddress, sendReq)
 					if err == nil {
-						log.Info(
+						e.log.Info(
 							"Submitted new evidence.",
 							zap.String("senderAddress", e.cfg.SenderAddress.String()),
 							zap.Any("request", sendReq),
@@ -88,7 +93,7 @@ func (e *Executor) Start(ctx context.Context) error {
 						return nil
 					}
 					if coreum.IsEvidenceProvidedError(err) {
-						log.Debug(
+						e.log.Debug(
 							"Evidence has been already submitted.",
 							zap.String("senderAddress", e.cfg.SenderAddress.String()),
 							zap.String("xrplTxHash", tx.XRPLTxHash),
@@ -96,14 +101,16 @@ func (e *Executor) Start(ctx context.Context) error {
 						return nil
 					}
 					if coreum.IsTransferSentError(err) {
-						log.Debug(
+						e.log.Debug(
 							"Transfer has been already sent.",
 							zap.String("senderAddress", e.cfg.SenderAddress.String()),
 							zap.String("xrplTxHash", tx.XRPLTxHash),
 						)
 						return nil
 					}
-					log.Error("Can't execute coreum contract transaction, the execution will be repeated", zap.Any("request", sendReq), zap.String("delay", e.cfg.RetryDelay.String()), zap.Error(err))
+
+					e.log.Error("Can't execute coreum contract transaction, the execution will be repeated", zap.Any("request", sendReq), zap.String("delay", e.cfg.RetryDelay.String()), zap.Error(err))
+
 					return retry.Retryable(err)
 				})
 				// unexpected error

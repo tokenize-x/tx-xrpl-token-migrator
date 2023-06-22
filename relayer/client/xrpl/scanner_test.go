@@ -8,8 +8,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/logger"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/http"
+	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
+	"github.com/CoreumFoundation/xrpl-bridge/relayer/metric"
 )
 
 func TestTxScanner_Scan(t *testing.T) {
@@ -20,14 +21,17 @@ func TestTxScanner_Scan(t *testing.T) {
 
 	rpcClientConfig := DefaultRPCClientConfig(mainnetRPCURL)
 	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
-	rpcClient := NewRPCClient(rpcClientConfig, httpClient)
 
-	ctx = logger.WithLogger(ctx, zaptest.NewLogger(t))
+	metricRecorder, err := metric.NewRecorder()
+	require.NoError(t, err)
 
-	txScanner := NewTxScanner(DefaultTxScannerConfig(), rpcClient)
+	log := logger.NewZapLogger(zaptest.NewLogger(t), metricRecorder)
+	rpcClient := NewRPCClient(rpcClientConfig, log, httpClient)
+
+	txScanner := NewTxScanner(DefaultTxScannerConfig(), log, rpcClient, metricRecorder)
 
 	txsCh := make(chan Transaction)
-	err := txScanner.Subscribe(
+	err = txScanner.Subscribe(
 		ctx,
 		mainnetCoreAccount,
 		mainnetInitialBridgeLedgerIndex,
