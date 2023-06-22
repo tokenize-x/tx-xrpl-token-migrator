@@ -208,6 +208,9 @@ func DeployCmd(ctx context.Context) *cobra.Command {
 				services.CoreumSenderAddress,
 				deployCfg,
 			)
+			if err != nil {
+				return err
+			}
 			services.Logger.Info("Contract deployed", zap.String("address", contractAddress))
 
 			return nil
