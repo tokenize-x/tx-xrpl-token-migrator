@@ -49,7 +49,7 @@ func TestWASMContractExecuteSend(t *testing.T) {
 	}
 
 	bankClient := banktypes.NewQueryClient(chain.ClientContext)
-	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(""), chain.ClientContext)
+	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil), chain.ClientContext)
 
 	t.Log("Deploying and instantiating the smart contract.")
 	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
@@ -67,7 +67,7 @@ func TestWASMContractExecuteSend(t *testing.T) {
 	requireT.NoError(err)
 
 	coinToFundContract := chain.NewCoin(sdk.NewInt(10_000))
-	chain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(sdk.MustAccAddressFromBech32(contractAddr), coinToFundContract))
+	chain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(contractAddr, coinToFundContract))
 
 	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
 
@@ -94,7 +94,7 @@ func TestWASMContractExecuteSend(t *testing.T) {
 	// balance of the contract remains the same
 	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
 	// balance of the recipient remains the same
-	assertBankBalance(ctx, t, bankClient, txSendRecipient.String(), chain.NewCoin(sdk.ZeroInt()))
+	assertBankBalance(ctx, t, bankClient, txSendRecipient, chain.NewCoin(sdk.ZeroInt()))
 
 	action, err := event.FindStringEventAttribute(txRes.Events, wasmtypes.ModuleName, "result")
 	requireT.NoError(err)
@@ -128,7 +128,7 @@ func TestWASMContractExecuteSend(t *testing.T) {
 	// balance of the contract remains the same
 	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
 	// balance of the recipient remains the same
-	assertBankBalance(ctx, t, bankClient, txSendRecipient.String(), chain.NewCoin(sdk.ZeroInt()))
+	assertBankBalance(ctx, t, bankClient, txSendRecipient, chain.NewCoin(sdk.ZeroInt()))
 
 	action, err = event.FindStringEventAttribute(txRes.Events, wasmtypes.ModuleName, "result")
 	requireT.NoError(err)
@@ -157,7 +157,7 @@ func TestWASMContractExecuteSend(t *testing.T) {
 	// balance of the contract is updated
 	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract.Sub(coinsToSend))
 	// balance of the recipient is updated
-	assertBankBalance(ctx, t, bankClient, txSendRecipient.String(), coinsToSend)
+	assertBankBalance(ctx, t, bankClient, txSendRecipient, coinsToSend)
 
 	action, err = event.FindStringEventAttribute(txRes.Events, wasmtypes.ModuleName, "result")
 	requireT.NoError(err)
@@ -196,7 +196,7 @@ func TestWASMContractExecuteWithdraw(t *testing.T) {
 	)
 
 	bankClient := banktypes.NewQueryClient(chain.ClientContext)
-	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(""), chain.ClientContext)
+	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil), chain.ClientContext)
 
 	t.Log("Deploying and instantiating the smart contract.")
 	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
@@ -212,7 +212,7 @@ func TestWASMContractExecuteWithdraw(t *testing.T) {
 	requireT.NoError(err)
 
 	coinToFundContract := chain.NewCoin(sdk.NewInt(10_000))
-	chain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(sdk.MustAccAddressFromBech32(contractAddr), coinToFundContract))
+	chain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(contractAddr, coinToFundContract))
 
 	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
 
@@ -222,7 +222,7 @@ func TestWASMContractExecuteWithdraw(t *testing.T) {
 
 	contractBalanceRes, err := bankClient.Balance(ctx,
 		&banktypes.QueryBalanceRequest{
-			Address: contractAddr,
+			Address: contractAddr.String(),
 			Denom:   coinToFundContract.Denom,
 		})
 	requireT.NoError(err)
@@ -278,7 +278,7 @@ func TestWASMContractQueryPagination(t *testing.T) {
 	)
 
 	bankClient := banktypes.NewQueryClient(chain.ClientContext)
-	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(""), chain.ClientContext)
+	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil), chain.ClientContext)
 
 	t.Log("Deploying and instantiating the smart contract.")
 	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
@@ -296,7 +296,7 @@ func TestWASMContractQueryPagination(t *testing.T) {
 	requireT.NoError(err)
 
 	coinToFundContract := chain.NewCoin(sdk.NewInt(10_000))
-	chain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(sdk.MustAccAddressFromBech32(contractAddr), coinToFundContract))
+	chain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(contractAddr, coinToFundContract))
 
 	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
 
@@ -305,7 +305,7 @@ func TestWASMContractQueryPagination(t *testing.T) {
 
 	t.Logf("Funding the smart contract to test pagination.")
 	chain.Faucet.FundAccounts(ctx, t,
-		integrationtests.NewFundedAccount(sdk.MustAccAddressFromBech32(contractAddr), chain.NewCoin(sdk.NewInt(1000000000))),
+		integrationtests.NewFundedAccount(contractAddr, chain.NewCoin(sdk.NewInt(1000000000))),
 	)
 
 	transactionsCount := 100
@@ -356,14 +356,14 @@ func assertBankBalance(
 	ctx context.Context,
 	t *testing.T,
 	bankClient banktypes.QueryClient,
-	address string,
+	address sdk.AccAddress,
 	expectedBalance sdk.Coin,
 ) {
 	t.Helper()
 
 	recipientBalance, err := bankClient.Balance(ctx,
 		&banktypes.QueryBalanceRequest{
-			Address: address,
+			Address: address.String(),
 			Denom:   expectedBalance.Denom,
 		})
 	require.NoError(t, err)

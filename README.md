@@ -25,23 +25,6 @@ Run to build in docker (linux only)
 ```bash
 make build-in-docker
 ```
-
-## Init pass as a mnemonic storage
-
-* Install the `pass` on you OS
-
-* Set up the `gpg` key (at least `Real name` must be filled).
-
-```
-gpg --gen-key
-```
-
-Init pass
-
-```
-pass init xrpl-bridge
-```
-
 ## Deploy contract
 
 * Set public variable:
@@ -53,12 +36,10 @@ export COREUM_CONTRACT_THRESHOLD="{Threshold}"
 export COREUM_CONTRACT_OWNER="{Owner which is able to withdraw coins}"
 ```
 
-* Store deployer mnemonic to the `pass`
-
-Call the command and add the deployer mnemonic there.
+* Store deployer mnemonic to the keystore
 
 ```
-pass insert xrpl-bridge/coreum-contract-deployer-mnemonic
+./relayer keys add --recover contract-deployer --coreum-chain-id $COREUM_CHAIN_ID
 ```
 
 * Deploy smart contract
@@ -68,7 +49,7 @@ pass insert xrpl-bridge/coreum-contract-deployer-mnemonic
     --coreum-contract-trusted-addresses $COREUM_CONTRACT_TRUSTED_ADDRESSES \
     --coreum-contract-threshold $COREUM_CONTRACT_THRESHOLD \
     --coreum-contract-owner-address $COREUM_CONTRACT_OWNER \
-    --coreum-mnemonic "$(pass show xrpl-bridge/coreum-contract-deployer-mnemonic)"
+    --coreum-sender-address $(./relayer keys show contract-deployer -a --coreum-chain-id $COREUM_CHAIN_ID)
 ```
 
 ## Start relayer
@@ -78,27 +59,22 @@ pass insert xrpl-bridge/coreum-contract-deployer-mnemonic
 Call the command and add the relayer mnemonic there.
 
 ```
-pass insert xrpl-bridge/coreum-contract-relayer-mnemonic
+./relayer keys add --recover relayer --coreum-chain-id $COREUM_CHAIN_ID
 ```
 
 ```bash
 export COREUM_CHAIN_ID="{Chain ID}"
-export COREUM_CONTRACT_ADDRESSES="{Contract address}"
+export COREUM_CONTRACT_ADDRESS="{Contract address}"
+export COREUM_RELAYER_ADDRESS="$(./relayer keys show relayer -a --coreum-chain-id $COREUM_CHAIN_ID)"
 ```
 
 * Create start service script
 
 ```bash
 echo "
-$PWD/relayer start --coreum-chain-id $COREUM_CHAIN_ID --coreum-contract-address $COREUM_CONTRACT_ADDRESSES --coreum-mnemonic \"\$(pass show xrpl-bridge/coreum-contract-relayer-mnemonic)\"
+$PWD/relayer start --coreum-chain-id $COREUM_CHAIN_ID --coreum-contract-address $COREUM_CONTRACT_ADDRESS --coreum-sender-address $COREUM_RELAYER_ADDRESS
     " > "run.sh"
 chmod +x run.sh
-```
-
-* Check that you don't use password in the script
-
-```bash
-cat run.sh
 ```
 
 * Start relayer manually to test that it is configured correctly.

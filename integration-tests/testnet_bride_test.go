@@ -9,6 +9,7 @@ import (
 	"time"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/pkg/errors"
@@ -31,12 +32,9 @@ func TestWASMTestnetBridging(t *testing.T) {
 	t.Cleanup(cancel)
 
 	owner := chain.GenAccount()
-	mnemonic1 := "apart ignore fancy carpet concert enact peasant property horse flash inmate regular possible lab pledge recycle gesture figure advice turn hover flat arch merge"
-	trustedAddress1 := chain.ImportMnemonic(mnemonic1)
-	mnemonic2 := "view throw outdoor skin bachelor crazy until similar speed lonely glass tuna rich shiver enrich bridge calm profit swim charge fence payment invite field"
-	trustedAddress2 := chain.ImportMnemonic(mnemonic2)
-	mnemonic3 := "uniform major close coil basket raccoon gym town few reject play picnic amused empower deny chimney leader fire lobster right virus page game jaguar"
-	trustedAddress3 := chain.ImportMnemonic(mnemonic3)
+	trustedAddress1 := chain.GenAccount()
+	trustedAddress2 := chain.GenAccount()
+	trustedAddress3 := chain.GenAccount()
 
 	recipient1Address := "devcore1k0vuxw2d835u56u64rerjfnkgdpm88n2zl596z"
 	recipient2Address := "devcore1ppc3az9z429hflver2gj8ervnlgx2s7gued0cs"
@@ -66,7 +64,7 @@ func TestWASMTestnetBridging(t *testing.T) {
 		integrationtests.NewFundedAccount(trustedAddress3, chain.NewCoin(sdk.NewInt(5000000000))),
 	)
 
-	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(""), chain.ClientContext)
+	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil), chain.ClientContext)
 
 	t.Log("Deploying and instantiating the smart contract.")
 	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
@@ -84,15 +82,15 @@ func TestWASMTestnetBridging(t *testing.T) {
 	requireT.NoError(err)
 
 	coinToFundContract := chain.NewCoin(sdk.NewInt(10_000_000_000))
-	chain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(sdk.MustAccAddressFromBech32(contractAddr), coinToFundContract))
+	chain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(contractAddr, coinToFundContract))
 
 	requireT.NoError(contractClient.SetContractAddress(contractAddr))
 	t.Logf("Contract deployed and instantiated, address:%s.", contractAddr)
 
 	log := zaptest.NewLogger(t)
-	trustedAddress1Service := buildTestingServices(t, log, chain.ChainSettings.ChainID, mnemonic1, contractAddr)
-	trustedAddress2Service := buildTestingServices(t, log, chain.ChainSettings.ChainID, mnemonic2, contractAddr)
-	trustedAddress3Service := buildTestingServices(t, log, chain.ChainSettings.ChainID, mnemonic3, contractAddr)
+	trustedAddress1Service := buildTestingServices(t, log, chain.ChainSettings.ChainID, chain.ClientContext.Keyring(), trustedAddress1, contractAddr)
+	trustedAddress2Service := buildTestingServices(t, log, chain.ChainSettings.ChainID, chain.ClientContext.Keyring(), trustedAddress2, contractAddr)
+	trustedAddress3Service := buildTestingServices(t, log, chain.ChainSettings.ChainID, chain.ClientContext.Keyring(), trustedAddress3, contractAddr)
 
 	startFunctions := []func(context.Context) error{
 		trustedAddress1Service.Executor.Start,
@@ -123,7 +121,13 @@ func TestWASMTestnetBridging(t *testing.T) {
 	requireT.Empty(executionErrors)
 }
 
-func buildTestingServices(t *testing.T, zapLogger *zap.Logger, chainID, mnemonic, contractAddress string) *service.Services {
+func buildTestingServices(
+	t *testing.T,
+	zapLogger *zap.Logger,
+	chainID string,
+	kr keyring.Keyring,
+	senderAddress, contractAddress sdk.AccAddress,
+) *service.Services {
 	services, err := service.NewServices(service.Config{
 		XRPLRPCURL:                 "https://s.altnet.rippletest.net:51234/",
 		XRPLHistoryScanStartLedger: 38500000,
@@ -134,9 +138,9 @@ func buildTestingServices(t *testing.T, zapLogger *zap.Logger, chainID, mnemonic
 		XRPLMemoSuffix:             "/integration-test",
 		CoreumGRPCURL:              "http://localhost:9090", // we don't use the chain ctx here intentionally to fully check the client initialisation
 		CoreumChainID:              chainID,
-		CoreumMnemonic:             mnemonic,
-		CoreumContractAddress:      contractAddress,
-	}, zapLogger, false)
+		CoreumSenderAddress:        senderAddress.String(),
+		CoreumContractAddress:      contractAddress.String(),
+	}, kr, zapLogger)
 	require.NoError(t, err)
 
 	return services
