@@ -140,7 +140,7 @@ journalctl -u relayer -f
 
 ### Load keys after reboot
 
-Call the command to add the key to session cache to let the service take it at the next restart.
+Call the command load key to let the service take it at the next restart.
 
 ```bash
 pass xrpl-bridge/coreum-contract-relayer-mnemonic > /dev/null
