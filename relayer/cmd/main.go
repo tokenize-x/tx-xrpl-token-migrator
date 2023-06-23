@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -162,15 +161,15 @@ func DeployCmd(ctx context.Context) *cobra.Command {
 				return err
 			}
 
-			trustedAddressesString, err := cmd.Flags().GetString(flagCoreumContractTrustedAddresses)
+			trustedAddresses, err := cmd.Flags().GetStringSlice(flagCoreumContractTrustedAddresses)
 			if err != nil {
 				return err
 			}
-			if len(trustedAddressesString) == 0 {
+
+			if len(trustedAddresses) == 0 {
 				return errors.New("at least one trusted address must be specified")
 			}
 
-			trustedAddresses := strings.Split(trustedAddressesString, ",")
 			for _, address := range trustedAddresses {
 				if err := validateAccAddress(address); err != nil {
 					return err
@@ -219,7 +218,7 @@ func DeployCmd(ctx context.Context) *cobra.Command {
 
 	addDefaultFlags(cmd)
 
-	cmd.PersistentFlags().StringArray(flagCoreumContractTrustedAddresses, nil, "")
+	cmd.PersistentFlags().StringSlice(flagCoreumContractTrustedAddresses, nil, "")
 	cmd.PersistentFlags().String(flagCoreumContractOwnerAddress, "", "")
 	cmd.PersistentFlags().Int(flagCoreumContractThreshold, 0, "")
 
