@@ -39,7 +39,7 @@ export COREUM_CONTRACT_OWNER="{Owner which is able to withdraw coins}"
 * Store deployer mnemonic to the keystore
 
 ```
-./relayer keys add --recover contract-deployer --coreum-chain-id $COREUM_CHAIN_ID
+./relayer keys add --recover contract-deployer --coreum-chain-id $COREUM_CHAIN_ID --keyring-backed os
 ```
 
 * Deploy smart contract
@@ -50,6 +50,7 @@ export COREUM_CONTRACT_OWNER="{Owner which is able to withdraw coins}"
     --coreum-contract-threshold $COREUM_CONTRACT_THRESHOLD \
     --coreum-contract-owner-address $COREUM_CONTRACT_OWNER \
     --coreum-sender-address $(./relayer keys show contract-deployer -a --coreum-chain-id $COREUM_CHAIN_ID)
+    --keyring-backed os
 ```
 
 ## Start relayer
@@ -59,20 +60,20 @@ export COREUM_CONTRACT_OWNER="{Owner which is able to withdraw coins}"
 Call the command and add the relayer mnemonic there.
 
 ```
-./relayer keys add --recover relayer --coreum-chain-id $COREUM_CHAIN_ID
+./relayer keys add --recover relayer --coreum-chain-id $COREUM_CHAIN_ID --keyring-backend os
 ```
 
 ```bash
 export COREUM_CHAIN_ID="{Chain ID}"
 export COREUM_CONTRACT_ADDRESS="{Contract address}"
-export COREUM_RELAYER_ADDRESS="$(./relayer keys show relayer -a --coreum-chain-id $COREUM_CHAIN_ID)"
+export COREUM_RELAYER_ADDRESS="$(./relayer keys show relayer -a --coreum-chain-id $COREUM_CHAIN_ID --keyring-backend os)"
 ```
 
 * Create start service script
 
 ```bash
 echo "
-$PWD/relayer start --coreum-chain-id $COREUM_CHAIN_ID --coreum-contract-address $COREUM_CONTRACT_ADDRESS --coreum-sender-address $COREUM_RELAYER_ADDRESS
+$PWD/relayer start --coreum-chain-id $COREUM_CHAIN_ID --coreum-contract-address $COREUM_CONTRACT_ADDRESS --coreum-sender-address $COREUM_RELAYER_ADDRESS --keyring-backed os
     " > "run.sh"
 chmod +x run.sh
 ```
@@ -114,12 +115,10 @@ journalctl -u relayer -f
 
 ## Relayer support
 
-### Load keys after reboot
-
-Call the command load key to let the service take it at the next restart.
+### Re-init relayer after the reboot
 
 ```bash
-pass xrpl-bridge/coreum-contract-relayer-mnemonic > /dev/null
+
 ```
 
 ### Read errors

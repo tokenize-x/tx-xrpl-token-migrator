@@ -6,6 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -53,7 +54,7 @@ type Services struct {
 }
 
 // NewServices returns new instance on the services.
-func NewServices(cfg Config, keyring keyring.Keyring, zapLogger *zap.Logger) (*Services, error) {
+func NewServices(cfg Config, kr keyring.Keyring, zapLogger *zap.Logger) (*Services, error) {
 	metricRecorder, err := metric.NewRecorder()
 	if err != nil {
 		return nil, err
@@ -78,10 +79,31 @@ func NewServices(cfg Config, keyring keyring.Keyring, zapLogger *zap.Logger) (*S
 		return nil, err
 	}
 
+	var senderAddress sdk.AccAddress
+	internalKr := keyring.NewInMemory()
+	if cfg.CoreumSenderAddress != "" {
+		senderAddress, err = sdk.AccAddressFromBech32(cfg.CoreumSenderAddress)
+		if err != nil {
+			return nil, errors.Wrapf(err, "invalid sender address")
+		}
+		keyInfo, err := kr.KeyByAddress(senderAddress)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get key for keyring")
+		}
+		pass := uuid.NewString()
+		armor, err := kr.ExportPrivKeyArmor(keyInfo.GetName(), pass)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to export key")
+		}
+		if err := internalKr.ImportPrivKey(keyInfo.GetName(), armor, pass); err != nil {
+			return nil, errors.Wrapf(err, "failed to import key")
+		}
+	}
+
 	cosmosClientCtx := client.NewContext(client.DefaultContextConfig(), app.ModuleBasics).
 		WithGRPCClient(coreumGRPCClient).
 		WithChainID(string(network.ChainID())).
-		WithKeyring(keyring)
+		WithKeyring(internalKr)
 
 	var contractAddress sdk.AccAddress
 	if cfg.CoreumContractAddress != "" {
@@ -102,13 +124,6 @@ func NewServices(cfg Config, keyring keyring.Keyring, zapLogger *zap.Logger) (*S
 		CoreumDecimals:             6,
 	}, log, xrplTxScanner)
 
-	var senderAddress sdk.AccAddress
-	if cfg.CoreumSenderAddress != "" {
-		senderAddress, err = sdk.AccAddressFromBech32(cfg.CoreumSenderAddress)
-		if err != nil {
-			return nil, errors.Wrapf(err, "invalid sender address")
-		}
-	}
 	txExecutor := executor.NewExecutor(executor.DefaultConfig(senderAddress), log, coreumContractClient, txFinder)
 
 	metricServer := metric.NewServer(metric.DefaultServerConfig(), log, metricRecorder.GetRegistry())

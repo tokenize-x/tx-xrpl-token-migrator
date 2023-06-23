@@ -259,7 +259,7 @@ func preProcessFlags() error {
 	flagSet := pflag.NewFlagSet("pre-process", pflag.ExitOnError)
 	flagSet.ParseErrorsWhitelist.UnknownFlags = true
 
-	chainID := flagSet.String(flagCoreumChainID, "", "")
+	chainID := flagSet.String(flagCoreumChainID, string(constant.ChainIDMain), "")
 	err := flagSet.Parse(os.Args[1:])
 	if err != nil {
 		return err
