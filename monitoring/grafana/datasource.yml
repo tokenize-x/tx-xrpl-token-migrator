@@ -1,0 +1,16 @@
+apiVersion: 1
+
+deleteDatasources:
+  - name: Bridge
+    orgId: 1
+
+datasources:
+  - name: Bridge
+    type: prometheus
+    access: proxy
+    orgId: 1
+    url: http://prometheus:9090
+    version: 1
+    editable: true
+    jsonData:
+      timeInterval: 5s

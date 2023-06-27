@@ -1,0 +1,36 @@
+groups:
+  - name: Bridge Monitoring
+    rules:
+    - alert: InstanceDown
+      # Condition for alerting
+      expr: up == 0
+      for: 1m
+      annotations:
+        title: 'Instance {{ $labels.instance }} down'
+        description: '{{ $labels.job }} on {{ $labels.instance }} has been down for more than 1 minutes'
+      labels:
+        severity: critical
+
+    - alert: ContractLowBalance
+      expr: coreum_contract_balance{job="bridge"} < 50000000000
+      for: 1s
+      labels:
+        severity: major
+      annotations:
+        description: 'Contract balance is less then 50.000'
+
+    - alert: SenderLowBalance
+      expr: coreum_sender_balance{job="bridge"} < 10000000
+      for: 1s
+      labels:
+        severity: major
+      annotations:
+        description: 'Sender balance is less then 10'
+
+    - alert: BridgeErrorsRate
+      expr: rate(errors_total{job="bridge"}[5m]) * 5 * 60 > 10
+      for: 1s
+      labels:
+        severity: major
+      annotations:
+        description: 'Bridge errors count for the last 5min > 10'

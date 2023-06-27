@@ -1,0 +1,35 @@
+version: "3.5"
+
+networks:
+  bridge-monitoring:
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: always
+    volumes:
+      - ./data/prometheus:/prometheus
+      - ./prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=3d'
+    networks:
+      - bridge-monitoring
+
+  # default login credentials: admin/admin
+  grafana:
+    image: grafana/grafana:latest
+    env_file: ./grafana/grafana.conf
+    container_name: grafana
+    restart: always
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+    ports:
+      - 3000:3000
+    networks:
+      - bridge-monitoring
