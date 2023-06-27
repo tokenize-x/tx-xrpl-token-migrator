@@ -2,9 +2,9 @@ package service
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net/url"
 
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/google/uuid"
@@ -38,7 +38,7 @@ type Config struct {
 
 	CoreumChainID         string
 	CoreumGRPCURL         string
-	CoreumMnemonic        string
+	CoreumSenderAddress   string
 	CoreumContractAddress string
 }
 
@@ -46,7 +46,6 @@ type Config struct {
 type Services struct {
 	Logger                logger.Logger
 	XRPLTxScanner         *xrpl.TxScanner
-	CoreumSenderAddress   sdk.AccAddress
 	CoreumContractClient  *coreum.ContractClient
 	Finder                *finder.Finder
 	Executor              *executor.Executor
@@ -56,7 +55,7 @@ type Services struct {
 }
 
 // NewServices returns new instance on the services.
-func NewServices(cfg Config, zapLogger *zap.Logger, setSDKConfig bool) (*Services, error) {
+func NewServices(cfg Config, kr keyring.Keyring, zapLogger *zap.Logger) (*Services, error) {
 	metricRecorder, err := metric.NewRecorder()
 	if err != nil {
 		return nil, err
@@ -75,27 +74,47 @@ func NewServices(cfg Config, zapLogger *zap.Logger, setSDKConfig bool) (*Service
 	if err != nil {
 		return nil, err
 	}
-	if setSDKConfig {
-		network.SetSDKConfig()
-	}
 
 	coreumGRPCClient, err := getGRPCClientConn(cfg.CoreumGRPCURL)
 	if err != nil {
 		return nil, err
 	}
 
-	kr := keyring.NewInMemory()
-	coreumSenderAddress, err := importMnemonic(kr, constant.CoinType, cfg.CoreumMnemonic)
+	var senderAddress sdk.AccAddress
+	internalKr := keyring.NewInMemory()
+	if cfg.CoreumSenderAddress == "" {
+		return nil, errors.New("coreum sender address is required")
+	}
+	senderAddress, err = sdk.AccAddressFromBech32(cfg.CoreumSenderAddress)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "invalid sender address")
+	}
+	keyInfo, err := kr.KeyByAddress(senderAddress)
+	if err != nil {
+		return nil, errors.Wrapf(err, fmt.Sprintf("failed to get key from keyring for address:%s", cfg.CoreumSenderAddress))
+	}
+	pass := uuid.NewString()
+	armor, err := kr.ExportPrivKeyArmor(keyInfo.GetName(), pass)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to export key")
+	}
+	if err := internalKr.ImportPrivKey(keyInfo.GetName(), armor, pass); err != nil {
+		return nil, errors.Wrapf(err, "failed to import key")
 	}
 
-	clientCtx := client.NewContext(client.DefaultContextConfig(), app.ModuleBasics).
+	cosmosClientCtx := client.NewContext(client.DefaultContextConfig(), app.ModuleBasics).
 		WithGRPCClient(coreumGRPCClient).
 		WithChainID(string(network.ChainID())).
-		WithKeyring(kr)
+		WithKeyring(internalKr)
 
-	coreumContractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(cfg.CoreumContractAddress), clientCtx)
+	var contractAddress sdk.AccAddress
+	if cfg.CoreumContractAddress != "" {
+		contractAddress, err = sdk.AccAddressFromBech32(cfg.CoreumContractAddress)
+		if err != nil {
+			return nil, errors.Wrapf(err, "invalid contract address")
+		}
+	}
+	coreumContractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(contractAddress), cosmosClientCtx)
 
 	txFinder := finder.NewFinder(finder.Config{
 		XRPLIssuer:                 cfg.XRPLIssuer,
@@ -107,21 +126,20 @@ func NewServices(cfg Config, zapLogger *zap.Logger, setSDKConfig bool) (*Service
 		CoreumDecimals:             6,
 	}, log, xrplTxScanner)
 
-	txExecutor := executor.NewExecutor(executor.DefaultConfig(coreumSenderAddress), log, coreumContractClient, txFinder)
+	txExecutor := executor.NewExecutor(executor.DefaultConfig(senderAddress), log, coreumContractClient, txFinder)
 
 	metricServer := metric.NewServer(metric.DefaultServerConfig(), log, metricRecorder.GetRegistry())
 
 	coreumMetricCollector := metric.NewCoreumCollector(
-		metric.DefaultCoreumRecorderConfig(cfg.CoreumContractAddress, coreumSenderAddress.String(), network.Denom()),
+		metric.DefaultCoreumRecorderConfig(contractAddress, senderAddress, network.Denom()),
 		log,
-		clientCtx,
+		cosmosClientCtx,
 		metricRecorder,
 	)
 
 	return &Services{
 		Logger:                log,
 		XRPLTxScanner:         xrplTxScanner,
-		CoreumSenderAddress:   coreumSenderAddress,
 		CoreumContractClient:  coreumContractClient,
 		Finder:                txFinder,
 		Executor:              txExecutor,
@@ -129,21 +147,6 @@ func NewServices(cfg Config, zapLogger *zap.Logger, setSDKConfig bool) (*Service
 		MetricServer:          metricServer,
 		CoreumMetricCollector: coreumMetricCollector,
 	}, nil
-}
-
-func importMnemonic(kr keyring.Keyring, coinType uint32, mnemonic string) (sdk.AccAddress, error) {
-	keyInfo, err := kr.NewAccount(
-		uuid.New().String(),
-		mnemonic,
-		"",
-		hd.CreateHDPath(coinType, 0, 0).String(),
-		hd.Secp256k1,
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "can't import mnemonic to keyring")
-	}
-
-	return keyInfo.GetAddress(), nil
 }
 
 func getGRPCClientConn(grpcURL string) (*grpc.ClientConn, error) {

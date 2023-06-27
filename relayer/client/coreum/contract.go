@@ -96,12 +96,12 @@ type sentTxQueryRequest struct {
 
 // ContractClientConfig represent the ContractClient config.
 type ContractClientConfig struct {
-	ContractAddress string
+	ContractAddress sdk.AccAddress
 	GasMultiplier   float64
 }
 
 // DefaultContractClientConfig returns default ContractClient config.
-func DefaultContractClientConfig(contractAddress string) ContractClientConfig {
+func DefaultContractClientConfig(contractAddress sdk.AccAddress) ContractClientConfig {
 	return ContractClientConfig{
 		ContractAddress: contractAddress,
 		GasMultiplier:   1.3,
@@ -125,7 +125,7 @@ func NewContractClient(cfg ContractClientConfig, clientCtx client.Context) *Cont
 }
 
 // DeployAndInstantiate deploys the contract bytecode and instantiate it.
-func (c *ContractClient) DeployAndInstantiate(ctx context.Context, sender sdk.AccAddress, config DeployAndInstantiateConfig) (string, error) {
+func (c *ContractClient) DeployAndInstantiate(ctx context.Context, sender sdk.AccAddress, config DeployAndInstantiateConfig) (sdk.AccAddress, error) {
 	msgStoreCode := &wasmtypes.MsgStoreCode{
 		Sender:       sender.String(),
 		WASMByteCode: contractembed.Bytecode,
@@ -133,11 +133,11 @@ func (c *ContractClient) DeployAndInstantiate(ctx context.Context, sender sdk.Ac
 
 	res, err := client.BroadcastTx(ctx, c.clientCtx.WithFromAddress(sender), c.txFactory(), msgStoreCode)
 	if err != nil {
-		return "", errors.Wrap(err, "can't deploy wasm bytecode")
+		return nil, errors.Wrap(err, "can't deploy wasm bytecode")
 	}
 	codeID, err := event.FindUint64EventAttribute(res.Events, wasmtypes.EventTypeStoreCode, wasmtypes.AttributeKeyCodeID)
 	if err != nil {
-		return "", errors.Wrap(err, "can't find code ID in the tx result")
+		return nil, errors.Wrap(err, "can't find code ID in the tx result")
 	}
 
 	reqPayload, err := json.Marshal(instantiateRequest{
@@ -146,7 +146,7 @@ func (c *ContractClient) DeployAndInstantiate(ctx context.Context, sender sdk.Ac
 		Threshold:        config.Threshold,
 	})
 	if err != nil {
-		return "", errors.Wrap(err, "can't marshal instantiate payload")
+		return nil, errors.Wrap(err, "can't marshal instantiate payload")
 	}
 
 	msg := &wasmtypes.MsgInstantiateContract{
@@ -159,20 +159,25 @@ func (c *ContractClient) DeployAndInstantiate(ctx context.Context, sender sdk.Ac
 
 	res, err = client.BroadcastTx(ctx, c.clientCtx.WithFromAddress(sender), c.txFactory(), msg)
 	if err != nil {
-		return "", errors.Wrap(err, "can't instantiate bytecode")
+		return nil, errors.Wrap(err, "can't instantiate bytecode")
 	}
 
 	contractAddr, err := event.FindStringEventAttribute(res.Events, wasmtypes.EventTypeInstantiate, wasmtypes.AttributeKeyContractAddr)
 	if err != nil {
-		return "", errors.Wrap(err, "can't find contract address in the tx result")
+		return nil, errors.Wrap(err, "can't find contract address in the tx result")
 	}
 
-	return contractAddr, nil
+	sdkContractAddr, err := sdk.AccAddressFromBech32(contractAddr)
+	if err != nil {
+		return nil, errors.Wrap(err, "can't convert contrac address to sdk.AccAddress")
+	}
+
+	return sdkContractAddr, nil
 }
 
 // SetContractAddress sets the client contract address if it was not set before.
-func (c *ContractClient) SetContractAddress(contractAddress string) error {
-	if c.cfg.ContractAddress != "" {
+func (c *ContractClient) SetContractAddress(contractAddress sdk.AccAddress) error {
+	if c.cfg.ContractAddress != nil {
 		return errors.New("contract address is already set")
 	}
 
@@ -295,7 +300,7 @@ func isError(err error, errorString string) bool {
 }
 
 func (c *ContractClient) execute(ctx context.Context, sender sdk.AccAddress, requests ...any) (*sdk.TxResponse, error) {
-	if c.cfg.ContractAddress == "" {
+	if c.cfg.ContractAddress == nil {
 		return nil, errors.New("failed to execute with empty contract address")
 	}
 
@@ -307,7 +312,7 @@ func (c *ContractClient) execute(ctx context.Context, sender sdk.AccAddress, req
 		}
 		msg := &wasmtypes.MsgExecuteContract{
 			Sender:   sender.String(),
-			Contract: c.cfg.ContractAddress,
+			Contract: c.cfg.ContractAddress.String(),
 			Msg:      wasmtypes.RawContractMessage(payload),
 		}
 		msgs = append(msgs, msg)
@@ -330,7 +335,7 @@ func (c *ContractClient) txFactory() client.Factory {
 }
 
 func (c *ContractClient) query(ctx context.Context, request, response any) error {
-	if c.cfg.ContractAddress == "" {
+	if c.cfg.ContractAddress == nil {
 		return errors.New("failed to execute with empty contract address")
 	}
 
@@ -340,7 +345,7 @@ func (c *ContractClient) query(ctx context.Context, request, response any) error
 	}
 
 	query := &wasmtypes.QuerySmartContractStateRequest{
-		Address:   c.cfg.ContractAddress,
+		Address:   c.cfg.ContractAddress.String(),
 		QueryData: wasmtypes.RawContractMessage(payload),
 	}
 	resp, err := c.wasmClient.SmartContractState(ctx, query)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -21,8 +22,8 @@ type CoreumRecorder interface {
 
 // CoreumRecorderConfig represents CoreumRecorder config.
 type CoreumRecorderConfig struct {
-	ContractAddress string
-	SenderAddress   string
+	ContractAddress sdk.AccAddress
+	SenderAddress   sdk.AccAddress
 	Denom           string
 
 	RequestTimeout time.Duration
@@ -30,7 +31,7 @@ type CoreumRecorderConfig struct {
 }
 
 // DefaultCoreumRecorderConfig returns CoreumRecorder default config.
-func DefaultCoreumRecorderConfig(contractAddress, senderAddress, denom string) CoreumRecorderConfig {
+func DefaultCoreumRecorderConfig(contractAddress, senderAddress sdk.AccAddress, denom string) CoreumRecorderConfig {
 	return CoreumRecorderConfig{
 		ContractAddress: contractAddress,
 		SenderAddress:   senderAddress,
@@ -66,8 +67,8 @@ func NewCoreumCollector(
 
 // Start starts the metric collector.
 func (c *CoreumCollector) Start(ctx context.Context) {
-	c.startCollectingBalance(ctx, c.cfg.ContractAddress, c.metricRecorder.SetCoreumContractBalance)
-	c.startCollectingBalance(ctx, c.cfg.SenderAddress, c.metricRecorder.SetCoreumSenderBalance)
+	c.startCollectingBalance(ctx, c.cfg.ContractAddress.String(), c.metricRecorder.SetCoreumContractBalance)
+	c.startCollectingBalance(ctx, c.cfg.SenderAddress.String(), c.metricRecorder.SetCoreumSenderBalance)
 }
 
 func (c *CoreumCollector) startCollectingBalance(ctx context.Context, accAddress string, setter func(int64)) {

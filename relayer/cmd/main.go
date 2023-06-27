@@ -3,15 +3,21 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/client/keys"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"go.uber.org/zap"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/logger"
 	"github.com/CoreumFoundation/coreum-tools/pkg/run"
+	"github.com/CoreumFoundation/coreum/pkg/config"
 	"github.com/CoreumFoundation/coreum/pkg/config/constant"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/service"
@@ -19,7 +25,6 @@ import (
 
 // Build options.
 var (
-	BuildDate    = ""
 	BuildVersion = ""
 )
 
@@ -34,7 +39,7 @@ const (
 
 	flagCoreumChainID         = "coreum-chain-id"
 	flagCoreumGRPCURL         = "coreum-grpc-url"
-	flagCoreumMnemonic        = "coreum-mnemonic"
+	flagCoreumSenderAddress   = "coreum-sender-address"
 	flagCoreumContractAddress = "coreum-contract-address"
 
 	flagCoreumContractTrustedAddresses = "coreum-contract-trusted-addresses"
@@ -42,7 +47,8 @@ const (
 	flagCoreumContractThreshold        = "coreum-contract-threshold"
 )
 
-// temporary constants.
+const defaultHome = ".xrpl-bridge"
+
 var (
 	defaultTestnetCfg = service.Config{
 		XRPLRPCURL:                 "https://s.altnet.rippletest.net:51234/",
@@ -55,6 +61,8 @@ var (
 
 		CoreumChainID: string(constant.ChainIDTest),
 		CoreumGRPCURL: "https://full-node.testnet-1.coreum.dev:9090",
+
+		CoreumContractAddress: "testcore1wt8hmu6yzrdaq030cp7pxa6asdrtc7ltvlzpat99dgust8g6w73qkqy8s5",
 	}
 
 	defaultMainnnetCfg = service.Config{
@@ -74,8 +82,10 @@ var (
 func main() {
 	run.Tool("bridge", func(ctx context.Context) error {
 		log := logger.Get(ctx)
-		log.Info(fmt.Sprintf("Build date: %s, version: %s", BuildDate, BuildVersion))
-		rootCmd := RootCmd(ctx)
+		rootCmd, err := RootCmd(ctx)
+		if err != nil {
+			return err
+		}
 		if err := rootCmd.Execute(); err != nil && !errors.Is(err, context.Canceled) {
 			log.Error("Error executing root cmd.", zap.Error(err))
 			return err
@@ -86,13 +96,38 @@ func main() {
 }
 
 // RootCmd returns the root cmd.
-func RootCmd(ctx context.Context) *cobra.Command {
-	cmd := &cobra.Command{
-		Short: "XRPL relayer.",
+func RootCmd(ctx context.Context) (*cobra.Command, error) {
+	if err := preProcessFlags(); err != nil {
+		return nil, err
 	}
+	clientCtx := client.Context{}.
+		WithInput(os.Stdin)
+	ctx = context.WithValue(ctx, client.ClientContextKey, &clientCtx)
+	cmd := &cobra.Command{
+		Short: "XRPL to coreum relayer.",
+	}
+	cmd.SetContext(ctx)
 
+	cmd.AddCommand(VersionCmd(ctx))
 	cmd.AddCommand(StartCmd(ctx))
 	cmd.AddCommand(DeployCmd(ctx))
+	cmd.AddCommand(keys.Commands(defaultHome))
+
+	cmd.PersistentFlags().String(flagCoreumChainID, string(constant.ChainIDMain), "")
+
+	return cmd, nil
+}
+
+// VersionCmd returns the version cmd.
+func VersionCmd(ctx context.Context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "version",
+		Short: "Print the relayer version.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			logger.Get(ctx).Info(fmt.Sprintf("version:%s", BuildVersion))
+			return nil
+		},
+	}
 
 	return cmd
 }
@@ -103,16 +138,17 @@ func StartCmd(ctx context.Context) *cobra.Command {
 		Use:   "start",
 		Short: "Start xrpl to coreum relayer.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := readDefaultConfig(cmd)
+			cfg, err := readCommonConfig(cmd)
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(cfg, logger.Get(ctx), true)
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}
-			if err := validateAccAddress(cfg.CoreumContractAddress); err != nil {
-				return errors.Wrapf(err, "invalid contract address")
+			services, err := service.NewServices(cfg, clientCtx.Keyring, logger.Get(ctx))
+			if err != nil {
+				return err
 			}
 
 			services.Logger.Info("Starting relayer.", zap.String("contract-address", cfg.CoreumContractAddress))
@@ -123,7 +159,9 @@ func StartCmd(ctx context.Context) *cobra.Command {
 		},
 	}
 
-	addDefaultFlags(cmd)
+	addXRPLFlags(cmd)
+	addCoreumFlags(cmd)
+	addKeyringFlags(cmd)
 
 	return cmd
 }
@@ -134,22 +172,20 @@ func DeployCmd(ctx context.Context) *cobra.Command {
 		Use:   "deploy",
 		Short: "Deploy contract to coreum chain.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := readDefaultConfig(cmd)
-			if err != nil {
-				return err
-			}
-			services, err := service.NewServices(cfg, logger.Get(ctx), true)
+			cfg, err := readCommonConfig(cmd)
 			if err != nil {
 				return err
 			}
 
-			trustedAddresses, err := cmd.Flags().GetStringArray(flagCoreumContractTrustedAddresses)
+			trustedAddresses, err := cmd.Flags().GetStringSlice(flagCoreumContractTrustedAddresses)
 			if err != nil {
 				return err
 			}
+
 			if len(trustedAddresses) == 0 {
 				return errors.New("at least one trusted address must be specified")
 			}
+
 			for _, address := range trustedAddresses {
 				if err := validateAccAddress(address); err != nil {
 					return err
@@ -172,35 +208,96 @@ func DeployCmd(ctx context.Context) *cobra.Command {
 				return errors.New("threshold must be greater than zero")
 			}
 
-			log := services.Logger
-			log.Info("Deploying contract.")
-			contractAddress, err := services.CoreumContractClient.DeployAndInstantiate(
-				ctx,
-				services.CoreumSenderAddress,
-				coreum.DeployAndInstantiateConfig{
-					Owner:            ownerAddress,
-					Admin:            ownerAddress,
-					TrustedAddresses: trustedAddresses,
-					Threshold:        threshold,
-					AccessType:       wasmtypes.AccessTypeUnspecified,
-					Label:            "bank_threshold_send",
-				})
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}
-			log.Info("Contract deployed", zap.String("address", contractAddress))
+			services, err := service.NewServices(cfg, clientCtx.Keyring, logger.Get(ctx))
+			if err != nil {
+				return err
+			}
+			deployCfg := coreum.DeployAndInstantiateConfig{
+				Owner:            ownerAddress,
+				Admin:            ownerAddress,
+				TrustedAddresses: trustedAddresses,
+				Threshold:        threshold,
+				AccessType:       wasmtypes.AccessTypeUnspecified,
+				Label:            "bank_threshold_send",
+			}
+			services.Logger.Info("Deploying contract.", zap.Any("config", deployCfg))
+
+			senderAddress, err := sdk.AccAddressFromBech32(cfg.CoreumSenderAddress)
+			if err != nil {
+				return errors.Wrapf(err, "invalid sender address")
+			}
+
+			contractAddress, err := services.CoreumContractClient.DeployAndInstantiate(
+				ctx,
+				senderAddress,
+				deployCfg,
+			)
+			if err != nil {
+				return err
+			}
+			services.Logger.Info("Contract deployed", zap.String("address", contractAddress.String()))
 
 			return nil
 		},
 	}
 
-	addDefaultFlags(cmd)
+	addCoreumFlags(cmd)
+	addKeyringFlags(cmd)
 
-	cmd.PersistentFlags().StringArray(flagCoreumContractTrustedAddresses, nil, "")
+	cmd.PersistentFlags().StringSlice(flagCoreumContractTrustedAddresses, nil, "")
 	cmd.PersistentFlags().String(flagCoreumContractOwnerAddress, "", "")
 	cmd.PersistentFlags().Int(flagCoreumContractThreshold, 0, "")
 
 	return cmd
+}
+
+func preProcessFlags() error {
+	flagSet := pflag.NewFlagSet("pre-process", pflag.ExitOnError)
+	flagSet.ParseErrorsWhitelist.UnknownFlags = true
+
+	chainID := flagSet.String(flagCoreumChainID, string(constant.ChainIDMain), "")
+	err := flagSet.Parse(os.Args[1:])
+	if err != nil {
+		return err
+	}
+
+	if chainID == nil || *chainID == "" {
+		return errors.Errorf("flag %s is required", flagCoreumChainID)
+	}
+
+	network, err := config.NetworkConfigByChainID(constant.ChainID(*chainID))
+	if err != nil {
+		return err
+	}
+	network.SetSDKConfig()
+
+	return nil
+}
+
+func addKeyringFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().String(flags.FlagKeyringBackend, flags.DefaultKeyringBackend, "Select keyring's backend (os|file|kwallet|pass|test)")
+	cmd.PersistentFlags().String(flags.FlagHome, defaultHome, "The application home directory")
+	cmd.PersistentFlags().String(flags.FlagKeyringDir, "", "The client Keyring directory; if omitted, the default 'home' directory will be used")
+}
+
+func addCoreumFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().String(flagCoreumGRPCURL, "", "")
+	cmd.PersistentFlags().String(flagCoreumSenderAddress, "", "")
+	cmd.PersistentFlags().String(flagCoreumContractAddress, "", "")
+}
+
+func addXRPLFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().String(flagXRPLRPCURL, "", "")
+	cmd.PersistentFlags().Int64(flagXRPLHistoryScanStartLedger, 0, "")
+	cmd.PersistentFlags().Int64(flagXRPLRecentScanIndexesBack, 0, "")
+	cmd.PersistentFlags().String(flagXRPLAccount, "", "")
+	cmd.PersistentFlags().String(flagXRPLCurrency, "", "")
+	cmd.PersistentFlags().String(flagXRPLIssuer, "", "")
+	cmd.PersistentFlags().String(flagXRPLMemoSuffix, "", "")
 }
 
 func validateAccAddress(address string) error {
@@ -210,22 +307,7 @@ func validateAccAddress(address string) error {
 	return nil
 }
 
-func addDefaultFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().String(flagXRPLRPCURL, "", "")
-	cmd.PersistentFlags().Int64(flagXRPLHistoryScanStartLedger, 0, "")
-	cmd.PersistentFlags().Int64(flagXRPLRecentScanIndexesBack, 0, "")
-	cmd.PersistentFlags().String(flagXRPLAccount, "", "")
-	cmd.PersistentFlags().String(flagXRPLCurrency, "", "")
-	cmd.PersistentFlags().String(flagXRPLIssuer, "", "")
-	cmd.PersistentFlags().String(flagXRPLMemoSuffix, "", "")
-
-	cmd.PersistentFlags().String(flagCoreumChainID, "", "")
-	cmd.PersistentFlags().String(flagCoreumGRPCURL, "", "")
-	cmd.PersistentFlags().String(flagCoreumMnemonic, "", "")
-	cmd.PersistentFlags().String(flagCoreumContractAddress, "", "")
-}
-
-func readDefaultConfig(cmd *cobra.Command) (service.Config, error) {
+func readCommonConfig(cmd *cobra.Command) (service.Config, error) {
 	chainID, err := cmd.Flags().GetString(flagCoreumChainID)
 	if err != nil {
 		return service.Config{}, err
@@ -283,9 +365,9 @@ func readDefaultConfig(cmd *cobra.Command) (service.Config, error) {
 				config.CoreumGRPCURL = v
 			})
 		},
-		flagCoreumMnemonic: func(flag string) error {
+		flagCoreumSenderAddress: func(flag string) error {
 			return setStringIfNotEmpty(cmd, flag, func(v string) {
-				config.CoreumMnemonic = v
+				config.CoreumSenderAddress = v
 			})
 		},
 		flagCoreumContractAddress: func(flag string) error {
@@ -305,6 +387,9 @@ func readDefaultConfig(cmd *cobra.Command) (service.Config, error) {
 }
 
 func setStringIfNotEmpty(cmd *cobra.Command, flagName string, setter func(v string)) error {
+	if cmd.Flags().Lookup(flagName) == nil {
+		return nil
+	}
 	val, err := cmd.Flags().GetString(flagName)
 	if err != nil {
 		return err
@@ -317,6 +402,9 @@ func setStringIfNotEmpty(cmd *cobra.Command, flagName string, setter func(v stri
 }
 
 func setStringInt64IfNotZero(cmd *cobra.Command, flagName string, setter func(v int64)) error {
+	if cmd.Flags().Lookup(flagName) == nil {
+		return nil
+	}
 	val, err := cmd.Flags().GetInt64(flagName)
 	if err != nil {
 		return err
