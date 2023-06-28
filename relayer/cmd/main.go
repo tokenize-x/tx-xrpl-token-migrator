@@ -45,6 +45,11 @@ const (
 	flagCoreumContractTrustedAddresses = "coreum-contract-trusted-addresses"
 	flagCoreumContractOwnerAddress     = "coreum-contract-owner-address"
 	flagCoreumContractThreshold        = "coreum-contract-threshold"
+
+	flagPrometheusURL          = "prometheus-url"
+	flagPrometheusInstanceName = "prometheus-instance-name"
+	flagPrometheusLogin        = "prometheus-login"
+	flagPrometheusPassword     = "prometheus-password"
 )
 
 const defaultHome = ".xrpl-bridge"
@@ -63,6 +68,7 @@ var (
 		CoreumGRPCURL: "https://full-node.testnet-1.coreum.dev:9090",
 
 		CoreumContractAddress: "testcore1wt8hmu6yzrdaq030cp7pxa6asdrtc7ltvlzpat99dgust8g6w73qkqy8s5",
+		PrometheusURL:         "https://pushgateway.testnet-1.coreum.dev",
 	}
 
 	defaultMainnnetCfg = service.Config{
@@ -138,10 +144,14 @@ func StartCmd(ctx context.Context) *cobra.Command {
 		Use:   "start",
 		Short: "Start xrpl to coreum relayer.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := readCommonConfig(cmd)
+			cfg, err := readServicesConfig(cmd)
 			if err != nil {
 				return err
 			}
+			if cfg.PrometheusURL == "" {
+				return errors.Errorf("flag %s is required", flagPrometheusURL)
+			}
+
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
@@ -153,7 +163,7 @@ func StartCmd(ctx context.Context) *cobra.Command {
 
 			services.Logger.Info("Starting relayer.", zap.String("contract-address", cfg.CoreumContractAddress))
 			services.CoreumMetricCollector.Start(ctx)
-			services.MetricServer.Start(ctx)
+			services.MetricPusher.Start(ctx)
 
 			return services.Executor.Start(ctx)
 		},
@@ -162,6 +172,7 @@ func StartCmd(ctx context.Context) *cobra.Command {
 	addXRPLFlags(cmd)
 	addCoreumFlags(cmd)
 	addKeyringFlags(cmd)
+	addPrometheusFlags(cmd)
 
 	return cmd
 }
@@ -172,7 +183,7 @@ func DeployCmd(ctx context.Context) *cobra.Command {
 		Use:   "deploy",
 		Short: "Deploy contract to coreum chain.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := readCommonConfig(cmd)
+			cfg, err := readServicesConfig(cmd)
 			if err != nil {
 				return err
 			}
@@ -300,6 +311,13 @@ func addXRPLFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().String(flagXRPLMemoSuffix, "", "")
 }
 
+func addPrometheusFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().String(flagPrometheusURL, "", "Prometheus URL for metrics publishing")
+	cmd.PersistentFlags().String(flagPrometheusInstanceName, "", "Instance name label for prometheus")
+	cmd.PersistentFlags().String(flagPrometheusLogin, "", "Prometheus login for metrics publishing")
+	cmd.PersistentFlags().String(flagPrometheusPassword, "", "Prometheus password for metrics publishing")
+}
+
 func validateAccAddress(address string) error {
 	if _, err := sdk.AccAddressFromBech32(address); err != nil {
 		return errors.Wrapf(err, "invalid account address:%s", address)
@@ -307,17 +325,17 @@ func validateAccAddress(address string) error {
 	return nil
 }
 
-func readCommonConfig(cmd *cobra.Command) (service.Config, error) {
+func readServicesConfig(cmd *cobra.Command) (service.Config, error) {
 	chainID, err := cmd.Flags().GetString(flagCoreumChainID)
 	if err != nil {
 		return service.Config{}, err
 	}
-	var config service.Config
+	var cfg service.Config
 	switch constant.ChainID(chainID) {
 	case constant.ChainIDTest:
-		config = defaultTestnetCfg
+		cfg = defaultTestnetCfg
 	case constant.ChainIDMain:
-		config = defaultMainnnetCfg
+		cfg = defaultMainnnetCfg
 	default:
 		return service.Config{}, errors.Errorf("unspported chain id: %s", chainID)
 	}
@@ -325,54 +343,75 @@ func readCommonConfig(cmd *cobra.Command) (service.Config, error) {
 	setters := map[string]func(string) error{
 		flagXRPLRPCURL: func(flag string) error {
 			return setStringIfNotEmpty(cmd, flag, func(v string) {
-				config.XRPLRPCURL = v
+				cfg.XRPLRPCURL = v
 			})
 		},
 
 		flagXRPLHistoryScanStartLedger: func(flag string) error {
 			return setStringInt64IfNotZero(cmd, flag, func(v int64) {
-				config.XRPLHistoryScanStartLedger = v
+				cfg.XRPLHistoryScanStartLedger = v
 			})
 		},
 		flagXRPLRecentScanIndexesBack: func(flag string) error {
 			return setStringInt64IfNotZero(cmd, flag, func(v int64) {
-				config.XRPLRecentScanIndexesBack = v
+				cfg.XRPLRecentScanIndexesBack = v
 			})
 		},
 		flagXRPLAccount: func(flag string) error {
 			return setStringIfNotEmpty(cmd, flag, func(v string) {
-				config.XRPLAccount = v
+				cfg.XRPLAccount = v
 			})
 		},
 		flagXRPLCurrency: func(flag string) error {
 			return setStringIfNotEmpty(cmd, flag, func(v string) {
-				config.XRPLCurrency = v
+				cfg.XRPLCurrency = v
 			})
 		},
 		flagXRPLIssuer: func(flag string) error {
 			return setStringIfNotEmpty(cmd, flag, func(v string) {
-				config.XRPLIssuer = v
+				cfg.XRPLIssuer = v
 			})
 		},
 		flagXRPLMemoSuffix: func(flag string) error {
 			return setStringIfNotEmpty(cmd, flag, func(v string) {
-				config.XRPLMemoSuffix = v
+				cfg.XRPLMemoSuffix = v
 			})
 		},
 
 		flagCoreumGRPCURL: func(flag string) error {
 			return setStringIfNotEmpty(cmd, flag, func(v string) {
-				config.CoreumGRPCURL = v
+				cfg.CoreumGRPCURL = v
 			})
 		},
 		flagCoreumSenderAddress: func(flag string) error {
 			return setStringIfNotEmpty(cmd, flag, func(v string) {
-				config.CoreumSenderAddress = v
+				cfg.CoreumSenderAddress = v
 			})
 		},
 		flagCoreumContractAddress: func(flag string) error {
 			return setStringIfNotEmpty(cmd, flag, func(v string) {
-				config.CoreumContractAddress = v
+				cfg.CoreumContractAddress = v
+			})
+		},
+
+		flagPrometheusURL: func(flag string) error {
+			return setStringIfNotEmpty(cmd, flag, func(v string) {
+				cfg.PrometheusURL = v
+			})
+		},
+		flagPrometheusInstanceName: func(flag string) error {
+			return setStringIfNotEmpty(cmd, flag, func(v string) {
+				cfg.PrometheusInstanceName = v
+			})
+		},
+		flagPrometheusLogin: func(flag string) error {
+			return setStringIfNotEmpty(cmd, flag, func(v string) {
+				cfg.PrometheusLogin = v
+			})
+		},
+		flagPrometheusPassword: func(flag string) error {
+			return setStringIfNotEmpty(cmd, flag, func(v string) {
+				cfg.PrometheusPassword = v
 			})
 		},
 	}
@@ -383,7 +422,7 @@ func readCommonConfig(cmd *cobra.Command) (service.Config, error) {
 		}
 	}
 
-	return config, nil
+	return cfg, nil
 }
 
 func setStringIfNotEmpty(cmd *cobra.Command, flagName string, setter func(v string)) error {

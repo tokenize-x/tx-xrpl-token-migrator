@@ -22,7 +22,7 @@ func TestTxScanner_Scan(t *testing.T) {
 	rpcClientConfig := DefaultRPCClientConfig(mainnetRPCURL)
 	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
 
-	metricRecorder, err := metric.NewRecorder()
+	metricRecorder, err := metric.NewRecorder(metric.RecorderConfig{})
 	require.NoError(t, err)
 
 	log := logger.NewZapLogger(zaptest.NewLogger(t), metricRecorder)

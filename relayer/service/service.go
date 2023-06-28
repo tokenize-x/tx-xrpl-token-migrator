@@ -40,6 +40,11 @@ type Config struct {
 	CoreumGRPCURL         string
 	CoreumSenderAddress   string
 	CoreumContractAddress string
+
+	PrometheusURL          string
+	PrometheusInstanceName string
+	PrometheusLogin        string
+	PrometheusPassword     string
 }
 
 // Services is the struct which aggregates application service.
@@ -50,13 +55,15 @@ type Services struct {
 	Finder                *finder.Finder
 	Executor              *executor.Executor
 	MetricRecorder        *metric.Recorder
-	MetricServer          *metric.Server
+	MetricPusher          *metric.Pusher
 	CoreumMetricCollector *metric.CoreumCollector
 }
 
 // NewServices returns new instance on the services.
 func NewServices(cfg Config, kr keyring.Keyring, zapLogger *zap.Logger) (*Services, error) {
-	metricRecorder, err := metric.NewRecorder()
+	metricRecorder, err := metric.NewRecorder(metric.RecorderConfig{
+		InstanceName: cfg.PrometheusInstanceName,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +135,13 @@ func NewServices(cfg Config, kr keyring.Keyring, zapLogger *zap.Logger) (*Servic
 
 	txExecutor := executor.NewExecutor(executor.DefaultConfig(senderAddress), log, coreumContractClient, txFinder)
 
-	metricServer := metric.NewServer(metric.DefaultServerConfig(), log, metricRecorder.GetRegistry())
+	var metricPusher *metric.Pusher
+	if cfg.PrometheusURL != "" {
+		metricPusher, err = metric.NewPusher(metric.DefaultPusherConfig(cfg.PrometheusURL, cfg.PrometheusLogin, cfg.PrometheusPassword), log, metricRecorder.GetRegistry())
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	coreumMetricCollector := metric.NewCoreumCollector(
 		metric.DefaultCoreumRecorderConfig(contractAddress, senderAddress, network.Denom()),
@@ -144,7 +157,7 @@ func NewServices(cfg Config, kr keyring.Keyring, zapLogger *zap.Logger) (*Servic
 		Finder:                txFinder,
 		Executor:              txExecutor,
 		MetricRecorder:        metricRecorder,
-		MetricServer:          metricServer,
+		MetricPusher:          metricPusher,
 		CoreumMetricCollector: coreumMetricCollector,
 	}, nil
 }

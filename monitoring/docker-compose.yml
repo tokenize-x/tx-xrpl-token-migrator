@@ -9,13 +9,23 @@ services:
     container_name: prometheus
     restart: always
     volumes:
-      - ./data/prometheus:/prometheus
       - ./prometheus:/etc/prometheus
+    ports:
+      - "9090:9090"
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.enable-lifecycle'
       - '--storage.tsdb.retention.time=3d'
+    networks:
+      - bridge-monitoring
+
+  pushgateway:
+    image: prom/pushgateway
+    container_name: pushgateway
+    restart: always
+    ports:
+      - "9091:9091"
     networks:
       - bridge-monitoring
 
@@ -26,10 +36,9 @@ services:
     container_name: grafana
     restart: always
     volumes:
-      - ./data/grafana:/var/lib/grafana
       - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
       - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
     ports:
-      - 3000:3000
+      - "3000:3000"
     networks:
       - bridge-monitoring

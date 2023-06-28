@@ -32,7 +32,7 @@
         "type": "prometheus",
         "uid": "P3892E10346FD2012"
       },
-      "description": "Account balance.",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -85,9 +85,103 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 6,
         "w": 12,
         "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.0.6",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P3892E10346FD2012"
+          },
+          "editorMode": "builder",
+          "expr": "coreum_sender_balance",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Coreum sender balance",
+      "transformations": [],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "P3892E10346FD2012"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 0,
+          "mappings": [],
+          "min": -1,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
         "y": 0
       },
       "id": 1,
@@ -96,7 +190,7 @@
           "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": false
         },
         "tooltip": {
           "mode": "single",
@@ -186,23 +280,24 @@
                 "value": null
               }
             ]
-          }
+          },
+          "unit": "dateTimeAsIso"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 6
       },
-      "id": 3,
+      "id": 4,
       "options": {
         "legend": {
           "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": false
         },
         "tooltip": {
           "mode": "single",
@@ -216,14 +311,14 @@
             "type": "prometheus",
             "uid": "P3892E10346FD2012"
           },
-          "editorMode": "builder",
-          "expr": "xrpl_latest_account_ledger_index",
+          "editorMode": "code",
+          "expr": "start_time{job=\"bridge\"} * 1000",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Latest observer XRPL account ledger index",
+      "title": "Start time",
       "type": "timeseries"
     },
     {
@@ -231,7 +326,7 @@
         "type": "prometheus",
         "uid": "P3892E10346FD2012"
       },
-      "description": "Account balance.",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -276,6 +371,10 @@
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 1
               }
             ]
           },
@@ -284,18 +383,18 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 8
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 6
       },
-      "id": 2,
+      "id": 5,
       "options": {
         "legend": {
           "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": false
         },
         "tooltip": {
           "mode": "single",
@@ -310,13 +409,13 @@
             "uid": "P3892E10346FD2012"
           },
           "editorMode": "builder",
-          "expr": "coreum_sender_balance",
+          "expr": "errors_total",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Coreum sender balance",
+      "title": "Errors total",
       "transformations": [],
       "type": "timeseries"
     },
@@ -374,18 +473,18 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 8
+        "h": 6,
+        "w": 8,
+        "x": 16,
+        "y": 6
       },
-      "id": 4,
+      "id": 3,
       "options": {
         "legend": {
           "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": false
         },
         "tooltip": {
           "mode": "single",
@@ -400,13 +499,13 @@
             "uid": "P3892E10346FD2012"
           },
           "editorMode": "builder",
-          "expr": "errors_total",
+          "expr": "xrpl_latest_account_ledger_index",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Errors counter",
+      "title": "Latest observer XRPL account ledger index",
       "type": "timeseries"
     }
   ],
@@ -425,6 +524,6 @@
   "timezone": "",
   "title": "Bridge",
   "uid": "b23d9a8a-68b9-4c0b-b0a0-917258060082",
-  "version": 2,
+  "version": 1,
   "weekStart": ""
 }

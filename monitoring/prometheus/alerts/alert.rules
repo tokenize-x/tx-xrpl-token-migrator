@@ -3,11 +3,11 @@ groups:
     rules:
     - alert: InstanceDown
       # Condition for alerting
-      expr: up == 0
+      expr: time() - timestamp(coreum_contract_balance) > 60
       for: 1m
       annotations:
-        title: 'Instance {{ $labels.instance }} down'
-        description: '{{ $labels.job }} on {{ $labels.instance }} has been down for more than 1 minutes'
+        title: 'Instance {{ $labels.instance }} does not report updated balance for 1 minute, it might be down!'
+        description: '{{ $labels.job }} on {{ $labels.instance }} has not been updating contract balance for more than 1 minute, it might be down'
       labels:
         severity: critical
 

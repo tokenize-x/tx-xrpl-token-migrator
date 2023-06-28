@@ -84,7 +84,7 @@ func TestRPCClient_GetAccountTransactions(t *testing.T) {
 	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
 
 	rpcClientConfig := DefaultRPCClientConfig(mainnetRPCURL)
-	metricRecorder, err := metric.NewRecorder()
+	metricRecorder, err := metric.NewRecorder(metric.RecorderConfig{})
 	require.NoError(t, err)
 	rpcClient := NewRPCClient(rpcClientConfig, logger.NewZapLogger(zaptest.NewLogger(t), metricRecorder), httpClient)
 
@@ -165,7 +165,7 @@ func TestRPCClient_GetCurrentLedger(t *testing.T) {
 	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
 
 	rpcClientConfig := DefaultRPCClientConfig(mainnetRPCURL)
-	metricRecorder, err := metric.NewRecorder()
+	metricRecorder, err := metric.NewRecorder(metric.RecorderConfig{})
 	require.NoError(t, err)
 	rpcClient := NewRPCClient(rpcClientConfig, logger.NewZapLogger(zaptest.NewLogger(t), metricRecorder), httpClient)
 

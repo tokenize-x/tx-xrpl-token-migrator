@@ -174,7 +174,7 @@ func TestBuildPendingTransaction(t *testing.T) { //nolint:funlen // a lot of tes
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			metricRecorder, err := metric.NewRecorder()
+			metricRecorder, err := metric.NewRecorder(metric.RecorderConfig{})
 			require.NoError(t, err)
 			finder := NewFinder(cfg, logger.NewZapLogger(zaptest.NewLogger(t), metricRecorder), nil)
 			pendingTx, matches := finder.buildPendingTransaction(tt.xrplTxFunc(validXRPLTransaction))
