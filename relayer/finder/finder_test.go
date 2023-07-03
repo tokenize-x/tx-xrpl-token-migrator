@@ -3,6 +3,7 @@ package finder
 import (
 	"fmt"
 	"math/big"
+	"reflect"
 	"sync"
 	"testing"
 
@@ -180,6 +181,62 @@ func TestBuildPendingTransaction(t *testing.T) { //nolint:funlen // a lot of tes
 			pendingTx, matches := finder.buildPendingTransaction(tt.xrplTxFunc(validXRPLTransaction))
 			require.Equal(t, tt.want, pendingTx)
 			require.Equal(t, tt.wantMatches, matches)
+		})
+	}
+}
+
+func TestFinder_convertXRPLAmountToCoreumCoin(t *testing.T) {
+	const denom = "ucore"
+	tests := []struct {
+		name       string
+		xrplAmount *big.Float
+		wantAmount sdk.Coin
+	}{
+		{
+			name:       "no_truncation",
+			xrplAmount: big.NewFloat(10.123456),
+			wantAmount: sdk.NewCoin(denom, sdk.NewInt(10123456)),
+		},
+		{
+			name: "max_amount",
+			xrplAmount: func() *big.Float {
+				v, _ := big.NewFloat(0).SetString("1000000000")
+				return v
+			}(),
+			wantAmount: sdk.NewCoin(denom, func() sdk.Int {
+				v, _ := sdk.NewIntFromString("1000000000000000")
+				return v
+			}()),
+		},
+		{
+			name: "many_decimals",
+			xrplAmount: func() *big.Float {
+				v, _ := big.NewFloat(0).SetString("0.100001000000000000001")
+				return v
+			}(),
+			wantAmount: sdk.NewInt64Coin(denom, 100001),
+		},
+		{
+			name: "many_decimals_to_zero",
+			xrplAmount: func() *big.Float {
+				v, _ := big.NewFloat(0).SetString("0.000000000000000000001")
+				return v
+			}(),
+			wantAmount: sdk.NewInt64Coin(denom, 0),
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			f := &Finder{
+				cfg: Config{
+					CoreumDenom:    denom,
+					CoreumDecimals: 6,
+				},
+			}
+			if got := f.convertXRPLAmountToCoreumCoin(tt.xrplAmount); !reflect.DeepEqual(got.String(), tt.wantAmount.String()) {
+				t.Errorf("convertXRPLAmountToCoreumCoin() = %v, want %v", got.String(), tt.wantAmount.String())
+			}
 		})
 	}
 }

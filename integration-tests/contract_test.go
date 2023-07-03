@@ -60,9 +60,8 @@ func TestWASMContractExecuteSend(t *testing.T) {
 			trustedAddress2.String(),
 			trustedAddress3.String(),
 		},
-		Threshold:  2,
-		AccessType: wasmtypes.AccessTypeUnspecified,
-		Label:      "bank_threshold_send",
+		Threshold: 2,
+		Label:     "bank_threshold_send",
 	})
 	requireT.NoError(err)
 
@@ -205,9 +204,8 @@ func TestWASMContractExecuteWithdraw(t *testing.T) {
 		TrustedAddresses: []string{
 			trustedAddress1.String(),
 		},
-		Threshold:  1,
-		AccessType: wasmtypes.AccessTypeUnspecified,
-		Label:      "bank_threshold_send",
+		Threshold: 1,
+		Label:     "bank_threshold_send",
 	})
 	requireT.NoError(err)
 
@@ -289,9 +287,8 @@ func TestWASMContractQueryPagination(t *testing.T) {
 			trustedAddress2.String(),
 			trustedAddress3.String(),
 		},
-		Threshold:  2,
-		AccessType: wasmtypes.AccessTypeUnspecified,
-		Label:      "bank_threshold_send",
+		Threshold: 2,
+		Label:     "bank_threshold_send",
 	})
 	requireT.NoError(err)
 

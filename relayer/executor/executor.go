@@ -94,7 +94,7 @@ func (e *Executor) Start(ctx context.Context) error {
 					}
 					if coreum.IsEvidenceProvidedError(err) {
 						e.log.Debug(
-							"Evidence has been already submitted.",
+							"Evidence has already been submitted.",
 							zap.String("senderAddress", e.cfg.SenderAddress.String()),
 							zap.String("xrplTxHash", tx.XRPLTxHash),
 						)
@@ -102,7 +102,7 @@ func (e *Executor) Start(ctx context.Context) error {
 					}
 					if coreum.IsTransferSentError(err) {
 						e.log.Debug(
-							"Transfer has been already sent.",
+							"Transfer has already been sent.",
 							zap.String("senderAddress", e.cfg.SenderAddress.String()),
 							zap.String("xrplTxHash", tx.XRPLTxHash),
 						)

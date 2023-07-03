@@ -17,21 +17,21 @@ import (
 
 // PusherConfig defines Pusher config.
 type PusherConfig struct {
-	URL             string
-	JobName         string
-	RequestTimeout  time.Duration
-	PushDelay       time.Duration
-	Login, Password string
+	URL                string
+	JobName            string
+	RequestTimeout     time.Duration
+	PushDelay          time.Duration
+	Username, Password string
 }
 
 // DefaultPusherConfig returns default Pusher config.
-func DefaultPusherConfig(url, login, password string) PusherConfig {
+func DefaultPusherConfig(url, username, password string) PusherConfig {
 	return PusherConfig{
 		URL:            url,
 		JobName:        "bridge",
 		RequestTimeout: 10 * time.Second,
 		PushDelay:      5 * time.Second,
-		Login:          login,
+		Username:       username,
 		Password:       password,
 	}
 }
@@ -54,7 +54,7 @@ func NewPusher(cfg PusherConfig, log logger.Logger, registry *prometheus.Registr
 	}
 
 	pusher := push.New(cfg.URL, cfg.JobName).
-		BasicAuth(cfg.Login, cfg.Password).
+		BasicAuth(cfg.Username, cfg.Password).
 		Gatherer(registry).
 		Client(httpClient)
 

@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -75,9 +74,8 @@ func TestWASMTestnetBridging(t *testing.T) {
 			trustedAddress2.String(),
 			trustedAddress3.String(),
 		},
-		Threshold:  2,
-		AccessType: wasmtypes.AccessTypeUnspecified,
-		Label:      "bank_threshold_send",
+		Threshold: 2,
+		Label:     "bank_threshold_send",
 	})
 	requireT.NoError(err)
 

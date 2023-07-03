@@ -39,7 +39,6 @@ type DeployAndInstantiateConfig struct {
 	Admin            string
 	TrustedAddresses []string
 	Threshold        int
-	AccessType       wasmtypes.AccessType
 	Label            string
 }
 

@@ -76,7 +76,7 @@ export COREUM_CONTRACT_OWNER="{Owner which is able to withdraw contract balance}
 ```bash
 export COREUM_CONTRACT_ADDRESS="{Contract address}"
 export PROMETHEUS_INSTANCE_NAME="{Unique name of your instance}"
-export PROMETHEUS_LOGIN="{Prometheus login}"
+export PROMETHEUS_USERNAME="{Prometheus username}"
 export PROMETHEUS_PASSWORD="{Prometheus password}"
 ```
 
@@ -89,7 +89,7 @@ echo \$(systemd-ask-password \"Enter keyring password:\") | $PWD/relayer start \
     --coreum-contract-address $COREUM_CONTRACT_ADDRESS \\
     --coreum-sender-address $(./relayer keys show relayer -a --coreum-chain-id $COREUM_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge) \\
     --prometheus-instance-name $PROMETHEUS_INSTANCE_NAME \\
-    --prometheus-login $PROMETHEUS_LOGIN \\
+    --prometheus-username $PROMETHEUS_USERNAME \\
     --prometheus-password $PROMETHEUS_PASSWORD \\
     --keyring-backend os \\
     --home $HOME/.xrpl-bridge

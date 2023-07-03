@@ -24,10 +24,9 @@ type Recorder struct {
 
 	xrplLatestLedgerIndexGauge prometheus.Gauge
 	xrplLatestLedgerIndex      int64
+	xrplLatestLedgerIndexMu    sync.Mutex
 
 	errorsCounter prometheus.Counter
-
-	mu sync.Mutex
 }
 
 // NewRecorder returns a new instance of the Recorder.
@@ -92,8 +91,8 @@ func NewRecorder(cfg RecorderConfig) (*Recorder, error) {
 		xrplLatestLedgerIndexGauge: xrplLatestLedgerIndexGauge,
 		xrplLatestLedgerIndex:      0,
 
-		errorsCounter: errorsCounter,
-		mu:            sync.Mutex{},
+		errorsCounter:           errorsCounter,
+		xrplLatestLedgerIndexMu: sync.Mutex{},
 	}, nil
 }
 
@@ -114,8 +113,8 @@ func (r *Recorder) SetCoreumContractBalance(v int64) {
 
 // SetXRPLLatestAccountLedgerIndex sets latest xrpl ledger index metric to v if v is greater than current value.
 func (r *Recorder) SetXRPLLatestAccountLedgerIndex(v int64) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	r.xrplLatestLedgerIndexMu.Lock()
+	defer r.xrplLatestLedgerIndexMu.Unlock()
 	if v < r.xrplLatestLedgerIndex {
 		return
 	}

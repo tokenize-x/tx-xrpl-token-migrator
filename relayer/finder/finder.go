@@ -137,7 +137,14 @@ func (f *Finder) convertXRPLAmountToCoreumCoin(xrplAmount *big.Float) sdk.Coin {
 		return sdk.NewInt64Coin(f.cfg.CoreumDenom, 0)
 	}
 
-	tenPowerDecimals := big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(f.cfg.CoreumDecimals)), nil)
-	truncatedAmount, _ := big.NewFloat(0).Mul(xrplAmount, big.NewFloat(0).SetInt(tenPowerDecimals)).Int(nil)
+	// 10^CoreumDecimals
+	var tenPowerDecimals big.Int
+	tenPowerDecimals.Exp(big.NewInt(10), big.NewInt(int64(f.cfg.CoreumDecimals)), nil)
+
+	var coreumFloatAmount big.Float
+	coreumFloatAmount.Mul(big.NewFloat(0).SetInt(&tenPowerDecimals), xrplAmount)
+
+	truncatedAmount, _ := coreumFloatAmount.Int(nil)
+
 	return sdk.NewCoin(f.cfg.CoreumDenom, sdk.NewIntFromBigInt(truncatedAmount))
 }

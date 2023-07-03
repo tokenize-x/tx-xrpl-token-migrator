@@ -43,7 +43,7 @@ type Config struct {
 
 	PrometheusURL          string
 	PrometheusInstanceName string
-	PrometheusLogin        string
+	PrometheusUsername     string
 	PrometheusPassword     string
 }
 
@@ -137,7 +137,7 @@ func NewServices(cfg Config, kr keyring.Keyring, zapLogger *zap.Logger) (*Servic
 
 	var metricPusher *metric.Pusher
 	if cfg.PrometheusURL != "" {
-		metricPusher, err = metric.NewPusher(metric.DefaultPusherConfig(cfg.PrometheusURL, cfg.PrometheusLogin, cfg.PrometheusPassword), log, metricRecorder.GetRegistry())
+		metricPusher, err = metric.NewPusher(metric.DefaultPusherConfig(cfg.PrometheusURL, cfg.PrometheusUsername, cfg.PrometheusPassword), log, metricRecorder.GetRegistry())
 		if err != nil {
 			return nil, err
 		}
