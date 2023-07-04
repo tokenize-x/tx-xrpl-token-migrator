@@ -21,6 +21,7 @@ const (
 	methodThresholdBankSend method = "threshold_bank_send"
 	methodWithdraw          method = "withdraw"
 
+	methodGetConfig              method = "get_config"
 	methodGetPendingTransaction  method = "get_pending_transaction"
 	methodGetPendingTransactions method = "get_pending_transactions"
 	methodGetSentTransaction     method = "get_sent_transaction"
@@ -47,6 +48,13 @@ type ThresholdBankSendRequest struct {
 	ID        string   `json:"id"`
 	Amount    sdk.Coin `json:"amount"`
 	Recipient string   `json:"recipient"`
+}
+
+// Config represents contract config.
+type Config struct {
+	Owner            string   `json:"owner"`
+	TrustedAddresses []string `json:"trusted_addresses"` //nolint:tagliatelle //contract spec
+	Threshold        int      `json:"threshold"`
 }
 
 // Transaction represents the transaction model.
@@ -215,6 +223,19 @@ func (c *ContractClient) Withdraw(ctx context.Context, sender sdk.AccAddress) (*
 	}
 
 	return txRes, nil
+}
+
+// GetConfig returns contract config.
+func (c *ContractClient) GetConfig(ctx context.Context) (Config, error) {
+	var config Config
+	err := c.query(ctx, map[method]struct{}{
+		methodGetConfig: {},
+	}, &config)
+	if err != nil {
+		return Config{}, errors.Wrapf(err, "failed to query %s", methodGetConfig)
+	}
+
+	return config, nil
 }
 
 // GetPendingTx returns a pending transaction.

@@ -8,19 +8,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-const instanceNameLabel = "instance"
-
-// RecorderConfig represent Recorder config.
-type RecorderConfig struct {
-	InstanceName string
-}
-
 // Recorder is metrics recorder.
 type Recorder struct {
 	registry *prometheus.Registry
 
-	coreumSenderBalanceGauge   prometheus.Gauge
-	coreumContractBalanceGauge prometheus.Gauge
+	coreumSenderBalanceGauge                 prometheus.Gauge
+	coreumContractBalanceGauge               prometheus.Gauge
+	coreumPendingUnapprovedTransactionsCount prometheus.Gauge
 
 	xrplLatestLedgerIndexGauge prometheus.Gauge
 	xrplLatestLedgerIndex      int64
@@ -30,17 +24,12 @@ type Recorder struct {
 }
 
 // NewRecorder returns a new instance of the Recorder.
-func NewRecorder(cfg RecorderConfig) (*Recorder, error) {
+func NewRecorder() (*Recorder, error) {
 	registry := prometheus.NewRegistry()
 
-	labels := prometheus.Labels{
-		instanceNameLabel: cfg.InstanceName,
-	}
-
 	startTimeGauge := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name:        "start_time",
-		Help:        "Start time of the application",
-		ConstLabels: labels,
+		Name: "start_time",
+		Help: "Start time of the application",
 	})
 	startTimeGauge.Set(float64(time.Now().Unix()))
 	if err := registry.Register(startTimeGauge); err != nil {
@@ -48,18 +37,16 @@ func NewRecorder(cfg RecorderConfig) (*Recorder, error) {
 	}
 
 	coreumSenderBalanceGauge := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name:        "coreum_sender_balance",
-		Help:        "Coreum sender balance",
-		ConstLabels: labels,
+		Name: "coreum_sender_balance",
+		Help: "Coreum sender balance",
 	})
 	if err := registry.Register(coreumSenderBalanceGauge); err != nil {
 		return nil, errors.Wrapf(err, "failed to register coreum sender balance gauge")
 	}
 
 	coreumContractBalanceGauge := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name:        "coreum_contract_balance",
-		Help:        "Coreum contract balance",
-		ConstLabels: labels,
+		Name: "coreum_contract_balance",
+		Help: "Coreum contract balance",
 	})
 
 	if err := registry.Register(coreumContractBalanceGauge); err != nil {
@@ -67,29 +54,36 @@ func NewRecorder(cfg RecorderConfig) (*Recorder, error) {
 	}
 
 	xrplLatestLedgerIndexGauge := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name:        "xrpl_latest_account_ledger_index",
-		Help:        "Latest observer XRPL account ledger index",
-		ConstLabels: labels,
+		Name: "xrpl_latest_account_ledger_index",
+		Help: "Latest observer XRPL account ledger index",
 	})
 	if err := registry.Register(xrplLatestLedgerIndexGauge); err != nil {
 		return nil, errors.Wrapf(err, "failed to register xrpl latest ledger index gauge")
 	}
 
 	errorsCounter := prometheus.NewCounter(prometheus.CounterOpts{
-		Name:        "errors_total",
-		Help:        "Errors counter",
-		ConstLabels: labels,
+		Name: "errors_total",
+		Help: "Errors counter",
 	})
 	if err := registry.Register(errorsCounter); err != nil {
 		return nil, errors.Wrapf(err, "failed to register errors сounter")
 	}
 
+	coreumPendingUnapprovedTransactionsTotal := prometheus.NewGauge(prometheus.GaugeOpts{ //nolint:promlinter // the name is expected
+		Name: "coreum_pending_unapproved_transactions_count",
+		Help: "Coreum pending unapproved transactions count",
+	})
+	if err := registry.Register(coreumPendingUnapprovedTransactionsTotal); err != nil {
+		return nil, errors.Wrapf(err, "failed to register xrpl coreum pending unapproved transactions count gauge")
+	}
+
 	return &Recorder{
-		registry:                   registry,
-		coreumSenderBalanceGauge:   coreumSenderBalanceGauge,
-		coreumContractBalanceGauge: coreumContractBalanceGauge,
-		xrplLatestLedgerIndexGauge: xrplLatestLedgerIndexGauge,
-		xrplLatestLedgerIndex:      0,
+		registry:                                 registry,
+		coreumSenderBalanceGauge:                 coreumSenderBalanceGauge,
+		coreumContractBalanceGauge:               coreumContractBalanceGauge,
+		coreumPendingUnapprovedTransactionsCount: coreumPendingUnapprovedTransactionsTotal,
+		xrplLatestLedgerIndexGauge:               xrplLatestLedgerIndexGauge,
+		xrplLatestLedgerIndex:                    0,
 
 		errorsCounter:           errorsCounter,
 		xrplLatestLedgerIndexMu: sync.Mutex{},
@@ -124,4 +118,9 @@ func (r *Recorder) SetXRPLLatestAccountLedgerIndex(v int64) {
 // IncrementError increments error metric.
 func (r *Recorder) IncrementError() {
 	r.errorsCounter.Inc()
+}
+
+// SetCoreumPendingUnapprovedTransactionsCount sets coreum contract pending unapproved transactions count.
+func (r *Recorder) SetCoreumPendingUnapprovedTransactionsCount(v int) {
+	r.coreumPendingUnapprovedTransactionsCount.Set(float64(v))
 }

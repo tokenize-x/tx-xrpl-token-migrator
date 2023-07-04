@@ -12,6 +12,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slices"
 
 	integrationtests "github.com/CoreumFoundation/coreum/integration-tests"
 	"github.com/CoreumFoundation/coreum/testutil/event"
@@ -29,6 +30,14 @@ func TestWASMContractExecuteSend(t *testing.T) {
 	trustedAddress3 := chain.GenAccount()
 
 	txSendRecipient := chain.GenAccount()
+
+	const threshold = 2
+	trustedAddresses := []string{
+		trustedAddress1.String(),
+		trustedAddress2.String(),
+		trustedAddress3.String(),
+	}
+	slices.Sort(trustedAddresses)
 
 	requireT := require.New(t)
 	chain.Faucet.FundAccounts(ctx, t,
@@ -53,15 +62,12 @@ func TestWASMContractExecuteSend(t *testing.T) {
 
 	t.Log("Deploying and instantiating the smart contract.")
 	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
-		Owner: owner.String(),
-		Admin: owner.String(),
-		TrustedAddresses: []string{
-			trustedAddress1.String(),
-			trustedAddress2.String(),
-			trustedAddress3.String(),
-		},
-		Threshold: 2,
-		Label:     "bank_threshold_send",
+		Owner:            owner.String(),
+		Admin:            owner.String(),
+		TrustedAddresses: trustedAddresses,
+		Threshold:        threshold,
+
+		Label: "bank_threshold_send",
 	})
 	requireT.NoError(err)
 
@@ -72,6 +78,14 @@ func TestWASMContractExecuteSend(t *testing.T) {
 
 	requireT.NoError(contractClient.SetContractAddress(contractAddr))
 	t.Logf("Contract deployed and instantiated, address:%s.", contractAddr)
+
+	// validate contract config
+
+	cfg, err := contractClient.GetConfig(ctx)
+	requireT.NoError(err)
+	requireT.Equal(owner.String(), cfg.Owner)
+	requireT.Equal(trustedAddresses, cfg.TrustedAddresses)
+	requireT.Equal(threshold, cfg.Threshold)
 
 	// generate the tx to be sent with the threshold
 	coinsToSend := chain.NewCoin(sdk.NewInt(1000))
@@ -292,7 +306,7 @@ func TestWASMContractQueryPagination(t *testing.T) {
 	})
 	requireT.NoError(err)
 
-	coinToFundContract := chain.NewCoin(sdk.NewInt(10_000))
+	coinToFundContract := chain.NewCoin(sdk.NewInt(10_000000))
 	chain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(contractAddr, coinToFundContract))
 
 	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
@@ -325,11 +339,12 @@ func TestWASMContractQueryPagination(t *testing.T) {
 	for _, tx := range pendingTxs {
 		require.Equal(t, 1, len(tx.EvidenceProviders))
 	}
+	require.Equal(t, 100, len(pendingTxs))
 
 	t.Logf("Quering pending transactions with pagination greater than max.")
 	pendingTxs, err = contractClient.GetPendingTxs(ctx, nil, lo.ToPtr(uint32(10000)))
 	require.NoError(t, err)
-	require.Equal(t, 50, len(pendingTxs))
+	require.Equal(t, 100, len(pendingTxs))
 
 	t.Logf("Quering pending transactions with offet.")
 	pendingTxs, err = contractClient.GetPendingTxs(ctx, lo.ToPtr(uint64(90)), nil)
@@ -343,7 +358,7 @@ func TestWASMContractQueryPagination(t *testing.T) {
 	t.Logf("Quering sent transactions with default pagination.")
 	sentTxs, err := contractClient.GetSentTxs(ctx, nil, nil)
 	require.NoError(t, err)
-	require.Equal(t, 50, len(sentTxs))
+	require.Equal(t, 100, len(sentTxs))
 	for _, tx := range sentTxs {
 		require.Equal(t, 2, len(tx.EvidenceProviders))
 	}

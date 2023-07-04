@@ -3,7 +3,6 @@ package metric
 import (
 	"context"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/pkg/errors"
@@ -15,20 +14,24 @@ import (
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
 )
 
+const instanceNameLabel = "instance"
+
 // PusherConfig defines Pusher config.
 type PusherConfig struct {
 	URL                string
 	JobName            string
+	InstanceName       string
 	RequestTimeout     time.Duration
 	PushDelay          time.Duration
 	Username, Password string
 }
 
 // DefaultPusherConfig returns default Pusher config.
-func DefaultPusherConfig(url, username, password string) PusherConfig {
+func DefaultPusherConfig(url, username, password, instanceName string) PusherConfig {
 	return PusherConfig{
 		URL:            url,
 		JobName:        "bridge",
+		InstanceName:   instanceName,
 		RequestTimeout: 10 * time.Second,
 		PushDelay:      5 * time.Second,
 		Username:       username,
@@ -45,10 +48,6 @@ type Pusher struct {
 
 // NewPusher returns a new instance of the Pusher.
 func NewPusher(cfg PusherConfig, log logger.Logger, registry *prometheus.Registry) (*Pusher, error) {
-	if _, err := url.Parse("https://pushgateway.devnet-1.coreum.dev/"); err != nil {
-		return nil, errors.Wrapf(err, "")
-	}
-
 	httpClient := &http.Client{
 		Timeout: cfg.RequestTimeout,
 	}
@@ -56,7 +55,8 @@ func NewPusher(cfg PusherConfig, log logger.Logger, registry *prometheus.Registr
 	pusher := push.New(cfg.URL, cfg.JobName).
 		BasicAuth(cfg.Username, cfg.Password).
 		Gatherer(registry).
-		Client(httpClient)
+		Client(httpClient).
+		Grouping(instanceNameLabel, cfg.InstanceName)
 
 	return &Pusher{
 		cfg:    cfg,

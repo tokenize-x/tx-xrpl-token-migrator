@@ -61,9 +61,7 @@ type Services struct {
 
 // NewServices returns new instance on the services.
 func NewServices(cfg Config, kr keyring.Keyring, zapLogger *zap.Logger) (*Services, error) {
-	metricRecorder, err := metric.NewRecorder(metric.RecorderConfig{
-		InstanceName: cfg.PrometheusInstanceName,
-	})
+	metricRecorder, err := metric.NewRecorder()
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +135,7 @@ func NewServices(cfg Config, kr keyring.Keyring, zapLogger *zap.Logger) (*Servic
 
 	var metricPusher *metric.Pusher
 	if cfg.PrometheusURL != "" {
-		metricPusher, err = metric.NewPusher(metric.DefaultPusherConfig(cfg.PrometheusURL, cfg.PrometheusUsername, cfg.PrometheusPassword), log, metricRecorder.GetRegistry())
+		metricPusher, err = metric.NewPusher(metric.DefaultPusherConfig(cfg.PrometheusURL, cfg.PrometheusUsername, cfg.PrometheusPassword, cfg.PrometheusInstanceName), log, metricRecorder.GetRegistry())
 		if err != nil {
 			return nil, err
 		}
@@ -148,6 +146,7 @@ func NewServices(cfg Config, kr keyring.Keyring, zapLogger *zap.Logger) (*Servic
 		log,
 		cosmosClientCtx,
 		metricRecorder,
+		coreumContractClient,
 	)
 
 	return &Services{

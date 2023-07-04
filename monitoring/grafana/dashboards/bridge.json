@@ -43,6 +43,8 @@
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
+            "axisSoftMax": 150,
+            "axisSoftMin": 50,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -86,7 +88,7 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 12,
+        "w": 8,
         "x": 0,
         "y": 0
       },
@@ -110,8 +112,8 @@
             "type": "prometheus",
             "uid": "P3892E10346FD2012"
           },
-          "editorMode": "builder",
-          "expr": "coreum_sender_balance",
+          "editorMode": "code",
+          "expr": "coreum_sender_balance{job=\"bridge\", exported_instance=~\"$instance\"}/1000000",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -126,7 +128,6 @@
         "type": "prometheus",
         "uid": "P3892E10346FD2012"
       },
-      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -137,6 +138,8 @@
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
+            "axisSoftMax": 10,
+            "axisSoftMin": 0,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -162,9 +165,7 @@
               "mode": "off"
             }
           },
-          "decimals": 0,
           "mappings": [],
-          "min": -1,
           "thresholds": {
             "mode": "percentage",
             "steps": [
@@ -173,18 +174,17 @@
                 "value": null
               }
             ]
-          },
-          "unit": "short"
+          }
         },
         "overrides": []
       },
       "gridPos": {
         "h": 6,
-        "w": 12,
-        "x": 12,
+        "w": 8,
+        "x": 8,
         "y": 0
       },
-      "id": 1,
+      "id": 6,
       "options": {
         "legend": {
           "calcs": [],
@@ -197,38 +197,21 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "9.0.6",
+      "pluginVersion": "9.5.2",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "P3892E10346FD2012"
           },
-          "editorMode": "builder",
-          "expr": "coreum_contract_balance",
+          "editorMode": "code",
+          "expr": "coreum_pending_unapproved_transactions_count{job=\"bridge\", exported_instance=~\"$instance\"}",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P3892E10346FD2012"
-          },
-          "hide": false,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P3892E10346FD2012"
-          },
-          "hide": false,
-          "refId": "C"
         }
       ],
-      "title": "Coreum contract balance",
-      "transformations": [],
+      "title": "Coreum pending unapproved transactions count",
       "type": "timeseries"
     },
     {
@@ -288,8 +271,8 @@
       "gridPos": {
         "h": 6,
         "w": 8,
-        "x": 0,
-        "y": 6
+        "x": 16,
+        "y": 0
       },
       "id": 4,
       "options": {
@@ -312,7 +295,7 @@
             "uid": "P3892E10346FD2012"
           },
           "editorMode": "code",
-          "expr": "start_time{job=\"bridge\"} * 1000",
+          "expr": "start_time{job=\"bridge\", exported_instance=~\"$instance\"} * 1000",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -337,6 +320,212 @@
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
+            "axisSoftMax": 1000000,
+            "axisSoftMin": 100000,
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 0,
+          "mappings": [],
+          "min": -1,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 6
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.0.6",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P3892E10346FD2012"
+          },
+          "editorMode": "code",
+          "expr": "coreum_contract_balance{job=\"bridge\", exported_instance=~\"$instance\"}/1000000",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P3892E10346FD2012"
+          },
+          "hide": false,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P3892E10346FD2012"
+          },
+          "hide": false,
+          "refId": "C"
+        }
+      ],
+      "title": "Coreum contract balance",
+      "transformations": [],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "P3892E10346FD2012"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMax": 45000000,
+            "axisSoftMin": 39000000,
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "linearThreshold": 0,
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 6
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P3892E10346FD2012"
+          },
+          "editorMode": "code",
+          "expr": "xrpl_latest_account_ledger_index{job=\"bridge\", exported_instance=~\"$instance\"}",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Latest observer XRPL account ledger index",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "P3892E10346FD2012"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMax": 10,
+            "axisSoftMin": 0,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -385,7 +574,7 @@
       "gridPos": {
         "h": 6,
         "w": 8,
-        "x": 8,
+        "x": 16,
         "y": 6
       },
       "id": 5,
@@ -408,8 +597,8 @@
             "type": "prometheus",
             "uid": "P3892E10346FD2012"
           },
-          "editorMode": "builder",
-          "expr": "errors_total",
+          "editorMode": "code",
+          "expr": "errors_total{job=\"bridge\", exported_instance=~\"$instance\"}",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -418,95 +607,6 @@
       "title": "Errors total",
       "transformations": [],
       "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "P3892E10346FD2012"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "percentage",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 8,
-        "x": 16,
-        "y": 6
-      },
-      "id": 3,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "9.5.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P3892E10346FD2012"
-          },
-          "editorMode": "builder",
-          "expr": "xrpl_latest_account_ledger_index",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Latest observer XRPL account ledger index",
-      "type": "timeseries"
     }
   ],
   "refresh": "",
@@ -514,7 +614,35 @@
   "style": "dark",
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "P3892E10346FD2012"
+        },
+        "definition": "label_values(coreum_contract_balance,exported_instance)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "instance",
+        "multi": false,
+        "name": "instance",
+        "options": [],
+        "query": {
+          "query": "label_values(coreum_contract_balance,exported_instance)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-5m",

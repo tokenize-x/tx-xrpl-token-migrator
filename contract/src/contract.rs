@@ -7,15 +7,15 @@ use cw_storage_plus::Map;
 
 use crate::error::ContractError;
 use crate::msg::{
-    ExecuteMsg, InstantiateMsg, PendingTransaction, PendingTransactions, QueryMsg, SentTransaction,
-    SentTransactions, Transaction,
+    Config, ExecuteMsg, InstantiateMsg, PendingTransaction, PendingTransactions, QueryMsg,
+    SentTransaction, SentTransactions, Transaction,
 };
 use crate::state::{OWNER, PENDING_TRANSACTIONS, SENT_TRANSACTIONS, THRESHOLD, TRUSTED_ADDRESSES};
 
 const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-const DEFAULT_PAGE_LIMIT: u32 = 50;
+const DEFAULT_PAGE_LIMIT: u32 = 500;
 const MAX_PAGE_LIMIT: u32 = DEFAULT_PAGE_LIMIT;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -159,6 +159,7 @@ pub fn withdraw(env: Env, info: MessageInfo, deps: DepsMut) -> Result<Response, 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
+        QueryMsg::GetConfig {} => to_binary(&get_config(deps)?),
         QueryMsg::GetPendingTransaction { evidence_id } => {
             to_binary(&get_pending_transaction(deps, evidence_id)?)
         }
@@ -171,6 +172,21 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&get_sent_transactions(deps, offset, limit)?)
         }
     }
+}
+
+fn get_config(deps: Deps) -> StdResult<Config> {
+    let owner = OWNER.load(deps.storage)?;
+    let trusted_addresses: Vec<Addr> = TRUSTED_ADDRESSES
+        .keys(deps.storage, None, None, Order::Ascending)
+        .map(|v| v.unwrap())
+        .collect();
+    let threshold = THRESHOLD.load(deps.storage)?;
+
+    Ok(Config {
+        owner,
+        trusted_addresses,
+        threshold,
+    })
 }
 
 fn get_pending_transaction(deps: Deps, evidence_id: String) -> StdResult<Transaction> {
@@ -324,20 +340,17 @@ mod tests {
                 continue;
             }
 
-            assert_eq!(TEST_OWNER, OWNER.load(&deps.storage).unwrap());
-            assert_eq!(TEST_THRESHOLD, THRESHOLD.load(&deps.storage).unwrap());
+            let config = get_config(deps.as_ref()).unwrap();
 
-            let got_trusted_addresses: Vec<String> = TRUSTED_ADDRESSES
-                .keys(&deps.storage, None, None, cosmwasm_std::Order::Ascending)
-                .map(|v| v.unwrap().to_string())
-                .collect();
+            assert_eq!(TEST_OWNER, config.owner);
+            assert_eq!(TEST_THRESHOLD, config.threshold);
             assert_eq!(
                 vec![
                     TEST_TRUSTED_ADDRESS1.to_string(),
                     TEST_TRUSTED_ADDRESS2.to_string(),
                     TEST_TRUSTED_ADDRESS3.to_string(),
                 ],
-                got_trusted_addresses
+                config.trusted_addresses
             );
         }
     }

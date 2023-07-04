@@ -1,17 +1,14 @@
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Coin};
 
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct InstantiateMsg {
     pub owner: Addr,
     pub trusted_addresses: Vec<Addr>,
     pub threshold: u32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum ExecuteMsg {
     ThresholdBankSend {
         id: String,
@@ -21,9 +18,9 @@ pub enum ExecuteMsg {
     Withdraw {},
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum QueryMsg {
+    GetConfig {},
     GetPendingTransaction {
         evidence_id: String,
     },
@@ -40,7 +37,14 @@ pub enum QueryMsg {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
+pub struct Config {
+    pub owner: Addr,
+    pub trusted_addresses: Vec<Addr>,
+    pub threshold: u32,
+}
+
+#[cw_serde]
 pub struct Transaction {
     pub amount: Coin,
     pub recipient: Addr,
@@ -57,7 +61,7 @@ impl Default for Transaction {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct PendingTransaction {
     pub evidence_id: String,
     pub amount: Coin,
@@ -65,7 +69,7 @@ pub struct PendingTransaction {
     pub evidence_providers: Vec<Addr>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct SentTransaction {
     pub id: String,
     pub amount: Coin,
@@ -73,12 +77,12 @@ pub struct SentTransaction {
     pub evidence_providers: Vec<Addr>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct PendingTransactions {
     pub transactions: Vec<PendingTransaction>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct SentTransactions {
     pub transactions: Vec<SentTransaction>,
 }

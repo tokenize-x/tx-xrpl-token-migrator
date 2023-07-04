@@ -17,7 +17,7 @@ groups:
       labels:
         severity: major
       annotations:
-        description: 'Contract balance is less then 50.000'
+        description: 'Contract balance is less than 50.000'
 
     - alert: SenderLowBalance
       expr: coreum_sender_balance{job="bridge"} < 10000000
@@ -25,7 +25,7 @@ groups:
       labels:
         severity: major
       annotations:
-        description: 'Sender balance is less then 10'
+        description: 'Sender balance is less than 10'
 
     - alert: BridgeErrorsRate
       expr: rate(errors_total{job="bridge"}[5m]) * 5 * 60 > 10
@@ -34,3 +34,11 @@ groups:
         severity: major
       annotations:
         description: 'Bridge errors count for the last 5min > 10'
+
+    - alert: BridgePendingUnapprovedRate
+      expr: rate(coreum_pending_unapproved_transactions_count{job="bridge"}[5m]) * 5 * 60 > 3
+      for: 1s
+      labels:
+        severity: major
+      annotations:
+        description: 'Bridge pending unapproved transactions rate for the last 5min > 3'
