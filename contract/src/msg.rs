@@ -1,11 +1,13 @@
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Coin};
+use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::{Addr, Coin, Uint128};
 
 #[cw_serde]
 pub struct InstantiateMsg {
     pub owner: Addr,
     pub trusted_addresses: Vec<Addr>,
     pub threshold: u32,
+    pub min_amount: Uint128,
+    pub max_amount: Uint128,
 }
 
 #[cw_serde]
@@ -15,22 +17,33 @@ pub enum ExecuteMsg {
         amount: Coin,
         recipient: Addr,
     },
+    ExecutePending {
+        evidence_id: String,
+    },
+    UpdateMinAmount {
+        min_amount: Uint128,
+    },
+    UpdateMaxAmount {
+        max_amount: Uint128,
+    },
     Withdraw {},
 }
 
 #[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
+    #[returns(Config)]
     GetConfig {},
-    GetPendingTransaction {
-        evidence_id: String,
-    },
+    #[returns(Transaction)]
+    GetPendingTransaction { evidence_id: String },
+    #[returns(PendingTransactions)]
     GetPendingTransactions {
         offset: Option<u64>,
         limit: Option<u32>,
     },
-    GetSentTransaction {
-        id: String,
-    },
+    #[returns(Transaction)]
+    GetSentTransaction { id: String },
+    #[returns(SentTransactions)]
     GetSentTransactions {
         offset: Option<u64>,
         limit: Option<u32>,
@@ -42,6 +55,8 @@ pub struct Config {
     pub owner: Addr,
     pub trusted_addresses: Vec<Addr>,
     pub threshold: u32,
+    pub min_amount: Uint128,
+    pub max_amount: Uint128,
 }
 
 #[cw_serde]

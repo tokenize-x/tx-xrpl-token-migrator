@@ -15,6 +15,7 @@ type Recorder struct {
 	coreumSenderBalanceGauge                 prometheus.Gauge
 	coreumContractBalanceGauge               prometheus.Gauge
 	coreumPendingUnapprovedTransactionsCount prometheus.Gauge
+	coreumPendingApprovedTransactionsCount   prometheus.Gauge
 
 	xrplLatestLedgerIndexGauge prometheus.Gauge
 	xrplLatestLedgerIndex      int64
@@ -77,11 +78,20 @@ func NewRecorder() (*Recorder, error) {
 		return nil, errors.Wrapf(err, "failed to register xrpl coreum pending unapproved transactions count gauge")
 	}
 
+	coreumPendingApprovedTransactionsTotal := prometheus.NewGauge(prometheus.GaugeOpts{ //nolint:promlinter // the name is expected
+		Name: "coreum_pending_approved_transactions_count",
+		Help: "Coreum pending approved transactions count",
+	})
+	if err := registry.Register(coreumPendingApprovedTransactionsTotal); err != nil {
+		return nil, errors.Wrapf(err, "failed to register xrpl coreum pending approved transactions count gauge")
+	}
+
 	return &Recorder{
 		registry:                                 registry,
 		coreumSenderBalanceGauge:                 coreumSenderBalanceGauge,
 		coreumContractBalanceGauge:               coreumContractBalanceGauge,
 		coreumPendingUnapprovedTransactionsCount: coreumPendingUnapprovedTransactionsTotal,
+		coreumPendingApprovedTransactionsCount:   coreumPendingApprovedTransactionsTotal,
 		xrplLatestLedgerIndexGauge:               xrplLatestLedgerIndexGauge,
 		xrplLatestLedgerIndex:                    0,
 
@@ -123,4 +133,9 @@ func (r *Recorder) IncrementError() {
 // SetCoreumPendingUnapprovedTransactionsCount sets coreum contract pending unapproved transactions count.
 func (r *Recorder) SetCoreumPendingUnapprovedTransactionsCount(v int) {
 	r.coreumPendingUnapprovedTransactionsCount.Set(float64(v))
+}
+
+// SetCoreumPendingApprovedTransactionsCount sets coreum contract pending approved transactions count.
+func (r *Recorder) SetCoreumPendingApprovedTransactionsCount(v int) {
+	r.coreumPendingApprovedTransactionsCount.Set(float64(v))
 }

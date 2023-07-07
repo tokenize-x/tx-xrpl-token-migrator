@@ -17,6 +17,7 @@ import (
 // ContractClient is coreum contract client interface.
 type ContractClient interface {
 	ThresholdBankSend(ctx context.Context, sender sdk.AccAddress, requests ...coreum.ThresholdBankSendRequest) (*sdk.TxResponse, error)
+	GetConfig(ctx context.Context) (coreum.Config, error)
 }
 
 // Finder is transactions finder interface.
@@ -78,12 +79,28 @@ func (e *Executor) Start(ctx context.Context) error {
 						"Found valid transaction.",
 						zap.Any("tx", tx),
 					)
+
+					contractCfg, err := e.contractClient.GetConfig(ctx)
+					if err != nil {
+						return retry.Retryable(err)
+					}
+
 					sendReq := coreum.ThresholdBankSendRequest{
 						ID:        tx.XRPLTxHash,
 						Amount:    tx.CoreumAmount,
 						Recipient: tx.CoreumDestination.String(),
 					}
-					_, err := e.contractClient.ThresholdBankSend(ctx, e.cfg.SenderAddress, sendReq)
+
+					if contractCfg.MinAmount.GT(tx.CoreumAmount.Amount) {
+						e.log.Info(
+							"Low amount, execution is skipped.",
+							zap.String("senderAddress", e.cfg.SenderAddress.String()),
+							zap.Any("request", sendReq),
+						)
+						return nil
+					}
+
+					_, err = e.contractClient.ThresholdBankSend(ctx, e.cfg.SenderAddress, sendReq)
 					if err == nil {
 						e.log.Info(
 							"Submitted new evidence.",

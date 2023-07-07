@@ -35,6 +35,8 @@ export COREUM_CHAIN_ID="{Chain ID}"
 export COREUM_CONTRACT_TRUSTED_ADDRESSES="{Trusted address 2,trusted address 1}"
 export COREUM_CONTRACT_THRESHOLD="{Threshold}"
 export COREUM_CONTRACT_OWNER="{Owner which is able to withdraw contract balance}"
+export COREUM_CONTRACT_MIN_AMOUNT="{Min allowed amount for a transaction}"
+export COREUM_CONTRACT_MAX_AMOUNT="{Max allowed amount for automated transaction processing}"
 ```
 
 * Store deployer mnemonic to the keystore
@@ -53,7 +55,9 @@ export COREUM_CONTRACT_OWNER="{Owner which is able to withdraw contract balance}
     --coreum-contract-trusted-addresses $COREUM_CONTRACT_TRUSTED_ADDRESSES \
     --coreum-contract-threshold $COREUM_CONTRACT_THRESHOLD \
     --coreum-contract-owner-address $COREUM_CONTRACT_OWNER \
-    --coreum-sender-address $(./relayer keys show contract-deployer -a --coreum-chain-id $COREUM_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge)
+    --coreum-contract-min-amount $COREUM_CONTRACT_MIN_AMOUNT \
+    --coreum-contract-max-amount $COREUM_CONTRACT_MAX_AMOUNT \
+    --coreum-sender-address $(./relayer keys show contract-deployer -a --coreum-chain-id $COREUM_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge) \
     --keyring-backend os \
     --home $HOME/.xrpl-bridge
 ```

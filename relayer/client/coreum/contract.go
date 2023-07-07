@@ -19,6 +19,9 @@ type method string
 
 const (
 	methodThresholdBankSend method = "threshold_bank_send"
+	methodExecutePending    method = "execute_pending"
+	methodUpdateMinAmount   method = "update_min_amount"
+	methodUpdateMaxAmount   method = "update_max_amount"
 	methodWithdraw          method = "withdraw"
 
 	methodGetConfig              method = "get_config"
@@ -29,9 +32,13 @@ const (
 )
 
 const (
-	unauthorizedErrorString     = "Unauthorized"
-	evidenceProvidedErrorString = "Sender already provided the evidence"
-	transferSentErrorString     = "Transfer already sent"
+	unauthorizedErrorString            = "Unauthorized"
+	evidenceProvidedErrorString        = "Sender already provided the evidence"
+	transferSentErrorString            = "Transfer already sent"
+	transactionNotFoundErrorString     = "Transaction not found"
+	transactionNotConfirmedErrorString = "Transaction not confirmed"
+	lowAmountErrorString               = "The amount is too low"
+	fundsMismatchErrorString           = "Funds mismatch"
 )
 
 // DeployAndInstantiateConfig holds attributes used for the contract deployment and instantiation.
@@ -40,6 +47,8 @@ type DeployAndInstantiateConfig struct {
 	Admin            string
 	TrustedAddresses []string
 	Threshold        int
+	MinAmount        sdk.Int
+	MaxAmount        sdk.Int
 	Label            string
 }
 
@@ -51,10 +60,14 @@ type ThresholdBankSendRequest struct {
 }
 
 // Config represents contract config.
+//
+//nolint:tagliatelle //contract spec
 type Config struct {
 	Owner            string   `json:"owner"`
-	TrustedAddresses []string `json:"trusted_addresses"` //nolint:tagliatelle //contract spec
+	TrustedAddresses []string `json:"trusted_addresses"`
 	Threshold        int      `json:"threshold"`
+	MinAmount        sdk.Int  `json:"min_amount"`
+	MaxAmount        sdk.Int  `json:"max_amount"`
 }
 
 // Transaction represents the transaction model.
@@ -76,10 +89,25 @@ type SentTransaction struct {
 	Transaction
 }
 
+//nolint:tagliatelle //contract spec
 type instantiateRequest struct {
 	Owner            string   `json:"owner"`
-	TrustedAddresses []string `json:"trusted_addresses"` //nolint:tagliatelle //contract spec
+	TrustedAddresses []string `json:"trusted_addresses"`
 	Threshold        int      `json:"threshold"`
+	MinAmount        sdk.Int  `json:"min_amount"`
+	MaxAmount        sdk.Int  `json:"max_amount"`
+}
+
+type executePendingRequest struct {
+	EvidenceID string `json:"evidence_id"` //nolint:tagliatelle //contract spec
+}
+
+type updateMinAmountRequest struct {
+	MinAmount sdk.Int `json:"min_amount"` //nolint:tagliatelle //contract spec
+}
+
+type updateMaxAmountRequest struct {
+	MaxAmount sdk.Int `json:"max_amount"` //nolint:tagliatelle //contract spec
 }
 
 type queryTxsResponse[T any] struct {
@@ -151,6 +179,8 @@ func (c *ContractClient) DeployAndInstantiate(ctx context.Context, sender sdk.Ac
 		Owner:            config.Owner,
 		TrustedAddresses: config.TrustedAddresses,
 		Threshold:        config.Threshold,
+		MinAmount:        config.MinAmount,
+		MaxAmount:        config.MaxAmount,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "can't marshal instantiate payload")
@@ -213,7 +243,49 @@ func (c *ContractClient) ThresholdBankSend(ctx context.Context, sender sdk.AccAd
 	return txRes, nil
 }
 
-// Withdraw executes withdraw method of the contract with will send the coins from the contract to recipient.
+// UpdateMinAmount executes update_min_amount method of the contract.
+func (c *ContractClient) UpdateMinAmount(ctx context.Context, sender sdk.AccAddress, minAmount sdk.Int) (*sdk.TxResponse, error) {
+	txRes, err := c.execute(ctx, sender, map[method]updateMinAmountRequest{
+		methodUpdateMinAmount: {
+			MinAmount: minAmount,
+		},
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to execute %s method", methodUpdateMinAmount)
+	}
+
+	return txRes, nil
+}
+
+// UpdateMaxAmount executes update_max_amount method of the contract.
+func (c *ContractClient) UpdateMaxAmount(ctx context.Context, sender sdk.AccAddress, maxAmount sdk.Int) (*sdk.TxResponse, error) {
+	txRes, err := c.execute(ctx, sender, map[method]updateMaxAmountRequest{
+		methodUpdateMaxAmount: {
+			MaxAmount: maxAmount,
+		},
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to execute %s method", methodUpdateMaxAmount)
+	}
+
+	return txRes, nil
+}
+
+// ExecutePending executes execute_pending method of the contract.
+func (c *ContractClient) ExecutePending(ctx context.Context, sender sdk.AccAddress, funds sdk.Coin, evidenceID string) (*sdk.TxResponse, error) {
+	txRes, err := c.executeWithFunds(ctx, sender, sdk.NewCoins(funds), map[method]executePendingRequest{
+		methodExecutePending: {
+			EvidenceID: evidenceID,
+		},
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to execute %s method", methodExecutePending)
+	}
+
+	return txRes, nil
+}
+
+// Withdraw executes withdraw method of the contract.
 func (c *ContractClient) Withdraw(ctx context.Context, sender sdk.AccAddress) (*sdk.TxResponse, error) {
 	txRes, err := c.execute(ctx, sender, map[method]struct{}{
 		methodWithdraw: {},
@@ -310,9 +382,29 @@ func IsEvidenceProvidedError(err error) bool {
 	return isError(err, evidenceProvidedErrorString)
 }
 
-// IsTransferSentError returns true is error is TransferSent error.
+// IsTransferSentError returns true if error is TransferSent error.
 func IsTransferSentError(err error) bool {
 	return isError(err, transferSentErrorString)
+}
+
+// IsTransactionNotFoundError returns true if error is TransactionNotFound error.
+func IsTransactionNotFoundError(err error) bool {
+	return isError(err, transactionNotFoundErrorString)
+}
+
+// IsTransactionNotConfirmedError returns true if error is TransactionNotConfirmed error.
+func IsTransactionNotConfirmedError(err error) bool {
+	return isError(err, transactionNotConfirmedErrorString)
+}
+
+// IsLowAmountError returns true if error is LowAmount error.
+func IsLowAmountError(err error) bool {
+	return isError(err, lowAmountErrorString)
+}
+
+// IsFundsMismatchError returns true if error is FundsMismatch error.
+func IsFundsMismatchError(err error) bool {
+	return isError(err, fundsMismatchErrorString)
 }
 
 func isError(err error, errorString string) bool {
@@ -339,6 +431,29 @@ func (c *ContractClient) execute(ctx context.Context, sender sdk.AccAddress, req
 	}
 
 	res, err := client.BroadcastTx(ctx, c.clientCtx.WithFromAddress(sender), c.txFactory(), msgs...)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *ContractClient) executeWithFunds(ctx context.Context, sender sdk.AccAddress, funds sdk.Coins, req any) (*sdk.TxResponse, error) {
+	if c.cfg.ContractAddress == nil {
+		return nil, errors.New("failed to execute with empty contract address")
+	}
+
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "can't marshal payload")
+	}
+	msg := &wasmtypes.MsgExecuteContract{
+		Sender:   sender.String(),
+		Contract: c.cfg.ContractAddress.String(),
+		Msg:      wasmtypes.RawContractMessage(payload),
+		Funds:    funds,
+	}
+
+	res, err := client.BroadcastTx(ctx, c.clientCtx.WithFromAddress(sender), c.txFactory(), msg)
 	if err != nil {
 		return nil, err
 	}

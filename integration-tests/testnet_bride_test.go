@@ -4,6 +4,8 @@ package integrationtests
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -15,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	"golang.org/x/exp/slices"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
 	integrationtests "github.com/CoreumFoundation/coreum/integration-tests"
@@ -37,6 +40,7 @@ func TestWASMTestnetBridging(t *testing.T) {
 
 	recipient1Address := "devcore1k0vuxw2d835u56u64rerjfnkgdpm88n2zl596z"
 	recipient2Address := "devcore1ppc3az9z429hflver2gj8ervnlgx2s7gued0cs"
+	recipient3Address := "devcore15rteqcut6w2vr3edhwqu8eh0ncv30j05sj7jck"
 
 	requireT := require.New(t)
 
@@ -75,6 +79,8 @@ func TestWASMTestnetBridging(t *testing.T) {
 			trustedAddress3.String(),
 		},
 		Threshold: 2,
+		MinAmount: sdk.NewInt(100),
+		MaxAmount: sdk.NewInt(200_000_000),
 		Label:     "bank_threshold_send",
 	})
 	requireT.NoError(err)
@@ -112,6 +118,35 @@ func TestWASMTestnetBridging(t *testing.T) {
 
 	awaitForBalance(ctx, t, chain.ClientContext, recipient1Address, chain.NewCoin(sdk.NewInt(150000000+7654321)))
 	awaitForBalance(ctx, t, chain.ClientContext, recipient2Address, chain.NewCoin(sdk.NewInt(42345679)))
+	// the third sender includes the low and high amount checks, the low amount will be skipped the high will be locked
+	// in the pending transactions. We use multiple amounts here since the low and high amounts are between
+	// the transactions with the valid amounts.
+	recipient3ExpectedBalance := sdk.NewInt(15000000 + 30000000 + 7000000)
+	awaitForBalance(ctx, t, chain.ClientContext, recipient3Address, chain.NewCoin(recipient3ExpectedBalance))
+
+	// check that one transaction is pending due to amount limit
+	const highAmountTxHash = "798C6F9FF80B794F869242529423CB43FCA8A3CF456AF2141B3D7AEE999A6165"
+	highAmount := chain.NewCoin(sdk.NewInt(250000000))
+	highAmountTxEvidenceID := strings.ToLower(fmt.Sprintf("%s-%s-%s", highAmountTxHash, highAmount, recipient3Address))
+	highAmountPendingTx, err := trustedAddress1Service.CoreumContractClient.GetPendingTx(ctx, highAmountTxEvidenceID)
+	requireT.NoError(err)
+	expectedHighAmountPendingTx := coreum.Transaction{
+		Amount:    highAmount,
+		Recipient: recipient3Address,
+		EvidenceProviders: []string{
+			trustedAddress1.String(),
+			trustedAddress2.String(),
+			trustedAddress3.String(),
+		},
+	}
+	slices.Sort(expectedHighAmountPendingTx.EvidenceProviders)
+	slices.Sort(highAmountPendingTx.EvidenceProviders)
+	requireT.Equal(expectedHighAmountPendingTx, highAmountPendingTx)
+
+	// execute the pending transaction
+	_, err = trustedAddress1Service.CoreumContractClient.ExecutePending(ctx, trustedAddress1, highAmount, highAmountTxEvidenceID)
+	requireT.NoError(err)
+	awaitForBalance(ctx, t, chain.ClientContext, recipient3Address, chain.NewCoin(recipient3ExpectedBalance.Add(highAmount.Amount)))
 
 	cancel()
 	wg.Wait()

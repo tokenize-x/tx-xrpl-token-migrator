@@ -44,6 +44,8 @@ const (
 	flagCoreumContractTrustedAddresses = "coreum-contract-trusted-addresses"
 	flagCoreumContractOwnerAddress     = "coreum-contract-owner-address"
 	flagCoreumContractThreshold        = "coreum-contract-threshold"
+	flagCoreumContractMinAmount        = "coreum-contract-min-amount"
+	flagCoreumContractMaxAmount        = "coreum-contract-max-amount"
 
 	flagPrometheusURL          = "prometheus-url"
 	flagPrometheusInstanceName = "prometheus-instance-name"
@@ -177,7 +179,7 @@ func StartCmd(ctx context.Context) *cobra.Command {
 }
 
 // DeployCmd returns the deployment cmd.
-func DeployCmd(ctx context.Context) *cobra.Command {
+func DeployCmd(ctx context.Context) *cobra.Command { //nolint:funlen // long logic of flags reading
 	cmd := &cobra.Command{
 		Use:   "deploy",
 		Short: "Deploy contract to coreum chain.",
@@ -218,6 +220,24 @@ func DeployCmd(ctx context.Context) *cobra.Command {
 				return errors.New("threshold must be greater than zero")
 			}
 
+			minAmountString, err := cmd.Flags().GetString(flagCoreumContractMinAmount)
+			if err != nil {
+				return err
+			}
+			minAmount, ok := sdk.NewIntFromString(minAmountString)
+			if !ok || !minAmount.IsPositive() {
+				return errors.Errorf("%s must be greater than zero", flagCoreumContractMinAmount)
+			}
+
+			maxAmountString, err := cmd.Flags().GetString(flagCoreumContractMaxAmount)
+			if err != nil {
+				return err
+			}
+			maxAmount, ok := sdk.NewIntFromString(maxAmountString)
+			if !ok || maxAmount.LT(minAmount) {
+				return errors.Errorf("%s must be greater or equal than %s", flagCoreumContractMaxAmount, flagCoreumContractMinAmount)
+			}
+
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
@@ -231,6 +251,8 @@ func DeployCmd(ctx context.Context) *cobra.Command {
 				Admin:            ownerAddress,
 				TrustedAddresses: trustedAddresses,
 				Threshold:        threshold,
+				MinAmount:        minAmount,
+				MaxAmount:        maxAmount,
 				Label:            "bank_threshold_send",
 			}
 			services.Logger.Info("Deploying contract.", zap.Any("config", deployCfg))
@@ -260,6 +282,8 @@ func DeployCmd(ctx context.Context) *cobra.Command {
 	cmd.PersistentFlags().StringSlice(flagCoreumContractTrustedAddresses, nil, "")
 	cmd.PersistentFlags().String(flagCoreumContractOwnerAddress, "", "")
 	cmd.PersistentFlags().Int(flagCoreumContractThreshold, 0, "")
+	cmd.PersistentFlags().String(flagCoreumContractMinAmount, "", "")
+	cmd.PersistentFlags().String(flagCoreumContractMaxAmount, "", "")
 
 	return cmd
 }

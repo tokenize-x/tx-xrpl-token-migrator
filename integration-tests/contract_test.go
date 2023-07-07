@@ -5,6 +5,7 @@ package integrationtests
 import (
 	"context"
 	"fmt"
+	"math"
 	"testing"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -19,7 +20,19 @@ import (
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
 )
 
-func TestWASMContractExecuteSend(t *testing.T) {
+var (
+	// used for the empty responses.
+	emptyTx = coreum.Transaction{
+		Amount: sdk.Coin{
+			Denom:  "",
+			Amount: sdk.ZeroInt(),
+		},
+		Recipient:         "",
+		EvidenceProviders: []string{},
+	}
+)
+
+func TestWASMContractThresholdBankSend(t *testing.T) {
 	t.Parallel()
 
 	ctx, chain := integrationtests.NewCoreumTestingContext(t)
@@ -39,6 +52,9 @@ func TestWASMContractExecuteSend(t *testing.T) {
 	}
 	slices.Sort(trustedAddresses)
 
+	minAmount := sdk.NewIntFromUint64(5)
+	maxAmount := sdk.NewIntFromUint64(math.MaxUint64)
+
 	requireT := require.New(t)
 	chain.Faucet.FundAccounts(ctx, t,
 		integrationtests.NewFundedAccount(owner, chain.NewCoin(sdk.NewInt(5000000000))),
@@ -46,16 +62,6 @@ func TestWASMContractExecuteSend(t *testing.T) {
 		integrationtests.NewFundedAccount(trustedAddress2, chain.NewCoin(sdk.NewInt(5000000000))),
 		integrationtests.NewFundedAccount(trustedAddress3, chain.NewCoin(sdk.NewInt(5000000000))),
 	)
-
-	// module used for the empty responses
-	emptyTx := coreum.Transaction{
-		Amount: sdk.Coin{
-			Denom:  "",
-			Amount: sdk.ZeroInt(),
-		},
-		Recipient:         "",
-		EvidenceProviders: []string{},
-	}
 
 	bankClient := banktypes.NewQueryClient(chain.ClientContext)
 	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil), chain.ClientContext)
@@ -66,8 +72,9 @@ func TestWASMContractExecuteSend(t *testing.T) {
 		Admin:            owner.String(),
 		TrustedAddresses: trustedAddresses,
 		Threshold:        threshold,
-
-		Label: "bank_threshold_send",
+		MinAmount:        minAmount,
+		MaxAmount:        maxAmount,
+		Label:            "bank_threshold_send",
 	})
 	requireT.NoError(err)
 
@@ -86,6 +93,8 @@ func TestWASMContractExecuteSend(t *testing.T) {
 	requireT.Equal(owner.String(), cfg.Owner)
 	requireT.Equal(trustedAddresses, cfg.TrustedAddresses)
 	requireT.Equal(threshold, cfg.Threshold)
+	requireT.Equal(minAmount.String(), cfg.MinAmount.String())
+	requireT.Equal(maxAmount.String(), cfg.MaxAmount.String())
 
 	// generate the tx to be sent with the threshold
 	coinsToSend := chain.NewCoin(sdk.NewInt(1000))
@@ -99,6 +108,15 @@ func TestWASMContractExecuteSend(t *testing.T) {
 	t.Logf("Trying to execute send from the owner address which is not in the list of trusted addresses.")
 	_, err = contractClient.ThresholdBankSend(ctx, owner, sendExecuteReq)
 	requireT.True(coreum.IsUnauthorizedError(err))
+
+	t.Logf("Trying to execute with low amount.")
+	sendLowAmountExecuteReq := coreum.ThresholdBankSendRequest{
+		ID:        txHash,
+		Amount:    chain.NewCoin(sdk.NewInt(1)),
+		Recipient: txSendRecipient.String(),
+	}
+	_, err = contractClient.ThresholdBankSend(ctx, trustedAddress1, sendLowAmountExecuteReq)
+	requireT.True(coreum.IsLowAmountError(err))
 
 	t.Logf("Executing send from the first trusted address.")
 	txRes, err := contractClient.ThresholdBankSend(ctx, trustedAddress1, sendExecuteReq)
@@ -194,6 +212,245 @@ func TestWASMContractExecuteSend(t *testing.T) {
 	requireT.True(coreum.IsTransferSentError(err))
 }
 
+func TestWASMContractExecutePending(t *testing.T) {
+	t.Parallel()
+
+	ctx, chain := integrationtests.NewCoreumTestingContext(t)
+
+	owner := chain.GenAccount()
+	trustedAddress1 := chain.GenAccount()
+	trustedAddress2 := chain.GenAccount()
+	trustedAddress3 := chain.GenAccount()
+
+	txSendRecipient := chain.GenAccount()
+	anyAddress := chain.GenAccount()
+
+	const threshold = 2
+	trustedAddresses := []string{
+		trustedAddress1.String(),
+		trustedAddress2.String(),
+		trustedAddress3.String(),
+	}
+	slices.Sort(trustedAddresses)
+
+	minAmount := sdk.NewIntFromUint64(5)
+	maxAmount := sdk.NewIntFromUint64(100_000)
+
+	requireT := require.New(t)
+	chain.Faucet.FundAccounts(ctx, t,
+		integrationtests.NewFundedAccount(owner, chain.NewCoin(sdk.NewInt(5000000000))),
+		integrationtests.NewFundedAccount(trustedAddress1, chain.NewCoin(sdk.NewInt(5000000000))),
+		integrationtests.NewFundedAccount(trustedAddress2, chain.NewCoin(sdk.NewInt(5000000000))),
+		integrationtests.NewFundedAccount(trustedAddress3, chain.NewCoin(sdk.NewInt(5000000000))),
+		integrationtests.NewFundedAccount(anyAddress, chain.NewCoin(sdk.NewInt(5000000000))),
+	)
+
+	bankClient := banktypes.NewQueryClient(chain.ClientContext)
+	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil), chain.ClientContext)
+
+	t.Log("Deploying and instantiating the smart contract.")
+	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
+		Owner:            owner.String(),
+		Admin:            owner.String(),
+		TrustedAddresses: trustedAddresses,
+		Threshold:        threshold,
+		MinAmount:        minAmount,
+		MaxAmount:        maxAmount,
+		Label:            "bank_threshold_send",
+	})
+	requireT.NoError(err)
+
+	coinToFundContract := chain.NewCoin(sdk.NewInt(10_000))
+	chain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(contractAddr, coinToFundContract))
+
+	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
+
+	requireT.NoError(contractClient.SetContractAddress(contractAddr))
+	t.Logf("Contract deployed and instantiated, address:%s.", contractAddr)
+
+	// validate contract config
+	cfg, err := contractClient.GetConfig(ctx)
+	requireT.NoError(err)
+	requireT.Equal(owner.String(), cfg.Owner)
+	requireT.Equal(trustedAddresses, cfg.TrustedAddresses)
+	requireT.Equal(threshold, cfg.Threshold)
+	requireT.Equal(minAmount.String(), cfg.MinAmount.String())
+	requireT.Equal(maxAmount.String(), cfg.MaxAmount.String())
+
+	// generate the tx with high amount
+	coinsToSend := chain.NewCoin(sdk.NewInt(200_000))
+	txHash := "9752A1D96CA8C54400FD11DD19FD88FC6F386A9DD0E29DE92DDD1FD419389998"
+	sendExecuteReq := coreum.ThresholdBankSendRequest{
+		ID:        txHash,
+		Amount:    coinsToSend,
+		Recipient: txSendRecipient.String(),
+	}
+
+	t.Logf("Executing send from the first trusted address.")
+	txRes, err := contractClient.ThresholdBankSend(ctx, trustedAddress1, sendExecuteReq)
+	requireT.NoError(err)
+	evidenceID, err := event.FindStringEventAttribute(txRes.Events, wasmtypes.ModuleName, "evidence_id")
+	requireT.NoError(err)
+
+	t.Logf("Trying to execute pending not confirmed transaction from the any address and funds.")
+	_, err = contractClient.ExecutePending(ctx, anyAddress, coinsToSend, evidenceID)
+	requireT.True(coreum.IsTransactionNotConfirmedError(err))
+
+	t.Logf("Executing send from the second trusted address.")
+	_, err = contractClient.ThresholdBankSend(ctx, trustedAddress2, sendExecuteReq)
+	requireT.NoError(err)
+	t.Logf("Executing send from the third trusted address.")
+	txRes, err = contractClient.ThresholdBankSend(ctx, trustedAddress3, sendExecuteReq)
+	requireT.NoError(err)
+	// balance of the contract remains the same
+	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
+	// balance of the recipient remains the same
+	assertBankBalance(ctx, t, bankClient, txSendRecipient, chain.NewCoin(sdk.ZeroInt()))
+	action, err := event.FindStringEventAttribute(txRes.Events, wasmtypes.ModuleName, "result")
+	requireT.NoError(err)
+	requireT.Equal(action, "pending")
+
+	pendingTx, err := contractClient.GetPendingTx(ctx, evidenceID)
+	requireT.NoError(err)
+	requireT.Equal(coreum.Transaction{
+		Amount:    sendExecuteReq.Amount,
+		Recipient: sendExecuteReq.Recipient,
+		EvidenceProviders: []string{
+			trustedAddress1.String(),
+			trustedAddress2.String(),
+			trustedAddress3.String(),
+		},
+	}, pendingTx)
+	t.Logf("Pending tx: %+v", pendingTx)
+	sentTx, err := contractClient.GetSentTx(ctx, txHash)
+	requireT.NoError(err)
+	requireT.Equal(emptyTx, sentTx)
+
+	t.Logf("Trying to execute pending transaction from any address and with incorrect funds.")
+	_, err = contractClient.ExecutePending(ctx, anyAddress, chain.NewCoin(sdk.NewInt(5_000)), evidenceID)
+	requireT.True(coreum.IsFundsMismatchError(err))
+
+	anyAddressBalanceBeforeRes, err := bankClient.Balance(ctx, &banktypes.QueryBalanceRequest{
+		Address: anyAddress.String(),
+		Denom:   pendingTx.Amount.Denom,
+	})
+	requireT.NoError(err)
+
+	t.Logf("Executing pending transaction from any address with funds.")
+	txRes, err = contractClient.ExecutePending(ctx, anyAddress, pendingTx.Amount, evidenceID)
+	requireT.NoError(err)
+
+	anyAddressBalanceAfterRes, err := bankClient.Balance(ctx, &banktypes.QueryBalanceRequest{
+		Address: anyAddress.String(),
+		Denom:   pendingTx.Amount.Denom,
+	})
+	requireT.NoError(err)
+
+	// check that the balance of any address is decreased by the tx amount
+	requireT.True(anyAddressBalanceAfterRes.Balance.Amount.Add(pendingTx.Amount.Amount).
+		LT(anyAddressBalanceBeforeRes.Balance.Amount))
+
+	// balance of the contract remains the same
+	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
+	// balance of the recipient is updated
+	assertBankBalance(ctx, t, bankClient, txSendRecipient, coinsToSend)
+
+	action, err = event.FindStringEventAttribute(txRes.Events, wasmtypes.ModuleName, "result")
+	requireT.NoError(err)
+	requireT.Equal(action, "sent")
+
+	pendingTx, err = contractClient.GetPendingTx(ctx, evidenceID)
+	requireT.NoError(err)
+	requireT.Equal(emptyTx, pendingTx)
+	sentTx, err = contractClient.GetSentTx(ctx, txHash)
+	requireT.NoError(err)
+	requireT.Equal(coreum.Transaction{
+		Amount:    coinsToSend,
+		Recipient: txSendRecipient.String(),
+		EvidenceProviders: []string{
+			trustedAddress1.String(),
+			trustedAddress2.String(),
+			trustedAddress3.String(),
+		},
+	}, sentTx)
+	t.Logf("Sent tx: %+v", sentTx)
+
+	t.Logf("Trying to execute processed pending transaction from the any address with funds.")
+	_, err = contractClient.ExecutePending(ctx, anyAddress, pendingTx.Amount, evidenceID)
+	requireT.True(coreum.IsTransactionNotFoundError(err))
+}
+
+func TestWASMUpdateMinMaxAmounts(t *testing.T) {
+	t.Parallel()
+
+	ctx, chain := integrationtests.NewCoreumTestingContext(t)
+
+	owner := chain.GenAccount()
+	anyAddress := chain.GenAccount()
+
+	requireT := require.New(t)
+	chain.Faucet.FundAccounts(ctx, t,
+		integrationtests.NewFundedAccount(owner, chain.NewCoin(sdk.NewInt(5000000000))),
+		integrationtests.NewFundedAccount(anyAddress, chain.NewCoin(sdk.NewInt(5000000000))),
+	)
+
+	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil), chain.ClientContext)
+
+	minAmount := sdk.NewIntFromUint64(1)
+	maxAmount := sdk.NewIntFromUint64(10_000)
+
+	t.Log("Deploying and instantiating the smart contract.")
+	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
+		Owner: owner.String(),
+		Admin: owner.String(),
+		TrustedAddresses: []string{
+			anyAddress.String(),
+		},
+		Threshold: 1,
+		MinAmount: minAmount,
+		MaxAmount: maxAmount,
+		Label:     "bank_threshold_send",
+	})
+	requireT.NoError(err)
+
+	requireT.NoError(contractClient.SetContractAddress(contractAddr))
+	t.Logf("Contract deployed and instantiated, address:%s.", contractAddr)
+
+	t.Logf("Trying to change min amount from non-owner.")
+	newMinAmount := sdk.NewIntFromUint64(5)
+	_, err = contractClient.UpdateMinAmount(
+		ctx, anyAddress, newMinAmount,
+	)
+	requireT.True(coreum.IsUnauthorizedError(err))
+
+	t.Logf("Updating min amount from the owner.")
+	_, err = contractClient.UpdateMinAmount(
+		ctx, owner, newMinAmount,
+	)
+	requireT.NoError(err)
+
+	cfg, err := contractClient.GetConfig(ctx)
+	requireT.NoError(err)
+	requireT.Equal(newMinAmount.String(), cfg.MinAmount.String())
+
+	t.Logf("Trying to change max amount from non-owner.")
+	newMaxAmount := sdk.NewIntFromUint64(100)
+	_, err = contractClient.UpdateMaxAmount(
+		ctx, anyAddress, newMaxAmount,
+	)
+	requireT.True(coreum.IsUnauthorizedError(err))
+
+	t.Logf("Updating max amount from owner.")
+	_, err = contractClient.UpdateMaxAmount(
+		ctx, owner, newMaxAmount,
+	)
+	requireT.NoError(err)
+
+	cfg, err = contractClient.GetConfig(ctx)
+	requireT.NoError(err)
+	requireT.Equal(newMaxAmount.String(), cfg.MaxAmount.String())
+}
+
 func TestWASMContractExecuteWithdraw(t *testing.T) {
 	t.Parallel()
 
@@ -211,6 +468,9 @@ func TestWASMContractExecuteWithdraw(t *testing.T) {
 	bankClient := banktypes.NewQueryClient(chain.ClientContext)
 	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil), chain.ClientContext)
 
+	minAmount := sdk.ZeroInt()
+	maxAmount := sdk.NewIntFromUint64(math.MaxUint64)
+
 	t.Log("Deploying and instantiating the smart contract.")
 	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
 		Owner: owner.String(),
@@ -219,6 +479,8 @@ func TestWASMContractExecuteWithdraw(t *testing.T) {
 			trustedAddress1.String(),
 		},
 		Threshold: 1,
+		MinAmount: minAmount,
+		MaxAmount: maxAmount,
 		Label:     "bank_threshold_send",
 	})
 	requireT.NoError(err)
@@ -292,6 +554,9 @@ func TestWASMContractQueryPagination(t *testing.T) {
 	bankClient := banktypes.NewQueryClient(chain.ClientContext)
 	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil), chain.ClientContext)
 
+	minAmount := sdk.ZeroInt()
+	maxAmount := sdk.NewIntFromUint64(math.MaxUint64)
+
 	t.Log("Deploying and instantiating the smart contract.")
 	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
 		Owner: owner.String(),
@@ -302,6 +567,8 @@ func TestWASMContractQueryPagination(t *testing.T) {
 			trustedAddress3.String(),
 		},
 		Threshold: 2,
+		MinAmount: minAmount,
+		MaxAmount: maxAmount,
 		Label:     "bank_threshold_send",
 	})
 	requireT.NoError(err)

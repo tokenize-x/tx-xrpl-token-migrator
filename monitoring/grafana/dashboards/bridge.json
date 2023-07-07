@@ -184,7 +184,7 @@
         "x": 8,
         "y": 0
       },
-      "id": 6,
+      "id": 7,
       "options": {
         "legend": {
           "calcs": [],
@@ -431,8 +431,8 @@
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "axisSoftMax": 45000000,
-            "axisSoftMin": 39000000,
+            "axisSoftMax": 10,
+            "axisSoftMin": 0,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -446,7 +446,6 @@
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
-              "linearThreshold": 0,
               "type": "linear"
             },
             "showPoints": "auto",
@@ -478,7 +477,7 @@
         "x": 8,
         "y": 6
       },
-      "id": 3,
+      "id": 6,
       "options": {
         "legend": {
           "calcs": [],
@@ -499,13 +498,13 @@
             "uid": "P3892E10346FD2012"
           },
           "editorMode": "code",
-          "expr": "xrpl_latest_account_ledger_index{job=\"bridge\", exported_instance=~\"$instance\"}",
+          "expr": "coreum_pending_approved_transactions_count{job=\"bridge\", exported_instance=~\"$instance\"}",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Latest observer XRPL account ledger index",
+      "title": "Coreum pending approved transactions count",
       "type": "timeseries"
     },
     {
@@ -606,6 +605,98 @@
       ],
       "title": "Errors total",
       "transformations": [],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "P3892E10346FD2012"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMax": 45000000,
+            "axisSoftMin": 39000000,
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "linearThreshold": 0,
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 16,
+        "y": 12
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P3892E10346FD2012"
+          },
+          "editorMode": "code",
+          "expr": "xrpl_latest_account_ledger_index{job=\"bridge\", exported_instance=~\"$instance\"}",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Latest observer XRPL account ledger index",
       "type": "timeseries"
     }
   ],

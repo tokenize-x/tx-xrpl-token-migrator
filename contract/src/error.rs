@@ -1,4 +1,5 @@
 use cosmwasm_std::StdError;
+use cw_utils::PaymentError;
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -23,4 +24,19 @@ pub enum ContractError {
 
     #[error("Sender already provided the evidence")]
     EvidenceAlreadyProvided {},
+
+    #[error("Transaction not found")]
+    TransactionNotFound {},
+
+    #[error("Transaction not confirmed")]
+    TransactionNotConfirmed {},
+
+    #[error("The amount is too low")]
+    LowAmount {},
+
+    #[error("Funds mismatch")]
+    FundsMismatch {},
+
+    #[error("{0}")]
+    Payment(#[from] PaymentError),
 }
