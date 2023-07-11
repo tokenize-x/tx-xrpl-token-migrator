@@ -5,6 +5,7 @@ package integrationtests
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -161,8 +162,14 @@ func buildTestingServices(
 	kr keyring.Keyring,
 	senderAddress, contractAddress sdk.AccAddress,
 ) *service.Services {
+	const XRPLRPCURLEnvVariableName = "XRPL_TESTNET_RPC_URL"
+	rpcURL := os.Getenv(XRPLRPCURLEnvVariableName)
+	if rpcURL == "" {
+		t.Fatalf("It is required to set %q env variable to use that function", XRPLRPCURLEnvVariableName)
+	}
+
 	services, err := service.NewServices(service.Config{
-		XRPLRPCURL:                 "https://s.altnet.rippletest.net:51234/",
+		XRPLRPCURL:                 rpcURL,
 		XRPLHistoryScanStartLedger: 38500000,
 		XRPLRecentScanIndexesBack:  30_000,
 		XRPLAccount:                "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",

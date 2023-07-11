@@ -61,7 +61,6 @@ const defaultHome = ".xrpl-bridge"
 
 var (
 	defaultTestnetCfg = service.Config{
-		XRPLRPCURL:                 "https://s.altnet.rippletest.net:51234/",
 		XRPLHistoryScanStartLedger: 38500000,
 		XRPLRecentScanIndexesBack:  30_000,
 		XRPLAccount:                "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
@@ -70,12 +69,9 @@ var (
 		XRPLMemoSuffix:             "/coreum-testnet-1/v1",
 
 		CoreumChainID: string(constant.ChainIDTest),
-		CoreumGRPCURL: "https://full-node.testnet-1.coreum.dev:9090",
-		PrometheusURL: "https://pushgateway.testnet-1.coreum.dev",
 	}
 
 	defaultMainnnetCfg = service.Config{
-		XRPLRPCURL:                 "https://s1.ripple.com:51234/",
 		XRPLHistoryScanStartLedger: 80590000,
 		XRPLRecentScanIndexesBack:  30_000,
 		XRPLAccount:                "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
@@ -83,9 +79,7 @@ var (
 		XRPLIssuer:                 "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
 		XRPLMemoSuffix:             "/coreum-mainnet-1/v1",
 
-		CoreumGRPCURL: "https://full-node.mainnet-1.coreum.dev:9090",
 		CoreumChainID: string(constant.ChainIDMain),
-		PrometheusURL: "https://pushgateway.mainnet-1.coreum.dev",
 	}
 )
 

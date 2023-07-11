@@ -28,15 +28,16 @@ make build-in-docker
 
 ## Deploy contract
 
-* Set public chain specific variables
+* Set variables
 
 ```bash
-export COREUM_CHAIN_ID="{Chain ID}"
+export COREUM_CHAIN_ID={Coreum chain ID}"
 export COREUM_CONTRACT_TRUSTED_ADDRESSES="{Trusted address 2,trusted address 1}"
 export COREUM_CONTRACT_THRESHOLD="{Threshold}"
 export COREUM_CONTRACT_OWNER="{Owner which is able to withdraw contract balance}"
 export COREUM_CONTRACT_MIN_AMOUNT="{Min allowed amount for a transaction}"
 export COREUM_CONTRACT_MAX_AMOUNT="{Max allowed amount for automated transaction processing}"
+export COREUM_GRPC_URL="{GRPC URL of coreum node}"
 ```
 
 * Store deployer mnemonic to the keystore
@@ -57,6 +58,7 @@ export COREUM_CONTRACT_MAX_AMOUNT="{Max allowed amount for automated transaction
     --coreum-contract-owner-address $COREUM_CONTRACT_OWNER \
     --coreum-contract-min-amount $COREUM_CONTRACT_MIN_AMOUNT \
     --coreum-contract-max-amount $COREUM_CONTRACT_MAX_AMOUNT \
+    --coreum-grpc-url $COREUM_GRPC_URL \
     --coreum-sender-address $(./relayer keys show contract-deployer -a --coreum-chain-id $COREUM_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge) \
     --keyring-backend os \
     --home $HOME/.xrpl-bridge
@@ -75,13 +77,17 @@ export COREUM_CONTRACT_MAX_AMOUNT="{Max allowed amount for automated transaction
     --home $HOME/.xrpl-bridge
 ```
 
-* Set `run` variables
+* Set variables
 
 ```bash
+export XRPL_RPC_URL="{RPC URL of XRPL node}"
+export COREUM_CHAIN_ID={Coreum chain ID}"
 export COREUM_CONTRACT_ADDRESS="{Contract address}"
+export COREUM_GRPC_URL="{GRPC URL of coreum node}"
 export PROMETHEUS_INSTANCE_NAME="{Unique name of your instance}"
 export PROMETHEUS_USERNAME="{Prometheus username}"
 export PROMETHEUS_PASSWORD="{Prometheus password}"
+export PROMETHEUS_URL="{Prometheus push URL}"
 ```
 
 * Create `start` script.
@@ -89,12 +95,15 @@ export PROMETHEUS_PASSWORD="{Prometheus password}"
 ```bash
 echo "
 echo \$(systemd-ask-password \"Enter keyring password:\") | $PWD/relayer start \\
+    --xrpl-rpc-url $XRPL_RPC_URL \\
     --coreum-chain-id $COREUM_CHAIN_ID \\
     --coreum-contract-address $COREUM_CONTRACT_ADDRESS \\
+    --coreum-grpc-url $COREUM_GRPC_URL \\
     --coreum-sender-address $(./relayer keys show relayer -a --coreum-chain-id $COREUM_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge) \\
     --prometheus-instance-name $PROMETHEUS_INSTANCE_NAME \\
     --prometheus-username $PROMETHEUS_USERNAME \\
     --prometheus-password $PROMETHEUS_PASSWORD \\
+    --prometheus-url $PROMETHEUS_URL \\
     --keyring-backend os \\
     --home $HOME/.xrpl-bridge
     " > "run-xrpl-bridge-relayer.sh"
@@ -188,12 +197,24 @@ systemctl daemon-reload
 
 ## Execute pending approved transactions
 
-Some transactions might reach the max allowed contract amount and will be kept in pending until manual execution of them.
+Some transactions might reach the max allowed contract amount and will be kept in pending until manual execution of
+them.
 
 ### Get list of pending approved transactions.
 
+* Set variables
+
 ```bash
-./relayer get-pending-approved-transactions --coreum-chain-id $COREUM_CHAIN_ID
+export COREUM_CHAIN_ID={Coreum chain ID}"
+export COREUM_CONTRACT_ADDRESS="{Contract address}"
+export COREUM_GRPC_URL="{GRPC URL of coreum node}"
+```
+
+```bash
+./relayer get-pending-approved-transactions \
+  --coreum-contract-address $COREUM_CONTRACT_ADDRESS \
+  --coreum-grpc-url $COREUM_GRPC_URL \
+  --coreum-chain-id $COREUM_CHAIN_ID
 ```
 
 Output example:
@@ -206,9 +227,15 @@ Using the output you can choose which transactions you would like to execute.
 
 ### Prepare transaction to be executed.
 
-* Export variables for the execution of the pending approved transactions.
+* Set variables
 
 ```bash
+* Set variables
+
+```bash
+export COREUM_CHAIN_ID={Coreum chain ID}"
+export COREUM_CONTRACT_ADDRESS="{Contract address}"
+export COREUM_GRPC_URL="{GRPC URL of coreum node}"
 export COREUM_EXECUTOR_ADDRESS="{The address which will execute the approved transactions and pay for them}"
 export COREUM_EVIDENCE_IDS="{Comma separated evidence IDs of the pending approved transactions to be executed}" # (Optional, by default all transactions will be executed.)
 ```
@@ -217,8 +244,10 @@ export COREUM_EVIDENCE_IDS="{Comma separated evidence IDs of the pending approve
 
 ```bash
 ./relayer build-execute-pending-approved-transaction \
-  --coreum-chain-id $COREUM_CHAIN_ID \
+  --coreum-contract-address $COREUM_CONTRACT_ADDRESS \
+  --coreum-grpc-url $COREUM_GRPC_URL \
   --coreum-contract-evidence-ids $COREUM_EVIDENCE_IDS \
+  --coreum-chain-id $COREUM_CHAIN_ID \
   --coreum-sender-address $COREUM_EXECUTOR_ADDRESS > unsigned.json
 ```
 

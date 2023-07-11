@@ -98,7 +98,7 @@ jobs:
             ${{ runner.os }}-docker-
       - name: Run ${{ matrix.ci_step }}
         working-directory: ./xrpl-bridge
-        run: ${{ matrix.command }}
+        run: export XRPL_TESTNET_RPC_URL=${{ secrets.XRPL_TESTNET_RPC_URL }} && ${{ matrix.command }}
       - name: Dump docker logs on failure
         if: failure()
         uses: jwalton/gh-docker-logs@v2
