@@ -67,15 +67,11 @@ var (
 		XRPLAccount:                "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
 		XRPLCurrency:               "434F524500000000000000000000000000000000",
 		XRPLIssuer:                 "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
-		// TODO update before the final testnet-release
-		XRPLMemoSuffix: "/coreum-testnet-1",
+		XRPLMemoSuffix:             "/coreum-testnet-1/v1",
 
 		CoreumChainID: string(constant.ChainIDTest),
 		CoreumGRPCURL: "https://full-node.testnet-1.coreum.dev:9090",
-
-		// TODO update before the final testnet-release
-		CoreumContractAddress: "testcore1p8zwflm7tarw5rn0qzz762kwldtr5grd9msq9exp34jnt20hp9esttyx6h",
-		PrometheusURL:         "https://pushgateway.testnet-1.coreum.dev",
+		PrometheusURL: "https://pushgateway.testnet-1.coreum.dev",
 	}
 
 	defaultMainnnetCfg = service.Config{
@@ -85,15 +81,11 @@ var (
 		XRPLAccount:                "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
 		XRPLCurrency:               "434F524500000000000000000000000000000000",
 		XRPLIssuer:                 "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
-		// TODO update before the final mainnet-release
-		XRPLMemoSuffix: "/coreum-mainnet-1",
+		XRPLMemoSuffix:             "/coreum-mainnet-1/v1",
 
 		CoreumGRPCURL: "https://full-node.mainnet-1.coreum.dev:9090",
 		CoreumChainID: string(constant.ChainIDMain),
-
-		// TODO update before the final mainnet-release
-		CoreumContractAddress: "",
-		PrometheusURL:         "https://pushgateway.mainnet-1.coreum.dev",
+		PrometheusURL: "https://pushgateway.mainnet-1.coreum.dev",
 	}
 )
 
