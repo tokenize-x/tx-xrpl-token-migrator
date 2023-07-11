@@ -7,11 +7,19 @@ import (
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
+	"github.com/samber/lo"
 
 	"github.com/CoreumFoundation/coreum/pkg/client"
 	"github.com/CoreumFoundation/coreum/testutil/event"
+	feemodeltypes "github.com/CoreumFoundation/coreum/x/feemodel/types"
 	contractembed "github.com/CoreumFoundation/xrpl-bridge/contract"
 )
 
@@ -131,31 +139,37 @@ type sentTxQueryRequest struct {
 
 // ContractClientConfig represent the ContractClient config.
 type ContractClientConfig struct {
-	ContractAddress sdk.AccAddress
-	GasMultiplier   float64
+	ContractAddress  sdk.AccAddress
+	CoreumDenom      string
+	GasMultiplier    float64
+	ContractPageSize uint32
 }
 
 // DefaultContractClientConfig returns default ContractClient config.
-func DefaultContractClientConfig(contractAddress sdk.AccAddress) ContractClientConfig {
+func DefaultContractClientConfig(contractAddress sdk.AccAddress, coreumDenom string) ContractClientConfig {
 	return ContractClientConfig{
-		ContractAddress: contractAddress,
-		GasMultiplier:   1.3,
+		ContractAddress:  contractAddress,
+		CoreumDenom:      coreumDenom,
+		GasMultiplier:    1.3,
+		ContractPageSize: 500,
 	}
 }
 
 // ContractClient is the wasm contract client.
 type ContractClient struct {
-	cfg        ContractClientConfig
-	clientCtx  client.Context
-	wasmClient wasmtypes.QueryClient
+	cfg                 ContractClientConfig
+	clientCtx           client.Context
+	wasmClient          wasmtypes.QueryClient
+	feemodelQueryClient feemodeltypes.QueryClient
 }
 
 // NewContractClient returns a new instance of the ContractClient.
 func NewContractClient(cfg ContractClientConfig, clientCtx client.Context) *ContractClient {
 	return &ContractClient{
-		cfg:        cfg,
-		clientCtx:  clientCtx.WithBroadcastMode(flags.BroadcastBlock),
-		wasmClient: wasmtypes.NewQueryClient(clientCtx),
+		cfg:                 cfg,
+		clientCtx:           clientCtx.WithBroadcastMode(flags.BroadcastBlock),
+		wasmClient:          wasmtypes.NewQueryClient(clientCtx),
+		feemodelQueryClient: feemodeltypes.NewQueryClient(clientCtx),
 	}
 }
 
@@ -191,7 +205,7 @@ func (c *ContractClient) DeployAndInstantiate(ctx context.Context, sender sdk.Ac
 		Admin:  config.Admin,
 		CodeID: codeID,
 		Label:  config.Label,
-		Msg:    wasmtypes.RawContractMessage(reqPayload),
+		Msg:    reqPayload,
 	}
 
 	res, err = client.BroadcastTx(ctx, c.clientCtx.WithFromAddress(sender), c.txFactory(), msg)
@@ -285,6 +299,44 @@ func (c *ContractClient) ExecutePending(ctx context.Context, sender sdk.AccAddre
 	return txRes, nil
 }
 
+// BuildExecutePendingMessages builds execute_pending messages of the contract.
+func (c *ContractClient) BuildExecutePendingMessages(ctx context.Context, sender sdk.AccAddress, evidenceIDs []string) ([]sdk.Msg, error) {
+	_, approvedTransactions, err := c.GetAllPendingTransactions(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	evidenceIDsMap := lo.SliceToMap(evidenceIDs, func(item string) (string, struct{}) {
+		return item, struct{}{}
+	})
+
+	msgs := make([]sdk.Msg, 0)
+	includeAll := len(evidenceIDsMap) == 0
+	for _, tx := range approvedTransactions {
+		if _, ok := evidenceIDsMap[tx.EvidenceID]; includeAll || ok {
+			msg, err := c.buildExecuteWithFunds(sender, sdk.NewCoins(tx.Amount), map[method]executePendingRequest{
+				methodExecutePending: {
+					EvidenceID: tx.EvidenceID,
+				},
+			})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to execute %s method", methodExecutePending)
+			}
+			msgs = append(msgs, msg)
+			delete(evidenceIDsMap, tx.EvidenceID)
+		}
+	}
+
+	if len(evidenceIDsMap) != 0 {
+		return nil, errors.Errorf("some of evidence ids are not found in the approved pending transactions: %v",
+			lo.MapToSlice(evidenceIDsMap, func(id string, _ struct{}) string {
+				return id
+			}))
+	}
+
+	return msgs, nil
+}
+
 // Withdraw executes withdraw method of the contract.
 func (c *ContractClient) Withdraw(ctx context.Context, sender sdk.AccAddress) (*sdk.TxResponse, error) {
 	txRes, err := c.execute(ctx, sender, map[method]struct{}{
@@ -297,8 +349,95 @@ func (c *ContractClient) Withdraw(ctx context.Context, sender sdk.AccAddress) (*
 	return txRes, nil
 }
 
-// GetConfig returns contract config.
-func (c *ContractClient) GetConfig(ctx context.Context) (Config, error) {
+// EstimateExecuteMessages estimates the cost for execute contract messages.
+func (c *ContractClient) EstimateExecuteMessages(ctx context.Context, sender sdk.AccAddress, msgs ...sdk.Msg) (sdk.Coin, uint64, error) {
+	gas, err := c.calculateGas(ctx, sender, c.txFactory(), msgs...)
+	if err != nil {
+		return sdk.Coin{}, 0, err
+	}
+	feemodelParamsRes, err := c.feemodelQueryClient.Params(ctx, &feemodeltypes.QueryParamsRequest{})
+	if err != nil {
+		return sdk.Coin{}, 0, err
+	}
+	amount := feemodelParamsRes.Params.Model.InitialGasPrice.Mul(sdk.NewDecFromInt(sdk.NewIntFromUint64(gas))).TruncateInt()
+
+	return sdk.NewCoin(c.cfg.CoreumDenom, amount), gas, nil
+}
+
+// calculateGas calculates gas using legacy amino codec to cover both multisig and basic accounts.
+func (c *ContractClient) calculateGas(ctx context.Context, sender sdk.AccAddress, txf client.Factory, msgs ...sdk.Msg) (uint64, error) {
+	modeInfo, signature := authtx.SignatureDataToModeInfoAndSig(&signing.MultiSignatureData{
+		Signatures: []signing.SignatureData{
+			&signing.SingleSignatureData{
+				SignMode: signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON,
+			},
+		},
+	})
+
+	pubKeyAny, err := codectypes.NewAnyWithValue(&secp256k1.PubKey{})
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	acc, err := client.GetAccountInfo(ctx, c.clientCtx, sender)
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	simAuthInfoBytes, err := proto.Marshal(&sdktx.AuthInfo{
+		SignerInfos: []*sdktx.SignerInfo{
+			{
+				PublicKey: pubKeyAny,
+				ModeInfo:  modeInfo,
+				Sequence:  acc.GetSequence(),
+			},
+		},
+		Fee: &sdktx.Fee{},
+	})
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	anyMessages := make([]*codectypes.Any, 0, len(msgs))
+	for _, msg := range msgs {
+		anyMsg, err := codectypes.NewAnyWithValue(msg)
+		if err != nil {
+			return 0, errors.WithStack(err)
+		}
+		anyMessages = append(anyMessages, anyMsg)
+	}
+
+	bodyBytes, err := proto.Marshal(&sdktx.TxBody{
+		Messages: anyMessages,
+	})
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	txBytes, err := proto.Marshal(&sdktx.TxRaw{
+		BodyBytes:     bodyBytes,
+		AuthInfoBytes: simAuthInfoBytes,
+		Signatures: [][]byte{
+			signature,
+		},
+	})
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	txSvcClient := sdktx.NewServiceClient(c.clientCtx)
+	simRes, err := txSvcClient.Simulate(ctx, &sdktx.SimulateRequest{
+		TxBytes: txBytes,
+	})
+	if err != nil {
+		return 0, errors.Wrap(err, "transaction estimation failed")
+	}
+
+	return uint64(txf.GasAdjustment() * float64(simRes.GasInfo.GasUsed)), nil
+}
+
+// GetContractConfig returns contract config.
+func (c *ContractClient) GetContractConfig(ctx context.Context) (Config, error) {
 	var config Config
 	err := c.query(ctx, map[method]struct{}{
 		methodGetConfig: {},
@@ -372,6 +511,43 @@ func (c *ContractClient) GetSentTxs(ctx context.Context, offset *uint64, limit *
 	return txs.Transactions, nil
 }
 
+// GetAllPendingTransactions queries all unapproved and approved pending transactions.
+func (c *ContractClient) GetAllPendingTransactions(ctx context.Context) ([]PendingTransaction, []PendingTransaction, error) {
+	offset := uint64(0)
+	limit := c.cfg.ContractPageSize
+
+	unapprovedTransactions := make([]PendingTransaction, 0)
+	approvedTransactions := make([]PendingTransaction, 0)
+
+	contractCfg, err := c.GetContractConfig(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for {
+		pendingTxs, err := c.GetPendingTxs(ctx, &offset, &limit)
+		if err != nil {
+			return nil, nil, err
+		}
+		if len(pendingTxs) == 0 {
+			break
+		}
+
+		for _, pendingTx := range pendingTxs {
+			if len(pendingTx.EvidenceProviders) < contractCfg.Threshold {
+				unapprovedTransactions = append(unapprovedTransactions, pendingTx)
+				continue
+			}
+			approvedTransactions = append(approvedTransactions, pendingTx)
+		}
+
+		offset += uint64(c.cfg.ContractPageSize)
+		limit += c.cfg.ContractPageSize
+	}
+
+	return unapprovedTransactions, approvedTransactions, nil
+}
+
 // IsUnauthorizedError returns true if error is Unauthorized error.
 func IsUnauthorizedError(err error) bool {
 	return isError(err, unauthorizedErrorString)
@@ -425,7 +601,7 @@ func (c *ContractClient) execute(ctx context.Context, sender sdk.AccAddress, req
 		msg := &wasmtypes.MsgExecuteContract{
 			Sender:   sender.String(),
 			Contract: c.cfg.ContractAddress.String(),
-			Msg:      wasmtypes.RawContractMessage(payload),
+			Msg:      payload,
 		}
 		msgs = append(msgs, msg)
 	}
@@ -438,6 +614,19 @@ func (c *ContractClient) execute(ctx context.Context, sender sdk.AccAddress, req
 }
 
 func (c *ContractClient) executeWithFunds(ctx context.Context, sender sdk.AccAddress, funds sdk.Coins, req any) (*sdk.TxResponse, error) {
+	msg, err := c.buildExecuteWithFunds(sender, funds, req)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := client.BroadcastTx(ctx, c.clientCtx.WithFromAddress(sender), c.txFactory(), msg)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *ContractClient) buildExecuteWithFunds(sender sdk.AccAddress, funds sdk.Coins, req any) (*wasmtypes.MsgExecuteContract, error) {
 	if c.cfg.ContractAddress == nil {
 		return nil, errors.New("failed to execute with empty contract address")
 	}
@@ -446,18 +635,12 @@ func (c *ContractClient) executeWithFunds(ctx context.Context, sender sdk.AccAdd
 	if err != nil {
 		return nil, errors.Wrap(err, "can't marshal payload")
 	}
-	msg := &wasmtypes.MsgExecuteContract{
+	return &wasmtypes.MsgExecuteContract{
 		Sender:   sender.String(),
 		Contract: c.cfg.ContractAddress.String(),
-		Msg:      wasmtypes.RawContractMessage(payload),
+		Msg:      payload,
 		Funds:    funds,
-	}
-
-	res, err := client.BroadcastTx(ctx, c.clientCtx.WithFromAddress(sender), c.txFactory(), msg)
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
+	}, nil
 }
 
 func (c *ContractClient) txFactory() client.Factory {
@@ -481,7 +664,7 @@ func (c *ContractClient) query(ctx context.Context, request, response any) error
 
 	query := &wasmtypes.QuerySmartContractStateRequest{
 		Address:   c.cfg.ContractAddress.String(),
-		QueryData: wasmtypes.RawContractMessage(payload),
+		QueryData: payload,
 	}
 	resp, err := c.wasmClient.SmartContractState(ctx, query)
 	if err != nil {

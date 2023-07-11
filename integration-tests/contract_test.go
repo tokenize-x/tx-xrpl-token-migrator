@@ -9,28 +9,34 @@ import (
 	"testing"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	sdkclient "github.com/cosmos/cosmos-sdk/client"
+	sdkmultisig "github.com/cosmos/cosmos-sdk/crypto/keys/multisig"
+	multisigtypes "github.com/cosmos/cosmos-sdk/crypto/types/multisig"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdksigning "github.com/cosmos/cosmos-sdk/types/tx/signing"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
 
 	integrationtests "github.com/CoreumFoundation/coreum/integration-tests"
+	"github.com/CoreumFoundation/coreum/pkg/client"
 	"github.com/CoreumFoundation/coreum/testutil/event"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
 )
 
-var (
-	// used for the empty responses.
-	emptyTx = coreum.Transaction{
-		Amount: sdk.Coin{
-			Denom:  "",
-			Amount: sdk.ZeroInt(),
-		},
-		Recipient:         "",
-		EvidenceProviders: []string{},
-	}
-)
+const txHash = "9752A1D96CA8C54400FD11DD19FD88FC6F386A9DD0E29DE92DDD1FD419389998"
+
+// used for the empty responses.
+var emptyTx = coreum.Transaction{
+	Amount: sdk.Coin{
+		Denom:  "",
+		Amount: sdk.ZeroInt(),
+	},
+	Recipient:         "",
+	EvidenceProviders: []string{},
+}
 
 func TestWASMContractThresholdBankSend(t *testing.T) {
 	t.Parallel()
@@ -64,7 +70,7 @@ func TestWASMContractThresholdBankSend(t *testing.T) {
 	)
 
 	bankClient := banktypes.NewQueryClient(chain.ClientContext)
-	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil), chain.ClientContext)
+	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil, ""), chain.ClientContext)
 
 	t.Log("Deploying and instantiating the smart contract.")
 	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
@@ -88,7 +94,7 @@ func TestWASMContractThresholdBankSend(t *testing.T) {
 
 	// validate contract config
 
-	cfg, err := contractClient.GetConfig(ctx)
+	cfg, err := contractClient.GetContractConfig(ctx)
 	requireT.NoError(err)
 	requireT.Equal(owner.String(), cfg.Owner)
 	requireT.Equal(trustedAddresses, cfg.TrustedAddresses)
@@ -98,7 +104,6 @@ func TestWASMContractThresholdBankSend(t *testing.T) {
 
 	// generate the tx to be sent with the threshold
 	coinsToSend := chain.NewCoin(sdk.NewInt(1000))
-	txHash := "9752A1D96CA8C54400FD11DD19FD88FC6F386A9DD0E29DE92DDD1FD419389998"
 	sendExecuteReq := coreum.ThresholdBankSendRequest{
 		ID:        txHash,
 		Amount:    coinsToSend,
@@ -246,7 +251,7 @@ func TestWASMContractExecutePending(t *testing.T) {
 	)
 
 	bankClient := banktypes.NewQueryClient(chain.ClientContext)
-	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil), chain.ClientContext)
+	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil, ""), chain.ClientContext)
 
 	t.Log("Deploying and instantiating the smart contract.")
 	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
@@ -269,7 +274,7 @@ func TestWASMContractExecutePending(t *testing.T) {
 	t.Logf("Contract deployed and instantiated, address:%s.", contractAddr)
 
 	// validate contract config
-	cfg, err := contractClient.GetConfig(ctx)
+	cfg, err := contractClient.GetContractConfig(ctx)
 	requireT.NoError(err)
 	requireT.Equal(owner.String(), cfg.Owner)
 	requireT.Equal(trustedAddresses, cfg.TrustedAddresses)
@@ -279,7 +284,6 @@ func TestWASMContractExecutePending(t *testing.T) {
 
 	// generate the tx with high amount
 	coinsToSend := chain.NewCoin(sdk.NewInt(200_000))
-	txHash := "9752A1D96CA8C54400FD11DD19FD88FC6F386A9DD0E29DE92DDD1FD419389998"
 	sendExecuteReq := coreum.ThresholdBankSendRequest{
 		ID:        txHash,
 		Amount:    coinsToSend,
@@ -380,6 +384,157 @@ func TestWASMContractExecutePending(t *testing.T) {
 	requireT.True(coreum.IsTransactionNotFoundError(err))
 }
 
+func TestWASMContractExecutePendingWithMultisig(t *testing.T) {
+	t.Parallel()
+
+	ctx, chain := integrationtests.NewCoreumTestingContext(t)
+
+	owner := chain.GenAccount()
+	trustedAddress1 := chain.GenAccount()
+	trustedAddress2 := chain.GenAccount()
+	trustedAddress3 := chain.GenAccount()
+
+	txSendRecipient := chain.GenAccount()
+
+	const threshold = 2
+	trustedAddresses := []string{
+		trustedAddress1.String(),
+		trustedAddress2.String(),
+		trustedAddress3.String(),
+	}
+	slices.Sort(trustedAddresses)
+
+	minAmount := sdk.NewIntFromUint64(5)
+	maxAmount := sdk.NewIntFromUint64(100_000)
+
+	requireT := require.New(t)
+
+	multisigPublicKey, keyNamesSet, err := chain.GenMultisigAccount(3, 2)
+	requireT.NoError(err)
+
+	multisigAddress := sdk.AccAddress(multisigPublicKey.Address())
+	signer1KeyName := keyNamesSet[0]
+	signer2KeyName := keyNamesSet[1]
+
+	chain.Faucet.FundAccounts(ctx, t,
+		integrationtests.NewFundedAccount(owner, chain.NewCoin(sdk.NewInt(5000000000))),
+		integrationtests.NewFundedAccount(trustedAddress1, chain.NewCoin(sdk.NewInt(5000000000))),
+		integrationtests.NewFundedAccount(trustedAddress2, chain.NewCoin(sdk.NewInt(5000000000))),
+		integrationtests.NewFundedAccount(multisigAddress, chain.NewCoin(sdk.NewInt(5000000000))),
+	)
+
+	bankClient := banktypes.NewQueryClient(chain.ClientContext)
+	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil, chain.ChainSettings.Denom), chain.ClientContext)
+
+	t.Log("Deploying and instantiating the smart contract.")
+	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
+		Owner:            owner.String(),
+		Admin:            owner.String(),
+		TrustedAddresses: trustedAddresses,
+		Threshold:        threshold,
+		MinAmount:        minAmount,
+		MaxAmount:        maxAmount,
+		Label:            "bank_threshold_send",
+	})
+	requireT.NoError(err)
+
+	coinToFundContract := chain.NewCoin(sdk.NewInt(10_000))
+	chain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(contractAddr, coinToFundContract))
+
+	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
+
+	requireT.NoError(contractClient.SetContractAddress(contractAddr))
+	t.Logf("Contract deployed and instantiated, address:%s.", contractAddr)
+
+	// generate the tx with high amount
+	coinsToSend := chain.NewCoin(sdk.NewInt(200_000))
+	sendExecuteReq := coreum.ThresholdBankSendRequest{
+		ID:        txHash,
+		Amount:    coinsToSend,
+		Recipient: txSendRecipient.String(),
+	}
+
+	t.Logf("Executing send from the first trusted address.")
+	txRes, err := contractClient.ThresholdBankSend(ctx, trustedAddress1, sendExecuteReq)
+	requireT.NoError(err)
+	evidenceID, err := event.FindStringEventAttribute(txRes.Events, wasmtypes.ModuleName, "evidence_id")
+	requireT.NoError(err)
+
+	t.Logf("Executing send from the second trusted address.")
+	_, err = contractClient.ThresholdBankSend(ctx, trustedAddress2, sendExecuteReq)
+	requireT.NoError(err)
+
+	pendingTx, err := contractClient.GetPendingTx(ctx, evidenceID)
+	requireT.NoError(err)
+
+	requireT.Equal(coreum.Transaction{
+		Amount:    sendExecuteReq.Amount,
+		Recipient: sendExecuteReq.Recipient,
+		EvidenceProviders: []string{
+			trustedAddress1.String(),
+			trustedAddress2.String(),
+		},
+	}, pendingTx)
+
+	// filter by id
+	msgs, err := contractClient.BuildExecutePendingMessages(ctx, multisigAddress, []string{evidenceID})
+	requireT.NoError(err)
+	requireT.Equal(1, len(msgs))
+	// get all
+	msgs, err = contractClient.BuildExecutePendingMessages(ctx, multisigAddress, nil)
+	requireT.NoError(err)
+	requireT.Equal(1, len(msgs))
+
+	fees, gas, err := contractClient.EstimateExecuteMessages(ctx, multisigAddress, msgs...)
+	requireT.NoError(err)
+
+	multisigAccInfo, err := client.GetAccountInfo(ctx, chain.ClientContext, multisigAddress)
+	requireT.NoError(err)
+	txf := chain.TxFactory().
+		WithGas(gas).
+		WithGasPrices(""). // reset to check fees
+		WithFees(fees.String()).
+		WithAccountNumber(multisigAccInfo.GetAccountNumber()).
+		WithSequence(multisigAccInfo.GetSequence()).
+		WithSignMode(sdksigning.SignMode_SIGN_MODE_LEGACY_AMINO_JSON)
+
+	// sign and submit with the min threshold
+	txBuilder, err := txf.BuildUnsignedTx(msgs...)
+	requireT.NoError(err)
+	err = client.Sign(txf, signer1KeyName, txBuilder, false)
+	requireT.NoError(err)
+	err = client.Sign(txf, signer2KeyName, txBuilder, false)
+	requireT.NoError(err)
+	multisigTx := createMulisignTx(requireT, txBuilder, multisigAccInfo.GetSequence(), multisigPublicKey)
+	encodedTx, err := chain.ClientContext.TxConfig().TxEncoder()(multisigTx)
+	requireT.NoError(err)
+
+	multisigAddressBalanceBeforeRes, err := bankClient.Balance(ctx, &banktypes.QueryBalanceRequest{
+		Address: multisigAddress.String(),
+		Denom:   pendingTx.Amount.Denom,
+	})
+	requireT.NoError(err)
+
+	result, err := client.BroadcastRawTx(ctx, chain.ClientContext, encodedTx)
+	requireT.NoError(err)
+	t.Logf("Fully signed tx executed, txHash:%s", result.TxHash)
+
+	multisigAddressBalanceAfterRes, err := bankClient.Balance(ctx, &banktypes.QueryBalanceRequest{
+		Address: multisigAddress.String(),
+		Denom:   pendingTx.Amount.Denom,
+	})
+	requireT.NoError(err)
+
+	// check that the balance of multisig address is decreased by the tx amount
+	requireT.True(multisigAddressBalanceAfterRes.Balance.Amount.Add(pendingTx.Amount.Amount).
+		LT(multisigAddressBalanceBeforeRes.Balance.Amount))
+
+	// balance of the contract remains the same
+	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
+	// balance of the recipient is updated
+	assertBankBalance(ctx, t, bankClient, txSendRecipient, coinsToSend)
+}
+
 func TestWASMUpdateMinMaxAmounts(t *testing.T) {
 	t.Parallel()
 
@@ -394,7 +549,7 @@ func TestWASMUpdateMinMaxAmounts(t *testing.T) {
 		integrationtests.NewFundedAccount(anyAddress, chain.NewCoin(sdk.NewInt(5000000000))),
 	)
 
-	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil), chain.ClientContext)
+	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil, ""), chain.ClientContext)
 
 	minAmount := sdk.NewIntFromUint64(1)
 	maxAmount := sdk.NewIntFromUint64(10_000)
@@ -429,7 +584,7 @@ func TestWASMUpdateMinMaxAmounts(t *testing.T) {
 	)
 	requireT.NoError(err)
 
-	cfg, err := contractClient.GetConfig(ctx)
+	cfg, err := contractClient.GetContractConfig(ctx)
 	requireT.NoError(err)
 	requireT.Equal(newMinAmount.String(), cfg.MinAmount.String())
 
@@ -446,7 +601,7 @@ func TestWASMUpdateMinMaxAmounts(t *testing.T) {
 	)
 	requireT.NoError(err)
 
-	cfg, err = contractClient.GetConfig(ctx)
+	cfg, err = contractClient.GetContractConfig(ctx)
 	requireT.NoError(err)
 	requireT.Equal(newMaxAmount.String(), cfg.MaxAmount.String())
 }
@@ -466,7 +621,7 @@ func TestWASMContractExecuteWithdraw(t *testing.T) {
 	)
 
 	bankClient := banktypes.NewQueryClient(chain.ClientContext)
-	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil), chain.ClientContext)
+	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil, ""), chain.ClientContext)
 
 	minAmount := sdk.ZeroInt()
 	maxAmount := sdk.NewIntFromUint64(math.MaxUint64)
@@ -552,7 +707,7 @@ func TestWASMContractQueryPagination(t *testing.T) {
 	)
 
 	bankClient := banktypes.NewQueryClient(chain.ClientContext)
-	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil), chain.ClientContext)
+	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil, ""), chain.ClientContext)
 
 	minAmount := sdk.ZeroInt()
 	maxAmount := sdk.NewIntFromUint64(math.MaxUint64)
@@ -647,4 +802,24 @@ func assertBankBalance(
 		})
 	require.NoError(t, err)
 	require.Equal(t, expectedBalance.Amount.String(), recipientBalance.Balance.Amount.String())
+}
+
+func createMulisignTx(requireT *require.Assertions, txBuilder sdkclient.TxBuilder, accSec uint64, multisigPublicKey *sdkmultisig.LegacyAminoPubKey) authsigning.Tx {
+	signs, err := txBuilder.GetTx().GetSignaturesV2()
+	requireT.NoError(err)
+
+	multisigSig := multisigtypes.NewMultisig(len(multisigPublicKey.PubKeys))
+	for _, sig := range signs {
+		requireT.NoError(multisigtypes.AddSignatureV2(multisigSig, sig, multisigPublicKey.GetPubKeys()))
+	}
+
+	sigV2 := sdksigning.SignatureV2{
+		PubKey:   multisigPublicKey,
+		Data:     multisigSig,
+		Sequence: accSec,
+	}
+
+	requireT.NoError(txBuilder.SetSignatures(sigV2))
+
+	return txBuilder.GetTx()
 }

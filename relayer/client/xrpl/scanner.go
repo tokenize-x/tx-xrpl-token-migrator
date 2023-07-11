@@ -101,7 +101,7 @@ func (t *TxScanner) Subscribe(
 			if err != nil {
 				return err
 			}
-			t.log.Info("Scanning of full history is done")
+			t.log.Info("Scanning of full history is done", zap.Int64("lastScannedIndex", startHistoricalScanIndex))
 
 			return nil
 		})

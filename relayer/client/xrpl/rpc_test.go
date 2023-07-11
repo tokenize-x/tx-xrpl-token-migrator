@@ -156,6 +156,46 @@ func TestRPCClient_GetAccountTransactions(t *testing.T) {
 	require.Equal(t, string(expectedTxBytes), string(txBytes))
 }
 
+func TestRPCClient_RPCErrorHandling(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	t.Cleanup(cancel)
+
+	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
+
+	rpcClientConfig := DefaultRPCClientConfig(mainnetRPCURL)
+	metricRecorder, err := metric.NewRecorder()
+	require.NoError(t, err)
+	rpcClient := NewRPCClient(rpcClientConfig, logger.NewZapLogger(zaptest.NewLogger(t), metricRecorder), httpClient)
+
+	// get core payment transaction
+	markerPtr := &PageMarker{
+		Ledger: mainnetInitialBridgeLedgerIndex,
+		Seq:    0,
+	}
+	txsCh := make(chan Transaction)
+	txs := make([]Transaction, 0)
+	// we read the channel until the SubscribeAccountTransactions is done
+	doneRead := make(chan struct{})
+	go func() {
+		defer close(doneRead)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case tx, open := <-txsCh:
+				if !open {
+					return
+				}
+				txs = append(txs, tx)
+			}
+		}
+	}()
+	_, _, err = rpcClient.GetAccountTransactions(ctx, "invalid-account", 0, 0, markerPtr, txsCh)
+	require.ErrorContains(t, err, "actMalformed")
+}
+
 func TestRPCClient_GetCurrentLedger(t *testing.T) {
 	t.Parallel()
 

@@ -67,7 +67,7 @@ func TestWASMTestnetBridging(t *testing.T) {
 		integrationtests.NewFundedAccount(trustedAddress3, chain.NewCoin(sdk.NewInt(5000000000))),
 	)
 
-	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil), chain.ClientContext)
+	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil, ""), chain.ClientContext)
 
 	t.Log("Deploying and instantiating the smart contract.")
 	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
@@ -173,7 +173,7 @@ func buildTestingServices(
 		CoreumChainID:              chainID,
 		CoreumSenderAddress:        senderAddress.String(),
 		CoreumContractAddress:      contractAddress.String(),
-	}, kr, zapLogger)
+	}, kr, true, zapLogger)
 	require.NoError(t, err)
 
 	return services
@@ -205,7 +205,7 @@ func awaitForBalance(
 		}
 
 		if balancesRes.Balances.AmountOf(expectedBalance.Denom).String() != expectedBalance.Amount.String() {
-			return retry.Retryable(errors.Errorf("%s balance is still not equal to expected, all balances: %s", expectedBalance.Denom, balancesRes.String()))
+			return retry.Retryable(errors.Errorf("account %s %s balance is still not equal to expected, all balances: %s", address, expectedBalance, balancesRes))
 		}
 
 		return nil

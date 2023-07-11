@@ -60,7 +60,7 @@ type Services struct {
 }
 
 // NewServices returns new instance on the services.
-func NewServices(cfg Config, kr keyring.Keyring, zapLogger *zap.Logger) (*Services, error) {
+func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *zap.Logger) (*Services, error) {
 	metricRecorder, err := metric.NewRecorder()
 	if err != nil {
 		return nil, err
@@ -86,31 +86,33 @@ func NewServices(cfg Config, kr keyring.Keyring, zapLogger *zap.Logger) (*Servic
 	}
 
 	var senderAddress sdk.AccAddress
-	internalKr := keyring.NewInMemory()
-	if cfg.CoreumSenderAddress == "" {
-		return nil, errors.New("coreum sender address is required")
-	}
-	senderAddress, err = sdk.AccAddressFromBech32(cfg.CoreumSenderAddress)
-	if err != nil {
-		return nil, errors.Wrapf(err, "invalid sender address")
-	}
-	keyInfo, err := kr.KeyByAddress(senderAddress)
-	if err != nil {
-		return nil, errors.Wrapf(err, fmt.Sprintf("failed to get key from keyring for address:%s", cfg.CoreumSenderAddress))
-	}
-	pass := uuid.NewString()
-	armor, err := kr.ExportPrivKeyArmor(keyInfo.GetName(), pass)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to export key")
-	}
-	if err := internalKr.ImportPrivKey(keyInfo.GetName(), armor, pass); err != nil {
-		return nil, errors.Wrapf(err, "failed to import key")
+	if cfg.CoreumSenderAddress != "" {
+		senderAddress, err = sdk.AccAddressFromBech32(cfg.CoreumSenderAddress)
+		if err != nil {
+			return nil, errors.Wrapf(err, "invalid sender address")
+		}
 	}
 
-	cosmosClientCtx := client.NewContext(client.DefaultContextConfig(), app.ModuleBasics).
+	if useInMemoryKr {
+		keyInfo, err := kr.KeyByAddress(senderAddress)
+		if err != nil {
+			return nil, errors.Wrapf(err, fmt.Sprintf("failed to get key from keyring for address:%s", cfg.CoreumSenderAddress))
+		}
+		pass := uuid.NewString()
+		armor, err := kr.ExportPrivKeyArmor(keyInfo.GetName(), pass)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to export key")
+		}
+		kr = keyring.NewInMemory()
+		if err := kr.ImportPrivKey(keyInfo.GetName(), armor, pass); err != nil {
+			return nil, errors.Wrapf(err, "failed to import key")
+		}
+	}
+
+	coreumClientCtx := client.NewContext(client.DefaultContextConfig(), app.ModuleBasics).
 		WithGRPCClient(coreumGRPCClient).
 		WithChainID(string(network.ChainID())).
-		WithKeyring(internalKr)
+		WithKeyring(kr)
 
 	var contractAddress sdk.AccAddress
 	if cfg.CoreumContractAddress != "" {
@@ -119,7 +121,7 @@ func NewServices(cfg Config, kr keyring.Keyring, zapLogger *zap.Logger) (*Servic
 			return nil, errors.Wrapf(err, "invalid contract address")
 		}
 	}
-	coreumContractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(contractAddress), cosmosClientCtx)
+	coreumContractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(contractAddress, network.Denom()), coreumClientCtx)
 
 	txFinder := finder.NewFinder(finder.Config{
 		XRPLIssuer:                 cfg.XRPLIssuer,
@@ -144,7 +146,7 @@ func NewServices(cfg Config, kr keyring.Keyring, zapLogger *zap.Logger) (*Servic
 	coreumMetricCollector := metric.NewCoreumCollector(
 		metric.DefaultCoreumRecorderConfig(contractAddress, senderAddress, network.Denom()),
 		log,
-		cosmosClientCtx,
+		coreumClientCtx,
 		metricRecorder,
 		coreumContractClient,
 	)

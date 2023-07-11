@@ -230,15 +230,22 @@ func (c *RPCClient) SubscribeAccountTransactions(
 		zap.Int64("endLedger", endLedger),
 	)
 
-	var marker *PageMarker
+	var (
+		marker         *PageMarker
+		maxLatestIndex int64
+	)
 	for {
 		nextMarker, latestIndex, err := c.GetAccountTransactions(ctx, account, startLedger, endLedger, marker, ch)
+		// handing of case when last page is empty so no transactions are indexed
+		if latestIndex > maxLatestIndex {
+			maxLatestIndex = latestIndex
+		}
 		if err != nil {
-			return latestIndex, err
+			return maxLatestIndex, err
 		}
 		// reached the end
 		if nextMarker.Seq == 0 && nextMarker.Ledger == 0 {
-			return latestIndex, nil
+			return maxLatestIndex, nil
 		}
 		marker = nextMarker
 	}
@@ -285,6 +292,7 @@ func (c *RPCClient) GetAccountTransactions(ctx context.Context, account string, 
 		return nil, latestIndex - 1, errors.Wrap(err, "can't call `account_tx` method")
 	}
 
+	totalValidCount := 0
 	for _, txItem := range accountTxRPCRes.Result.Transactions {
 		latestIndex = txItem.Tx.LedgerIndex
 		tx, ok, err := convertTxInfoToTransaction(txItem.Tx.baseTx, txItem.Meta, txItem.Tx.LedgerIndex, txItem.Validated)
@@ -295,6 +303,7 @@ func (c *RPCClient) GetAccountTransactions(ctx context.Context, account string, 
 		if !ok {
 			continue
 		}
+		totalValidCount++
 
 		select {
 		case <-ctx.Done():
@@ -307,7 +316,11 @@ func (c *RPCClient) GetAccountTransactions(ctx context.Context, account string, 
 		Ledger: accountTxRPCRes.Result.Marker.Ledger,
 		Seq:    accountTxRPCRes.Result.Marker.Seq,
 	}
-	c.log.Debug("Got account transactions, and received next marker", convertMarkerToZapFields(marker)...)
+	c.log.Debug(
+		"Got account transactions, and received next marker",
+		append(convertMarkerToZapFields(marker),
+			zap.Int("total", len(accountTxRPCRes.Result.Transactions)),
+			zap.Int("totalValid", totalValidCount))...)
 
 	return marker, latestIndex - 1, nil
 }
@@ -328,13 +341,15 @@ func (c *RPCClient) GetCurrentLedger(ctx context.Context) (int64, error) {
 }
 
 func (c *RPCClient) callPRC(ctx context.Context, req rpcReq, res any) error {
+	c.log.Debug("Executing XRPL RPC request", zap.Any("request", req))
+
 	err := c.httpClient.DoJSON(ctx, http.MethodPost, c.cfg.URL, req, func(resBytes []byte) error {
-		var rpcErrRes rpcErrResult
+		var rpcErrRes rpcRes[rpcErrResult]
 		if err := json.Unmarshal(resBytes, &rpcErrRes); err != nil {
 			return errors.Wrapf(err, "can't decode http result to error result, raw http result:%s", string(resBytes))
 		}
-		if rpcErrRes.ErrorCode != 0 {
-			return errors.Errorf("can't call xrpl RPC, error:%s, error code:%d, error message:%s", rpcErrRes.Error, rpcErrRes.ErrorCode, rpcErrRes.ErrorMessage)
+		if rpcErrRes.Result.ErrorCode != 0 {
+			return errors.Errorf("can't call xrpl RPC, error:%s, error code:%d, error message:%s", rpcErrRes.Result.Error, rpcErrRes.Result.ErrorCode, rpcErrRes.Result.ErrorMessage)
 		}
 
 		if err := json.Unmarshal(resBytes, res); err != nil {

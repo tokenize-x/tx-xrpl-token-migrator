@@ -25,27 +25,24 @@ type CoreumRecorder interface {
 
 // ContractClient defines contract client interface.
 type ContractClient interface {
-	GetConfig(ctx context.Context) (coreum.Config, error)
-	GetPendingTxs(ctx context.Context, offset *uint64, limit *uint32) ([]coreum.PendingTransaction, error)
+	GetAllPendingTransactions(ctx context.Context) ([]coreum.PendingTransaction, []coreum.PendingTransaction, error)
 }
 
 // CoreumRecorderConfig represents CoreumRecorder config.
 type CoreumRecorderConfig struct {
-	ContractAddress  sdk.AccAddress
-	ContractPageSize uint32
-	SenderAddress    sdk.AccAddress
-	Denom            string
-	RepeatDelay      time.Duration
+	ContractAddress sdk.AccAddress
+	SenderAddress   sdk.AccAddress
+	Denom           string
+	RepeatDelay     time.Duration
 }
 
 // DefaultCoreumRecorderConfig returns CoreumRecorder default config.
 func DefaultCoreumRecorderConfig(contractAddress, senderAddress sdk.AccAddress, denom string) CoreumRecorderConfig {
 	return CoreumRecorderConfig{
-		ContractAddress:  contractAddress,
-		ContractPageSize: 500,
-		SenderAddress:    senderAddress,
-		Denom:            denom,
-		RepeatDelay:      30 * time.Second,
+		ContractAddress: contractAddress,
+		SenderAddress:   senderAddress,
+		Denom:           denom,
+		RepeatDelay:     30 * time.Second,
 	}
 }
 
@@ -112,44 +109,14 @@ func (c *CoreumCollector) startCollectingBalance(ctx context.Context, accAddress
 func (c *CoreumCollector) startCollectingPendingTransactions(ctx context.Context) {
 	go func() {
 		err := retry.Do(ctx, c.cfg.RepeatDelay, func() error {
-			offset := uint64(0)
-			limit := c.cfg.ContractPageSize
-
-			var (
-				unapprovedTransactionsCount int
-				approvedTransactionsCount   int
-			)
-
-			contractCfg, err := c.contractClient.GetConfig(ctx)
+			unapprovedTransactions, approvedTransactions, err := c.contractClient.GetAllPendingTransactions(ctx)
 			if err != nil {
-				c.log.Error("Error on getting contract config", zap.Error(err))
-				return retry.Retryable(err)
+				c.log.Error("Error on getting contract pending transactions", zap.Error(err))
+				return retry.Retryable(errors.New("repeat metric collector"))
 			}
 
-			for {
-				pendingTxs, err := c.contractClient.GetPendingTxs(ctx, &offset, &limit)
-				if err != nil {
-					c.log.Error("Error on getting contract pending transactions", zap.Error(err))
-					return retry.Retryable(errors.New("repeat metric collector"))
-				}
-				if len(pendingTxs) == 0 {
-					break
-				}
-
-				for _, pendingTx := range pendingTxs {
-					if len(pendingTx.EvidenceProviders) < contractCfg.Threshold {
-						unapprovedTransactionsCount++
-						continue
-					}
-					approvedTransactionsCount++
-				}
-
-				offset += uint64(c.cfg.ContractPageSize)
-				limit += c.cfg.ContractPageSize
-			}
-
-			c.metricRecorder.SetCoreumPendingUnapprovedTransactionsCount(unapprovedTransactionsCount)
-			c.metricRecorder.SetCoreumPendingApprovedTransactionsCount(approvedTransactionsCount)
+			c.metricRecorder.SetCoreumPendingUnapprovedTransactionsCount(len(unapprovedTransactions))
+			c.metricRecorder.SetCoreumPendingApprovedTransactionsCount(len(approvedTransactions))
 
 			return retry.Retryable(errors.New("repeat metric collector"))
 		})

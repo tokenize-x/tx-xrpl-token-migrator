@@ -8,14 +8,17 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/keys"
+	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
+	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/logger"
 	"github.com/CoreumFoundation/coreum-tools/pkg/run"
+	coruemapp "github.com/CoreumFoundation/coreum/app"
 	"github.com/CoreumFoundation/coreum/pkg/config"
 	"github.com/CoreumFoundation/coreum/pkg/config/constant"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
@@ -36,10 +39,11 @@ const (
 	flagXRPLIssuer                 = "xrpl-issuer"
 	flagXRPLMemoSuffix             = "xrpl-memo-suffix"
 
-	flagCoreumChainID         = "coreum-chain-id"
-	flagCoreumGRPCURL         = "coreum-grpc-url"
-	flagCoreumSenderAddress   = "coreum-sender-address"
-	flagCoreumContractAddress = "coreum-contract-address"
+	flagCoreumChainID             = "coreum-chain-id"
+	flagCoreumGRPCURL             = "coreum-grpc-url"
+	flagCoreumSenderAddress       = "coreum-sender-address"
+	flagCoreumContractAddress     = "coreum-contract-address"
+	flagCoreumContractEvidenceIDs = "coreum-contract-evidence-ids"
 
 	flagCoreumContractTrustedAddresses = "coreum-contract-trusted-addresses"
 	flagCoreumContractOwnerAddress     = "coreum-contract-owner-address"
@@ -63,12 +67,14 @@ var (
 		XRPLAccount:                "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
 		XRPLCurrency:               "434F524500000000000000000000000000000000",
 		XRPLIssuer:                 "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
-		XRPLMemoSuffix:             "/coreum-testnet-1",
+		// TODO update before the final testnet-release
+		XRPLMemoSuffix: "/coreum-testnet-1",
 
 		CoreumChainID: string(constant.ChainIDTest),
 		CoreumGRPCURL: "https://full-node.testnet-1.coreum.dev:9090",
 
-		CoreumContractAddress: "testcore1wt8hmu6yzrdaq030cp7pxa6asdrtc7ltvlzpat99dgust8g6w73qkqy8s5",
+		// TODO update before the final testnet-release
+		CoreumContractAddress: "testcore1p8zwflm7tarw5rn0qzz762kwldtr5grd9msq9exp34jnt20hp9esttyx6h",
 		PrometheusURL:         "https://pushgateway.testnet-1.coreum.dev",
 	}
 
@@ -79,15 +85,20 @@ var (
 		XRPLAccount:                "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
 		XRPLCurrency:               "434F524500000000000000000000000000000000",
 		XRPLIssuer:                 "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
-		XRPLMemoSuffix:             "/coreum-mainnet-1",
+		// TODO update before the final mainnet-release
+		XRPLMemoSuffix: "/coreum-mainnet-1",
 
 		CoreumGRPCURL: "https://full-node.mainnet-1.coreum.dev:9090",
 		CoreumChainID: string(constant.ChainIDMain),
+
+		// TODO update before the final mainnet-release
+		CoreumContractAddress: "",
+		PrometheusURL:         "https://pushgateway.mainnet-1.coreum.dev",
 	}
 )
 
 func main() {
-	run.Tool("bridge", func(ctx context.Context) error {
+	run.Tool("relayer", func(ctx context.Context) error {
 		log := logger.Get(ctx)
 		rootCmd, err := RootCmd(ctx)
 		if err != nil {
@@ -107,7 +118,13 @@ func RootCmd(ctx context.Context) (*cobra.Command, error) {
 	if err := preProcessFlags(); err != nil {
 		return nil, err
 	}
+
+	encodingConfig := config.NewEncodingConfig(coruemapp.ModuleBasics)
 	clientCtx := client.Context{}.
+		WithCodec(encodingConfig.Codec).
+		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
+		WithTxConfig(encodingConfig.TxConfig).
+		WithLegacyAmino(encodingConfig.Amino).
 		WithInput(os.Stdin)
 	ctx = context.WithValue(ctx, client.ClientContextKey, &clientCtx)
 	cmd := &cobra.Command{
@@ -118,6 +135,11 @@ func RootCmd(ctx context.Context) (*cobra.Command, error) {
 	cmd.AddCommand(VersionCmd(ctx))
 	cmd.AddCommand(StartCmd(ctx))
 	cmd.AddCommand(DeployCmd(ctx))
+	cmd.AddCommand(GetContractConfigCmd(ctx))
+	cmd.AddCommand(GetPendingUnapprovedTransactionsCmd(ctx))
+	cmd.AddCommand(GetPendingApprovedTransactionsCmd(ctx))
+	cmd.AddCommand(BuildExecutePendingApprovedTransactionsCmd(ctx))
+
 	cmd.AddCommand(keys.Commands(defaultHome))
 
 	cmd.PersistentFlags().String(flagCoreumChainID, string(constant.ChainIDMain), "")
@@ -157,7 +179,7 @@ func StartCmd(ctx context.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(cfg, clientCtx.Keyring, logger.Get(ctx))
+			services, err := service.NewServices(cfg, clientCtx.Keyring, true, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
@@ -242,7 +264,7 @@ func DeployCmd(ctx context.Context) *cobra.Command { //nolint:funlen // long log
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(cfg, clientCtx.Keyring, logger.Get(ctx))
+			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
@@ -284,6 +306,175 @@ func DeployCmd(ctx context.Context) *cobra.Command { //nolint:funlen // long log
 	cmd.PersistentFlags().Int(flagCoreumContractThreshold, 0, "")
 	cmd.PersistentFlags().String(flagCoreumContractMinAmount, "", "")
 	cmd.PersistentFlags().String(flagCoreumContractMaxAmount, "", "")
+
+	return cmd
+}
+
+// GetContractConfigCmd prints contract config.
+func GetContractConfigCmd(ctx context.Context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "get-contract-config",
+		Short: "Print contract config.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := readServicesConfig(cmd)
+			if err != nil {
+				return err
+			}
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			if err != nil {
+				return err
+			}
+			contractCfg, err := services.CoreumContractClient.GetContractConfig(ctx)
+			if err != nil {
+				return err
+			}
+
+			services.Logger.Info("Contract config:", zap.Any("config", contractCfg))
+
+			return nil
+		},
+	}
+
+	addCoreumFlags(cmd)
+
+	return cmd
+}
+
+// GetPendingUnapprovedTransactionsCmd prints pending unapproved transactions.
+func GetPendingUnapprovedTransactionsCmd(ctx context.Context) *cobra.Command { //nolint:dupl // templated logic
+	cmd := &cobra.Command{
+		Use:   "get-pending-unapproved-transactions",
+		Short: "Print pending unapproved transactions.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := readServicesConfig(cmd)
+			if err != nil {
+				return err
+			}
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			if err != nil {
+				return err
+			}
+			unapprovedTransactions, _, err := services.CoreumContractClient.GetAllPendingTransactions(ctx)
+			if err != nil {
+				return err
+			}
+			evidenceIDs := lo.Map(unapprovedTransactions, func(tx coreum.PendingTransaction, _ int) string {
+				return tx.EvidenceID
+			})
+
+			services.Logger.Info("Unapproved pending transactions:",
+				zap.Int("total", len(evidenceIDs)),
+				zap.Any("evidenceIDs", evidenceIDs),
+			)
+
+			return nil
+		},
+	}
+
+	addCoreumFlags(cmd)
+
+	return cmd
+}
+
+// GetPendingApprovedTransactionsCmd prints pending approved transactions.
+func GetPendingApprovedTransactionsCmd(ctx context.Context) *cobra.Command { //nolint:dupl // templated logic
+	cmd := &cobra.Command{
+		Use:   "get-pending-approved-transactions",
+		Short: "Print pending approved transactions.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := readServicesConfig(cmd)
+			if err != nil {
+				return err
+			}
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			if err != nil {
+				return err
+			}
+			_, approvedTransactions, err := services.CoreumContractClient.GetAllPendingTransactions(ctx)
+			if err != nil {
+				return err
+			}
+			evidenceIDs := lo.Map(approvedTransactions, func(tx coreum.PendingTransaction, _ int) string {
+				return tx.EvidenceID
+			})
+			services.Logger.Info("Approved pending transactions:",
+				zap.Int("total", len(evidenceIDs)),
+				zap.Any("evidenceIDs", evidenceIDs),
+			)
+
+			return nil
+		},
+	}
+
+	addCoreumFlags(cmd)
+
+	return cmd
+}
+
+// BuildExecutePendingApprovedTransactionsCmd builds transaction for pending approved transactions execution.
+func BuildExecutePendingApprovedTransactionsCmd(ctx context.Context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "build-execute-pending-approved-transaction",
+		Short: "Build transaction for pending approved transactions execution.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := readServicesConfig(cmd)
+			if err != nil {
+				return err
+			}
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			if err != nil {
+				return err
+			}
+			senderAddress, err := sdk.AccAddressFromBech32(cfg.CoreumSenderAddress)
+			if err != nil {
+				return errors.Wrapf(err, "invalid signer address")
+			}
+
+			evidenceIDs, err := cmd.Flags().GetStringSlice(flagCoreumContractEvidenceIDs)
+			if err != nil {
+				return err
+			}
+
+			msgs, err := services.CoreumContractClient.BuildExecutePendingMessages(ctx, senderAddress, evidenceIDs)
+			if err != nil {
+				return err
+			}
+
+			fees, gas, err := services.CoreumContractClient.EstimateExecuteMessages(ctx, senderAddress, msgs...)
+			if err != nil {
+				return err
+			}
+
+			clientCtx = clientCtx.
+				WithChainID(cfg.CoreumChainID).
+				WithGenerateOnly(true)
+
+			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).
+				WithFees(fees.String()).
+				WithGas(gas)
+
+			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msgs...)
+		},
+	}
+
+	addCoreumFlags(cmd)
+	cmd.PersistentFlags().StringSlice(flagCoreumContractEvidenceIDs, nil, "")
 
 	return cmd
 }

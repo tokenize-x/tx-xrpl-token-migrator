@@ -42,3 +42,11 @@ groups:
         severity: major
       annotations:
         description: 'Bridge pending unapproved transactions rate for the last 5min > 3'
+
+    - alert: BridgePendingApprovedRate
+      expr: rate(coreum_pending_approved_transactions_count{job="bridge"}[1m]) * 5 * 60 > 0
+      for: 1s
+      labels:
+        severity: major
+      annotations:
+        description: 'Bridge pending approved transactions rate for the last 1min > 0'

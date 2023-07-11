@@ -89,10 +89,5 @@ func doJSON(ctx context.Context, method, url string, reqBody any, resDecoder fun
 		return errors.Errorf("can't perform request, code: %d, body: %s", resp.StatusCode, string(bodyData))
 	}
 
-	err = resDecoder(bodyData)
-	if err != nil {
-		return errors.Errorf("can't docde the response body, body: %s, err: %v", string(bodyData), err)
-	}
-
-	return nil
+	return resDecoder(bodyData)
 }

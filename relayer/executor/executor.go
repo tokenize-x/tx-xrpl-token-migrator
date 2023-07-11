@@ -17,7 +17,7 @@ import (
 // ContractClient is coreum contract client interface.
 type ContractClient interface {
 	ThresholdBankSend(ctx context.Context, sender sdk.AccAddress, requests ...coreum.ThresholdBankSendRequest) (*sdk.TxResponse, error)
-	GetConfig(ctx context.Context) (coreum.Config, error)
+	GetContractConfig(ctx context.Context) (coreum.Config, error)
 }
 
 // Finder is transactions finder interface.
@@ -80,7 +80,7 @@ func (e *Executor) Start(ctx context.Context) error {
 						zap.Any("tx", tx),
 					)
 
-					contractCfg, err := e.contractClient.GetConfig(ctx)
+					contractCfg, err := e.contractClient.GetContractConfig(ctx)
 					if err != nil {
 						return retry.Retryable(err)
 					}
