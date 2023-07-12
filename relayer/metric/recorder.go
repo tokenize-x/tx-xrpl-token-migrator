@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	prometheusdto "github.com/prometheus/client_model/go"
 )
 
 // Recorder is metrics recorder.
@@ -128,6 +129,16 @@ func (r *Recorder) SetXRPLLatestAccountLedgerIndex(v int64) {
 // IncrementError increments error metric.
 func (r *Recorder) IncrementError() {
 	r.errorsCounter.Inc()
+}
+
+// GetTotalErrors returns current errors counter value.
+func (r *Recorder) GetTotalErrors() (float64, error) {
+	metric := &prometheusdto.Metric{}
+	if err := r.errorsCounter.Write(metric); err != nil {
+		return 0, err
+	}
+
+	return *metric.Counter.Value, nil
 }
 
 // SetCoreumPendingUnapprovedTransactionsCount sets coreum contract pending unapproved transactions count.

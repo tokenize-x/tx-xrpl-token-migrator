@@ -89,7 +89,12 @@ func (t *TxScanner) Subscribe(
 		startHistoricalScanIndex := historyScanStartLedger - 1
 		t.doWithResubscribe(ctx, false, func() error {
 			endLedger := initialLedger - recentScanIndexesBack
-			t.log.Info("Scanning full history", zap.Int64("endLedger", endLedger))
+			t.log.Info(
+				"Scanning full history",
+				zap.Int64("startLedger", startHistoricalScanIndex+1),
+				zap.Int64("endLedger", endLedger),
+			)
+
 			var err error
 			startHistoricalScanIndex, err = t.rpcTxProvider.SubscribeAccountTransactions(
 				ctx,
@@ -101,7 +106,7 @@ func (t *TxScanner) Subscribe(
 			if err != nil {
 				return err
 			}
-			t.log.Info("Scanning of full history is done", zap.Int64("lastScannedIndex", startHistoricalScanIndex))
+			t.log.Info("Scanning of full history is done", zap.Int64("latestProcessedLedger", startHistoricalScanIndex))
 
 			return nil
 		})
@@ -113,12 +118,23 @@ func (t *TxScanner) Subscribe(
 		prevEndLedger := initialLedger - recentScanIndexesBack
 		t.doWithResubscribe(ctx, true, func() error {
 			startLedger := prevEndLedger + 1
-			t.log.Info("Scanning recent history", zap.Int64("startLedger", startLedger))
+			currentLedger, err := t.rpcTxProvider.GetCurrentLedger(ctx)
+			if err != nil {
+				return err
+			}
+			// to prevent out of range RPC error
+			endLedger := currentLedger - 1
+
+			t.log.Info(
+				"Scanning recent history",
+				zap.Int64("startLedger", startLedger),
+				zap.Int64("endLedger", endLedger),
+			)
 			latestProcessedLedger, err := t.rpcTxProvider.SubscribeAccountTransactions(
 				ctx,
 				account,
 				startLedger,
-				0,
+				endLedger,
 				ch,
 			)
 			t.metricRecorder.SetXRPLLatestAccountLedgerIndex(latestProcessedLedger)

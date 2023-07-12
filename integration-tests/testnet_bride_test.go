@@ -93,28 +93,26 @@ func TestWASMTestnetBridging(t *testing.T) {
 	t.Logf("Contract deployed and instantiated, address:%s.", contractAddr)
 
 	log := zaptest.NewLogger(t)
-	trustedAddress1Service := buildTestingServices(t, log, chain.ChainSettings.ChainID, chain.ClientContext.Keyring(), trustedAddress1, contractAddr)
-	trustedAddress2Service := buildTestingServices(t, log, chain.ChainSettings.ChainID, chain.ClientContext.Keyring(), trustedAddress2, contractAddr)
-	trustedAddress3Service := buildTestingServices(t, log, chain.ChainSettings.ChainID, chain.ClientContext.Keyring(), trustedAddress3, contractAddr)
 
-	startFunctions := []func(context.Context) error{
-		trustedAddress1Service.Executor.Start,
-		trustedAddress2Service.Executor.Start,
-		trustedAddress3Service.Executor.Start,
+	instances := []*service.Services{
+		buildTestingServices(t, log, chain.ChainSettings.ChainID, chain.ClientContext.Keyring(), trustedAddress1, contractAddr),
+		buildTestingServices(t, log, chain.ChainSettings.ChainID, chain.ClientContext.Keyring(), trustedAddress2, contractAddr),
+		buildTestingServices(t, log, chain.ChainSettings.ChainID, chain.ClientContext.Keyring(), trustedAddress3, contractAddr),
 	}
+
 	executionErrors := make([]error, 0)
 	mu := sync.Mutex{}
 	wg := sync.WaitGroup{}
-	wg.Add(len(startFunctions))
-	for _, f := range startFunctions {
-		go func(f func(context.Context) error) {
+	wg.Add(len(instances))
+	for _, instance := range instances {
+		go func(instance *service.Services) {
 			defer wg.Done()
-			if err := f(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			if err := instance.Executor.Start(ctx); err != nil && !errors.Is(err, context.Canceled) {
 				mu.Lock()
 				executionErrors = append(executionErrors, err)
 				mu.Unlock()
 			}
-		}(f)
+		}(instance)
 	}
 
 	awaitForBalance(ctx, t, chain.ClientContext, recipient1Address, chain.NewCoin(sdk.NewInt(150000000+7654321)))
@@ -129,7 +127,7 @@ func TestWASMTestnetBridging(t *testing.T) {
 	const highAmountTxHash = "798C6F9FF80B794F869242529423CB43FCA8A3CF456AF2141B3D7AEE999A6165"
 	highAmount := chain.NewCoin(sdk.NewInt(250000000))
 	highAmountTxEvidenceID := strings.ToLower(fmt.Sprintf("%s-%s-%s", highAmountTxHash, highAmount, recipient3Address))
-	highAmountPendingTx, err := trustedAddress1Service.CoreumContractClient.GetPendingTx(ctx, highAmountTxEvidenceID)
+	highAmountPendingTx, err := instances[0].CoreumContractClient.GetPendingTx(ctx, highAmountTxEvidenceID)
 	requireT.NoError(err)
 	expectedHighAmountPendingTx := coreum.Transaction{
 		Amount:    highAmount,
@@ -145,7 +143,7 @@ func TestWASMTestnetBridging(t *testing.T) {
 	requireT.Equal(expectedHighAmountPendingTx, highAmountPendingTx)
 
 	// execute the pending transaction
-	_, err = trustedAddress1Service.CoreumContractClient.ExecutePending(ctx, trustedAddress1, highAmount, highAmountTxEvidenceID)
+	_, err = instances[0].CoreumContractClient.ExecutePending(ctx, trustedAddress1, highAmount, highAmountTxEvidenceID)
 	requireT.NoError(err)
 	awaitForBalance(ctx, t, chain.ClientContext, recipient3Address, chain.NewCoin(recipient3ExpectedBalance.Add(highAmount.Amount)))
 
@@ -153,6 +151,12 @@ func TestWASMTestnetBridging(t *testing.T) {
 	wg.Wait()
 
 	requireT.Empty(executionErrors)
+	// validate that no error where produced
+	for _, instance := range instances {
+		totalErrors, err := instance.MetricRecorder.GetTotalErrors()
+		requireT.NoError(err)
+		requireT.Zero(totalErrors)
+	}
 }
 
 func buildTestingServices(
