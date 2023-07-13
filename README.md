@@ -230,9 +230,6 @@ Using the output you can choose which transactions you would like to execute.
 * Set variables
 
 ```bash
-* Set variables
-
-```bash
 export COREUM_CHAIN_ID={Coreum chain ID}"
 export COREUM_CONTRACT_ADDRESS="{Contract address}"
 export COREUM_GRPC_URL="{GRPC URL of coreum node}"
@@ -276,4 +273,92 @@ cored tx sign unsigned.json --from $COREUM_EXECUTOR_ADDRESS --output-document si
 
 ```bash
 cored tx broadcast signed.json -y -b block --chain-id $COREUM_CHAIN_ID --node $COREUM_NODE
+```
+
+## Set up env
+
+### Run promtail
+
+#### Install binary (you need `wget` and  `unzip` to be installed)
+
+```bash
+sudo su
+wget https://github.com/grafana/loki/releases/download/v2.7.3/promtail-linux-amd64.zip
+unzip promtail-linux-amd64.zip
+mv promtail-linux-amd64 /usr/local/bin/promtail && sudo chmod 755 /usr/local/bin/promtail
+rm promtail-linux-amd64.zip
+mkdir -p /etc/promtail
+
+promtail version
+```
+
+#### Create promtail config
+
+* Set variables
+
+```
+export LOKI_INSTANCE_NAME="{Unique name of your instance}"
+export LOKI_USERNAME="{Loki username}"
+export LOKI_PASSWORD="{Loki password}"
+export LOKI_URL="{Loki push URL}"
+```
+
+* Create config
+
+```bash
+echo "
+---
+server:
+  disable: true
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: \"$LOKI_URL\"
+    basic_auth:
+      username: \"$LOKI_USERNAME\"
+      password: \"$LOKI_PASSWORD\"
+
+scrape_configs:
+- job_name: xrpl-bridge-relayer
+  journal:
+    json: false
+    max_age: 12h
+    path: /var/log/journal
+    labels:
+      job: xrpl-bridge-relayer
+      instance: \"$LOKI_INSTANCE_NAME\" 
+" >  /etc/promtail/config.yaml
+```
+
+* Start promtail to validate the config
+
+```bash
+promtail -config.file=/etc/promtail/config.yaml -config.expand-env=true
+```
+
+* Add service
+
+```bash
+echo " 
+[Unit]
+Description = promtail logshipper
+
+[Service]
+ExecStart = /bin/bash -c \"/usr/local/bin/promtail -config.file=/etc/promtail/config.yaml -config.expand-env=true\"
+
+[Install]
+WantedBy=multi-user.target" > /etc/systemd/system/promtail.service
+
+systemctl daemon-reload
+systemctl enable promtail
+systemctl start promtail
+```
+
+* Check status and logs
+
+```bash
+systemctl status promtail --no-pager
+journalctl -u promtail -n 100 --no-pager
 ```
