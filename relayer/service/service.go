@@ -28,13 +28,14 @@ import (
 
 // Config is services config.
 type Config struct {
-	XRPLRPCURL                 string
-	XRPLHistoryScanStartLedger int64
-	XRPLRecentScanIndexesBack  int64
-	XRPLAccount                string
-	XRPLCurrency               string
-	XRPLIssuer                 string
-	XRPLMemoSuffix             string
+	XRPLRPCURL                    string
+	XRPLHistoryScanStartLedger    int64
+	XRPLRecentScanIndexesBack     int64
+	XRPLRecentScanSkipLastIndexes int64
+	XRPLAccount                   string
+	XRPLCurrency                  string
+	XRPLIssuer                    string
+	XRPLMemoSuffix                string
 
 	CoreumChainID         string
 	CoreumGRPCURL         string
@@ -67,13 +68,13 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 	}
 
 	log := logger.NewZapLogger(zapLogger, metricRecorder)
-
 	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
 	rpcClientConfig := xrpl.DefaultRPCClientConfig(cfg.XRPLRPCURL)
-
 	rpcClient := xrpl.NewRPCClient(rpcClientConfig, log, httpClient)
 
-	xrplTxScanner := xrpl.NewTxScanner(xrpl.DefaultTxScannerConfig(), log, rpcClient, metricRecorder)
+	scannerCfg := xrpl.DefaultTxScannerConfig()
+	scannerCfg.RecentScanSkipLastIndexes = cfg.XRPLRecentScanSkipLastIndexes
+	xrplTxScanner := xrpl.NewTxScanner(scannerCfg, log, rpcClient, metricRecorder)
 
 	network, err := config.NetworkConfigByChainID(constant.ChainID(cfg.CoreumChainID))
 	if err != nil {
@@ -109,11 +110,6 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 		}
 	}
 
-	coreumClientCtx := client.NewContext(client.DefaultContextConfig(), app.ModuleBasics).
-		WithGRPCClient(coreumGRPCClient).
-		WithChainID(string(network.ChainID())).
-		WithKeyring(kr)
-
 	var contractAddress sdk.AccAddress
 	if cfg.CoreumContractAddress != "" {
 		contractAddress, err = sdk.AccAddressFromBech32(cfg.CoreumContractAddress)
@@ -121,6 +117,10 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 			return nil, errors.Wrapf(err, "invalid contract address")
 		}
 	}
+	coreumClientCtx := client.NewContext(client.DefaultContextConfig(), app.ModuleBasics).
+		WithGRPCClient(coreumGRPCClient).
+		WithChainID(string(network.ChainID())).
+		WithKeyring(kr)
 	coreumContractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(contractAddress, network.Denom()), coreumClientCtx)
 
 	txFinder := finder.NewFinder(finder.Config{

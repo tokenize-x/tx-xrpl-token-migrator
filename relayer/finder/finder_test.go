@@ -33,7 +33,7 @@ var (
 	}
 )
 
-func TestBuildPendingTransaction(t *testing.T) { //nolint:funlen // a lot of test cases
+func TestBuildPendingTransaction(t *testing.T) {
 	t.Parallel()
 
 	setSDKConfig()

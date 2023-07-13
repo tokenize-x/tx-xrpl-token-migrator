@@ -173,17 +173,18 @@ func buildTestingServices(
 	}
 
 	services, err := service.NewServices(service.Config{
-		XRPLRPCURL:                 rpcURL,
-		XRPLHistoryScanStartLedger: 38500000,
-		XRPLRecentScanIndexesBack:  30_000,
-		XRPLAccount:                "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
-		XRPLCurrency:               "434F524500000000000000000000000000000000",
-		XRPLIssuer:                 "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
-		XRPLMemoSuffix:             "/integration-test",
-		CoreumGRPCURL:              "http://localhost:9090", // we don't use the chain ctx here intentionally to fully check the client initialisation
-		CoreumChainID:              chainID,
-		CoreumSenderAddress:        senderAddress.String(),
-		CoreumContractAddress:      contractAddress.String(),
+		XRPLRPCURL:                    rpcURL,
+		XRPLHistoryScanStartLedger:    38500000,
+		XRPLRecentScanIndexesBack:     30_000,
+		XRPLRecentScanSkipLastIndexes: 20,
+		XRPLAccount:                   "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
+		XRPLCurrency:                  "434F524500000000000000000000000000000000",
+		XRPLIssuer:                    "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
+		XRPLMemoSuffix:                "/integration-test",
+		CoreumGRPCURL:                 "http://localhost:9090", // we don't use the chain ctx here intentionally to fully check the client initialisation
+		CoreumChainID:                 chainID,
+		CoreumSenderAddress:           senderAddress.String(),
+		CoreumContractAddress:         contractAddress.String(),
 	}, kr, true, zapLogger)
 	require.NoError(t, err)
 

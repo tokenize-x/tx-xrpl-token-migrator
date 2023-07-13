@@ -31,13 +31,14 @@ var (
 )
 
 const (
-	flagXRPLRPCURL                 = "xrpl-rpc-url"
-	flagXRPLHistoryScanStartLedger = "xrpl-history-scan-start-ledger"
-	flagXRPLRecentScanIndexesBack  = "xrpl-recent-scan-indexes-back"
-	flagXRPLAccount                = "xrpl-account"
-	flagXRPLCurrency               = "xrpl-currency"
-	flagXRPLIssuer                 = "xrpl-issuer"
-	flagXRPLMemoSuffix             = "xrpl-memo-suffix"
+	flagXRPLRPCURL                    = "xrpl-rpc-url"
+	flagXRPLHistoryScanStartLedger    = "xrpl-history-scan-start-ledger"
+	flagXRPLRecentScanIndexesBack     = "xrpl-recent-scan-indexes-back"
+	flagXRPLRecentScanSkipLastIndexes = "xrpl-recent-scan-skip-last-indexes"
+	flagXRPLAccount                   = "xrpl-account"
+	flagXRPLCurrency                  = "xrpl-currency"
+	flagXRPLIssuer                    = "xrpl-issuer"
+	flagXRPLMemoSuffix                = "xrpl-memo-suffix"
 
 	flagCoreumChainID             = "coreum-chain-id"
 	flagCoreumGRPCURL             = "coreum-grpc-url"
@@ -61,23 +62,25 @@ const defaultHome = ".xrpl-bridge"
 
 var (
 	defaultTestnetCfg = service.Config{
-		XRPLHistoryScanStartLedger: 38500000,
-		XRPLRecentScanIndexesBack:  30_000,
-		XRPLAccount:                "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
-		XRPLCurrency:               "434F524500000000000000000000000000000000",
-		XRPLIssuer:                 "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
-		XRPLMemoSuffix:             "/coreum-testnet-1/v1",
+		XRPLHistoryScanStartLedger:    38500000,
+		XRPLRecentScanIndexesBack:     30_000,
+		XRPLRecentScanSkipLastIndexes: 20,
+		XRPLAccount:                   "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
+		XRPLCurrency:                  "434F524500000000000000000000000000000000",
+		XRPLIssuer:                    "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
+		XRPLMemoSuffix:                "/coreum-testnet-1/v1",
 
 		CoreumChainID: string(constant.ChainIDTest),
 	}
 
 	defaultMainnnetCfg = service.Config{
-		XRPLHistoryScanStartLedger: 80590000,
-		XRPLRecentScanIndexesBack:  30_000,
-		XRPLAccount:                "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
-		XRPLCurrency:               "434F524500000000000000000000000000000000",
-		XRPLIssuer:                 "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
-		XRPLMemoSuffix:             "/coreum-mainnet-1/v1",
+		XRPLHistoryScanStartLedger:    80590000,
+		XRPLRecentScanIndexesBack:     30_000,
+		XRPLRecentScanSkipLastIndexes: 20,
+		XRPLAccount:                   "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
+		XRPLCurrency:                  "434F524500000000000000000000000000000000",
+		XRPLIssuer:                    "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
+		XRPLMemoSuffix:                "/coreum-mainnet-1/v1",
 
 		CoreumChainID: string(constant.ChainIDMain),
 	}
@@ -548,6 +551,9 @@ func readServicesConfig(cmd *cobra.Command) (service.Config, error) {
 		},
 		flagXRPLRecentScanIndexesBack: func(flag string) error {
 			return setStringInt64IfNotZero(cmd, flag, &cfg.XRPLRecentScanIndexesBack)
+		},
+		flagXRPLRecentScanSkipLastIndexes: func(flag string) error {
+			return setStringInt64IfNotZero(cmd, flag, &cfg.XRPLRecentScanSkipLastIndexes)
 		},
 		flagXRPLAccount: func(flag string) error {
 			return setStringIfNotEmpty(cmd, flag, &cfg.XRPLAccount)

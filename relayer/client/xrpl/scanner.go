@@ -24,13 +24,15 @@ type MetricRecorder interface {
 
 // TxScannerConfig is the TxScanner config.
 type TxScannerConfig struct {
-	RetryDelay time.Duration
+	RetryDelay                time.Duration
+	RecentScanSkipLastIndexes int64
 }
 
 // DefaultTxScannerConfig returns the default TxScannerConfig.
 func DefaultTxScannerConfig() TxScannerConfig {
 	return TxScannerConfig{
-		RetryDelay: 30 * time.Second,
+		RetryDelay:                30 * time.Second,
+		RecentScanSkipLastIndexes: 20,
 	}
 }
 
@@ -123,7 +125,7 @@ func (t *TxScanner) Subscribe(
 				return err
 			}
 			// to prevent out of range RPC error
-			endLedger := currentLedger - 1
+			endLedger := currentLedger - t.cfg.RecentScanSkipLastIndexes
 
 			t.log.Info(
 				"Scanning recent history",
