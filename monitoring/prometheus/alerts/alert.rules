@@ -17,7 +17,7 @@ groups:
       labels:
         severity: major
       annotations:
-        description: 'Contract balance is less than 50.000'
+        description: 'Contract balance is less than 50000'
 
     - alert: SenderLowBalance
       expr: coreum_sender_balance{job="bridge"} < 10000000
