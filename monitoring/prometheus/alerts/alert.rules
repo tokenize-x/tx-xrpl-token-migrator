@@ -13,7 +13,7 @@ groups:
 
     - alert: ContractLowBalance
       expr: coreum_contract_balance{job="bridge"} < 50000000000
-      for: 1s
+      for: 30s
       labels:
         severity: major
       annotations:
@@ -21,7 +21,7 @@ groups:
 
     - alert: SenderLowBalance
       expr: coreum_sender_balance{job="bridge"} < 10000000
-      for: 1s
+      for: 30s
       labels:
         severity: major
       annotations:
@@ -29,7 +29,7 @@ groups:
 
     - alert: BridgeErrorsRate
       expr: rate(errors_total{job="bridge"}[5m]) * 5 * 60 > 10
-      for: 1s
+      for: 30s
       labels:
         severity: major
       annotations:
@@ -37,7 +37,7 @@ groups:
 
     - alert: BridgePendingUnapprovedRate
       expr: rate(coreum_pending_unapproved_transactions_count{job="bridge"}[5m]) * 5 * 60 > 3
-      for: 1s
+      for: 30s
       labels:
         severity: major
       annotations:
@@ -45,7 +45,7 @@ groups:
 
     - alert: BridgePendingApprovedRate
       expr: rate(coreum_pending_approved_transactions_count{job="bridge"}[1m]) * 5 * 60 > 0
-      for: 1s
+      for: 30s
       labels:
         severity: major
       annotations:
