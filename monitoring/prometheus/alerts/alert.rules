@@ -3,11 +3,11 @@ groups:
     rules:
     - alert: InstanceDown
       # Condition for alerting
-      expr: time() - timestamp(coreum_contract_balance) > 60
+      expr: time() - push_time_seconds{instance !~ ""} > 60
       for: 1m
       annotations:
-        title: 'Instance {{ $labels.instance }} does not report updated balance for 1 minute, it might be down!'
-        description: '{{ $labels.job }} on {{ $labels.instance }} has not been updating contract balance for more than 1 minute, it might be down'
+        title: 'Instance {{ $labels.instance }} does not push metrics for 1 minute, it might be down!'
+        description: '{{ $labels.job }} on {{ $labels.instance }} has not been updating metrics more than 1 minute, it might be down'
       labels:
         severity: critical
 
@@ -17,7 +17,7 @@ groups:
       labels:
         severity: major
       annotations:
-        description: 'Contract balance is less than 50000'
+        description: 'Contract balance is less than 50 000, reported by `{{ $labels.instance }}`, actual value `{{ $value }}`'
 
     - alert: SenderLowBalance
       expr: coreum_sender_balance{job="bridge"} < 10000000
@@ -25,7 +25,7 @@ groups:
       labels:
         severity: major
       annotations:
-        description: 'Sender balance is less than 10'
+        description: 'Sender balance is less than 10, reported by `{{ $labels.instance }}`, actual value `{{ $value }}'
 
     - alert: BridgeErrorsRate
       expr: rate(errors_total{job="bridge"}[5m]) * 5 * 60 > 10
