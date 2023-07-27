@@ -74,7 +74,7 @@ var (
 	}
 
 	defaultMainnnetCfg = service.Config{
-		XRPLHistoryScanStartLedger:    81427000,
+		XRPLHistoryScanStartLedger:    81400000,
 		XRPLRecentScanIndexesBack:     30_000,
 		XRPLRecentScanSkipLastIndexes: 20,
 		XRPLAccount:                   "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
