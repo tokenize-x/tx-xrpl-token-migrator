@@ -27,7 +27,7 @@ groups:
       annotations:
         description: 'Sender balance is less than 10, reported by `{{ $labels.instance }}`, actual value `{{ $value }}'
 
-    - alert: BridgeErrorsRate
+    - alert: BridgeErrorsRateIncreased
       expr: rate(errors_total{job="bridge"}[5m]) * 5 * 60 > 10
       for: 30s
       labels:
@@ -35,18 +35,18 @@ groups:
       annotations:
         description: 'Bridge errors count for the last 5min > 10'
 
-    - alert: BridgePendingUnapprovedRate
-      expr: rate(coreum_pending_unapproved_transactions_count{job="bridge"}[5m]) * 5 * 60 > 3
-      for: 30s
+    - alert: BridgePendingUnapprovedMaxReached
+      expr: coreum_pending_unapproved_transactions_count{job="bridge"} > 3
+      for: 5m
       labels:
         severity: major
       annotations:
-        description: 'Bridge pending unapproved transactions rate for the last 5min > 3'
+        description: 'Bridge pending unapproved transactions count for the last 5min > 3'
 
-    - alert: BridgePendingApprovedRate
-      expr: rate(coreum_pending_approved_transactions_count{job="bridge"}[1m]) * 5 * 60 > 0
-      for: 30s
+    - alert: BridgePendingApprovedTransactionFound
+      expr: coreum_pending_approved_transactions_count{job="bridge"} > 0
+      for: 1m
       labels:
         severity: major
       annotations:
-        description: 'Bridge pending approved transactions rate for the last 1min > 0'
+        description: 'Bridge pending approved transactions count for the last 1min > 0'
