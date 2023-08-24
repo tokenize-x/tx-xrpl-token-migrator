@@ -134,15 +134,15 @@ Storage=persistent
 echo "
     [Unit]
     After=network.target
-    
+
     [Service]
     Environment=\"HOME=$HOME\"
     ExecStart=/bin/sh $PWD/run-xrpl-bridge-relayer.sh
-    
+
     [Install]
     WantedBy=multi-user.target
     " > "/etc/systemd/system/xrpl-bridge-relayer.service"
-    
+
 systemctl daemon-reload
 systemctl enable xrpl-bridge-relayer
 systemctl start xrpl-bridge-relayer
@@ -326,9 +326,10 @@ scrape_configs:
     json: false
     max_age: 12h
     path: /var/log/journal
+    matches: _SYSTEMD_UNIT=xrpl-bridge-relayer.service
     labels:
       job: xrpl-bridge-relayer
-      instance: \"$LOKI_INSTANCE_NAME\" 
+      instance: \"$LOKI_INSTANCE_NAME\"
 " >  /etc/promtail/config.yaml
 ```
 
@@ -341,7 +342,7 @@ promtail -config.file=/etc/promtail/config.yaml -config.expand-env=true
 * Add service
 
 ```bash
-echo " 
+echo "
 [Unit]
 Description = promtail logshipper
 
