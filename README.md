@@ -363,3 +363,21 @@ systemctl start promtail
 systemctl status promtail --no-pager
 journalctl -u promtail -n 100 --no-pager
 ```
+
+#### Additional Notes
+
+If you wish to run two instances of bridge on the same VM, makes sure:
+
+1. Rename xrpl bridge instance to include something instance specific
+`ex. xrpl-bridge-relayer.service => xrpl-bridge-*instance_name_one*-relayer.service`
+`ex. xrpl-bridge-relayer.service => xrpl-bridge-*instance_name_two*-relayer.service`
+
+2. Create 2 separate configs for promtail
+`ex. /etc/promtail/config.yaml => /etc/promtail/*instance_name_one*_config.yaml`
+`ex. /etc/promtail/config.yaml => /etc/promtail/*instance_name_two*_config.yaml`
+
+3. Create 2 separate services for promtail
+`ex. /etc/systemd/system/promtail.service => /etc/systemd/system/promtail_*instance_name_one*.service`
+`ex. /etc/systemd/system/promtail.service => /etc/systemd/system/promtail_*instance_name_two*.service`
+
+4. Edit `promtail` instance specific service to read from instance specific promtail `config.yaml`
