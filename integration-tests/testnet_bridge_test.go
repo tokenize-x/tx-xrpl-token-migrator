@@ -157,6 +157,12 @@ func TestWASMTestnetBridging(t *testing.T) {
 		requireT.NoError(err)
 		requireT.Zero(totalErrors)
 	}
+
+	auditCtx, auditCtxCancel := context.WithTimeout(context.Background(), time.Minute)
+	defer auditCtxCancel()
+	discrepancies, err := instances[0].Auditor.Audit(auditCtx)
+	requireT.NoError(err)
+	requireT.Empty(discrepancies)
 }
 
 func buildTestingServices(
@@ -181,10 +187,12 @@ func buildTestingServices(
 		XRPLCurrency:                  "434F524500000000000000000000000000000000",
 		XRPLIssuer:                    "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
 		XRPLMemoSuffix:                "/integration-test",
-		CoreumGRPCURL:                 "http://localhost:9090", // we don't use the chain ctx here intentionally to fully check the client initialisation
-		CoreumChainID:                 chainID,
-		CoreumSenderAddress:           senderAddress.String(),
-		CoreumContractAddress:         contractAddress.String(),
+		// we don't use the chain ctx here intentionally to fully check the client initialisation
+		CoreumRPCURL:          "http://localhost:26657",
+		CoreumGRPCURL:         "http://localhost:9090",
+		CoreumChainID:         chainID,
+		CoreumSenderAddress:   senderAddress.String(),
+		CoreumContractAddress: contractAddress.String(),
 	}, kr, true, zapLogger)
 	require.NoError(t, err)
 

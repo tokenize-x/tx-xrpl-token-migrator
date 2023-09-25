@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 
+	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/google/uuid"
@@ -13,12 +14,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/CoreumFoundation/coreum-tools/pkg/http"
 	"github.com/CoreumFoundation/coreum/app"
 	"github.com/CoreumFoundation/coreum/pkg/client"
 	"github.com/CoreumFoundation/coreum/pkg/config"
 	"github.com/CoreumFoundation/coreum/pkg/config/constant"
+	"github.com/CoreumFoundation/xrpl-bridge/relayer/audit"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/http"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/xrpl"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/executor"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/finder"
@@ -38,6 +40,7 @@ type Config struct {
 	XRPLMemoSuffix                string
 
 	CoreumChainID         string
+	CoreumRPCURL          string
 	CoreumGRPCURL         string
 	CoreumSenderAddress   string
 	CoreumContractAddress string
@@ -58,9 +61,12 @@ type Services struct {
 	MetricRecorder        *metric.Recorder
 	MetricPusher          *metric.Pusher
 	CoreumMetricCollector *metric.CoreumCollector
+	Auditor               *audit.Auditor
 }
 
 // NewServices returns new instance on the services.
+//
+//nolint:funlen // step-by step initialization
 func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *zap.Logger) (*Services, error) {
 	metricRecorder, err := metric.NewRecorder()
 	if err != nil {
@@ -69,19 +75,13 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 
 	log := logger.NewZapLogger(zapLogger, metricRecorder)
 	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
-	rpcClientConfig := xrpl.DefaultRPCClientConfig(cfg.XRPLRPCURL)
-	rpcClient := xrpl.NewRPCClient(rpcClientConfig, log, httpClient)
+	xrplRPCClient := xrpl.NewRPCClient(xrpl.DefaultRPCClientConfig(cfg.XRPLRPCURL), log, httpClient)
 
 	scannerCfg := xrpl.DefaultTxScannerConfig()
 	scannerCfg.RecentScanSkipLastIndexes = cfg.XRPLRecentScanSkipLastIndexes
-	xrplTxScanner := xrpl.NewTxScanner(scannerCfg, log, rpcClient, metricRecorder)
+	xrplTxScanner := xrpl.NewTxScanner(scannerCfg, log, xrplRPCClient, metricRecorder)
 
 	network, err := config.NetworkConfigByChainID(constant.ChainID(cfg.CoreumChainID))
-	if err != nil {
-		return nil, err
-	}
-
-	coreumGRPCClient, err := getGRPCClientConn(cfg.CoreumGRPCURL)
 	if err != nil {
 		return nil, err
 	}
@@ -118,9 +118,25 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 		}
 	}
 	coreumClientCtx := client.NewContext(client.DefaultContextConfig(), app.ModuleBasics).
-		WithGRPCClient(coreumGRPCClient).
 		WithChainID(string(network.ChainID())).
 		WithKeyring(kr)
+
+	if cfg.CoreumRPCURL != "" {
+		coreumRPCClient, err := cosmosclient.NewClientFromNode(cfg.CoreumRPCURL)
+		if err != nil {
+			return nil, errors.Wrapf(err, "faild to create coreum RPC client")
+		}
+		coreumClientCtx = coreumClientCtx.WithRPCClient(coreumRPCClient)
+	}
+
+	if cfg.CoreumGRPCURL != "" {
+		coreumGRPCClient, err := getGRPCClientConn(cfg.CoreumGRPCURL)
+		if err != nil {
+			return nil, err
+		}
+		coreumClientCtx = coreumClientCtx.WithGRPCClient(coreumGRPCClient)
+	}
+
 	coreumContractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(contractAddress, network.Denom()), coreumClientCtx)
 
 	txFinder := finder.NewFinder(finder.Config{
@@ -151,6 +167,17 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 		coreumContractClient,
 	)
 
+	coreumChainClient := coreum.NewChainClient(coreum.DefaultChainClientConfig(), log, coreumClientCtx)
+
+	auditor := audit.NewAuditor(audit.AuditorConfig{
+		ContractAddress: contractAddress.String(),
+		XRPLIssuer:      cfg.XRPLIssuer,
+		XRPLCurrency:    cfg.XRPLCurrency,
+		XRPLMemoSuffix:  cfg.XRPLMemoSuffix,
+		CoreumDenom:     network.Denom(),
+		CoreumDecimals:  6,
+	}, log, coreumChainClient, xrplRPCClient)
+
 	return &Services{
 		Logger:                log,
 		XRPLTxScanner:         xrplTxScanner,
@@ -160,6 +187,7 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 		MetricRecorder:        metricRecorder,
 		MetricPusher:          metricPusher,
 		CoreumMetricCollector: coreumMetricCollector,
+		Auditor:               auditor,
 	}, nil
 }
 

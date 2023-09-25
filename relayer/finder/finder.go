@@ -93,7 +93,7 @@ func (f *Finder) buildPendingTransaction(tx xrpl.Transaction) (PendingCoreumSend
 		return PendingCoreumSendTransaction{}, false
 	}
 
-	coreumDestination, matches := f.extractAddressFromMemo(tx)
+	coreumDestination, matches := ExtractAddressFromMemo(tx.Memos, f.cfg.XRPLMemoSuffix)
 	if !matches {
 		return PendingCoreumSendTransaction{}, false
 	}
@@ -115,12 +115,18 @@ func (f *Finder) buildPendingTransaction(tx xrpl.Transaction) (PendingCoreumSend
 	}, true
 }
 
-func (f *Finder) extractAddressFromMemo(tx xrpl.Transaction) (sdk.AccAddress, bool) {
-	for _, memo := range tx.Memos {
-		if !strings.HasSuffix(memo, f.cfg.XRPLMemoSuffix) {
+func (f *Finder) convertXRPLAmountToCoreumCoin(xrplAmount *big.Float) sdk.Coin {
+	amount := ConvertXRPLAmountToCoreumAmount(xrplAmount, f.cfg.CoreumDecimals)
+	return sdk.NewCoin(f.cfg.CoreumDenom, amount)
+}
+
+// ExtractAddressFromMemo extracts the coreum sdk address from the transaction.
+func ExtractAddressFromMemo(memos []string, suffix string) (sdk.AccAddress, bool) {
+	for _, memo := range memos {
+		if !strings.HasSuffix(memo, suffix) {
 			continue
 		}
-		addressString := strings.TrimSuffix(memo, f.cfg.XRPLMemoSuffix)
+		addressString := strings.TrimSuffix(memo, suffix)
 		accAddress, err := sdk.AccAddressFromBech32(addressString)
 		if err != nil {
 			continue
@@ -132,19 +138,19 @@ func (f *Finder) extractAddressFromMemo(tx xrpl.Transaction) (sdk.AccAddress, bo
 	return sdk.AccAddress{}, false
 }
 
-func (f *Finder) convertXRPLAmountToCoreumCoin(xrplAmount *big.Float) sdk.Coin {
+// ConvertXRPLAmountToCoreumAmount converts xrpl amount to coreum using the coreum decimals.
+func ConvertXRPLAmountToCoreumAmount(xrplAmount *big.Float, decimals int) sdk.Int {
 	if xrplAmount == nil {
-		return sdk.NewInt64Coin(f.cfg.CoreumDenom, 0)
+		return sdk.NewInt(0)
 	}
 
 	// 10^CoreumDecimals
 	var tenPowerDecimals big.Int
-	tenPowerDecimals.Exp(big.NewInt(10), big.NewInt(int64(f.cfg.CoreumDecimals)), nil)
+	tenPowerDecimals.Exp(big.NewInt(10), big.NewInt(int64(decimals)), nil)
 
 	var coreumFloatAmount big.Float
 	coreumFloatAmount.Mul(big.NewFloat(0).SetInt(&tenPowerDecimals), xrplAmount)
 
 	truncatedAmount, _ := coreumFloatAmount.Int(nil)
-
-	return sdk.NewCoin(f.cfg.CoreumDenom, sdk.NewIntFromBigInt(truncatedAmount))
+	return sdk.NewIntFromBigInt(truncatedAmount)
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/http"
+	"github.com/CoreumFoundation/coreum-tools/pkg/http"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/metric"
 )
@@ -152,6 +152,15 @@ func TestRPCClient_GetAccountTransactions(t *testing.T) {
 	require.NoError(t, err)
 
 	txBytes, err := json.Marshal(tx)
+	require.NoError(t, err)
+	require.Equal(t, string(expectedTxBytes), string(txBytes))
+
+	// fetch same transaction by its hash
+	txsMap, err := rpcClient.GetTransactions(ctx, []string{expectedTx.Hash})
+	require.NoError(t, err)
+	require.Len(t, txs, 1)
+	tx = txsMap[expectedTx.Hash]
+	txBytes, err = json.Marshal(tx)
 	require.NoError(t, err)
 	require.Equal(t, string(expectedTxBytes), string(txBytes))
 }

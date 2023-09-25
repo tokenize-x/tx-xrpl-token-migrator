@@ -41,6 +41,7 @@ const (
 	flagXRPLMemoSuffix                = "xrpl-memo-suffix"
 
 	flagCoreumChainID             = "coreum-chain-id"
+	flagCoreumRPCURL              = "coreum-rpc-url"
 	flagCoreumGRPCURL             = "coreum-grpc-url"
 	flagCoreumSenderAddress       = "coreum-sender-address"
 	flagCoreumContractAddress     = "coreum-contract-address"
@@ -128,6 +129,7 @@ func RootCmd(ctx context.Context) (*cobra.Command, error) {
 	cmd.AddCommand(GetPendingUnapprovedTransactionsCmd(ctx))
 	cmd.AddCommand(GetPendingApprovedTransactionsCmd(ctx))
 	cmd.AddCommand(BuildExecutePendingApprovedTransactionsCmd(ctx))
+	cmd.AddCommand(AuditCmd(ctx))
 
 	cmd.AddCommand(keys.Commands(defaultHome))
 
@@ -468,6 +470,61 @@ func BuildExecutePendingApprovedTransactionsCmd(ctx context.Context) *cobra.Comm
 	return cmd
 }
 
+// AuditCmd prints audit report.
+func AuditCmd(ctx context.Context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "audit",
+		Short: "Print audit report.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := readServicesConfig(cmd)
+			if err != nil {
+				return err
+			}
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			if err != nil {
+				return err
+			}
+
+			discrepancies, err := services.Auditor.Audit(ctx)
+			if err != nil {
+				return err
+			}
+
+			if len(discrepancies) > 0 {
+				for _, discrepancy := range discrepancies {
+					fields := []zap.Field{
+						zap.String("type", string(discrepancy.Type)),
+						zap.String("description", discrepancy.Description),
+					}
+					if discrepancy.CoreumTx != nil {
+						fields = append(fields, zap.String("coreumTxHash", discrepancy.CoreumTx.TxHash))
+					}
+					if discrepancy.XRPLTx.Hash != "" {
+						fields = append(fields, zap.String("xrplTxHash", discrepancy.XRPLTx.Hash))
+					}
+					services.Logger.Info("Found discrepancy", fields...)
+				}
+				services.Logger.Warn("!!! The audit is failed !!!", zap.Int("discrepanciesCount", len(discrepancies)))
+				
+				return nil
+			}
+
+			services.Logger.Info("The audit is succeed. No discrepancies found.")
+
+			return nil
+		},
+	}
+
+	addCoreumFlags(cmd)
+	addXRPLFlags(cmd)
+
+	return cmd
+}
+
 func preProcessFlags() error {
 	flagSet := pflag.NewFlagSet("pre-process", pflag.ExitOnError)
 	flagSet.ParseErrorsWhitelist.UnknownFlags = true
@@ -498,6 +555,7 @@ func addKeyringFlags(cmd *cobra.Command) {
 }
 
 func addCoreumFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().String(flagCoreumRPCURL, "", "")
 	cmd.PersistentFlags().String(flagCoreumGRPCURL, "", "")
 	cmd.PersistentFlags().String(flagCoreumSenderAddress, "", "")
 	cmd.PersistentFlags().String(flagCoreumContractAddress, "", "")
@@ -567,7 +625,9 @@ func readServicesConfig(cmd *cobra.Command) (service.Config, error) {
 		flagXRPLMemoSuffix: func(flag string) error {
 			return setStringIfNotEmpty(cmd, flag, &cfg.XRPLMemoSuffix)
 		},
-
+		flagCoreumRPCURL: func(flag string) error {
+			return setStringIfNotEmpty(cmd, flag, &cfg.CoreumRPCURL)
+		},
 		flagCoreumGRPCURL: func(flag string) error {
 			return setStringIfNotEmpty(cmd, flag, &cfg.CoreumGRPCURL)
 		},

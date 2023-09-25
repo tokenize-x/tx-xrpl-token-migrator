@@ -23,20 +23,28 @@ import (
 	contractembed "github.com/CoreumFoundation/xrpl-bridge/contract"
 )
 
-type method string
+// ExecMethod is contract exec method.
+type ExecMethod string
 
+// ExecMethods.
 const (
-	methodThresholdBankSend method = "threshold_bank_send"
-	methodExecutePending    method = "execute_pending"
-	methodUpdateMinAmount   method = "update_min_amount"
-	methodUpdateMaxAmount   method = "update_max_amount"
-	methodWithdraw          method = "withdraw"
+	ExecMethodThresholdBankSend ExecMethod = "threshold_bank_send"
+	ExecMethodExecutePending    ExecMethod = "execute_pending"
+	ExecMethodUpdateMinAmount   ExecMethod = "update_min_amount"
+	ExecMethodUpdateMaxAmount   ExecMethod = "update_max_amount"
+	ExecMethodWithdraw          ExecMethod = "withdraw"
+)
 
-	methodGetConfig              method = "get_config"
-	methodGetPendingTransaction  method = "get_pending_transaction"
-	methodGetPendingTransactions method = "get_pending_transactions"
-	methodGetSentTransaction     method = "get_sent_transaction"
-	methodGetSentTransactions    method = "get_sent_transactions"
+// QueryMethod is contract query method.
+type QueryMethod string
+
+// QueryMethods.
+const (
+	QueryMethodGetConfig              QueryMethod = "get_config"
+	QueryMethodGetPendingTransaction  QueryMethod = "get_pending_transaction"
+	QueryMethodGetPendingTransactions QueryMethod = "get_pending_transactions"
+	QueryMethodGetSentTransaction     QueryMethod = "get_sent_transaction"
+	QueryMethodGetSentTransactions    QueryMethod = "get_sent_transactions"
 )
 
 const (
@@ -60,13 +68,6 @@ type DeployAndInstantiateConfig struct {
 	Label            string
 }
 
-// ThresholdBankSendRequest holds attributes for the send transaction.
-type ThresholdBankSendRequest struct {
-	ID        string   `json:"id"`
-	Amount    sdk.Coin `json:"amount"`
-	Recipient string   `json:"recipient"`
-}
-
 // Config represents contract config.
 //
 //nolint:tagliatelle //contract spec
@@ -77,6 +78,31 @@ type Config struct {
 	MinAmount        sdk.Int  `json:"min_amount"`
 	MaxAmount        sdk.Int  `json:"max_amount"`
 }
+
+// ThresholdBankSendRequest holds attributes for the send transaction.
+type ThresholdBankSendRequest struct {
+	ID        string   `json:"id"`
+	Amount    sdk.Coin `json:"amount"`
+	Recipient string   `json:"recipient"`
+}
+
+// ExecutePendingRequest is the `execute_pending` request payload.
+type ExecutePendingRequest struct {
+	EvidenceID string `json:"evidence_id"` //nolint:tagliatelle //contract spec
+}
+
+// UpdateMinAmountRequest is the `update_min_amount_request` request payload.
+type UpdateMinAmountRequest struct {
+	MinAmount sdk.Int `json:"min_amount"` //nolint:tagliatelle //contract spec
+}
+
+// UpdateMaxAmountRequest is the `update_max_amount_request` request payload.
+type UpdateMaxAmountRequest struct {
+	MaxAmount sdk.Int `json:"max_amount"` //nolint:tagliatelle //contract spec
+}
+
+// WithdrawRequest is the `withdraw` request payload.
+type WithdrawRequest struct{}
 
 // Transaction represents the transaction model.
 type Transaction struct {
@@ -104,18 +130,6 @@ type instantiateRequest struct {
 	Threshold        int      `json:"threshold"`
 	MinAmount        sdk.Int  `json:"min_amount"`
 	MaxAmount        sdk.Int  `json:"max_amount"`
-}
-
-type executePendingRequest struct {
-	EvidenceID string `json:"evidence_id"` //nolint:tagliatelle //contract spec
-}
-
-type updateMinAmountRequest struct {
-	MinAmount sdk.Int `json:"min_amount"` //nolint:tagliatelle //contract spec
-}
-
-type updateMaxAmountRequest struct {
-	MaxAmount sdk.Int `json:"max_amount"` //nolint:tagliatelle //contract spec
 }
 
 type queryTxsResponse[T any] struct {
@@ -237,12 +251,12 @@ func (c *ContractClient) SetContractAddress(contractAddress sdk.AccAddress) erro
 	return nil
 }
 
-// ThresholdBankSend executes threshold_bank_send method of the contract.
+// ThresholdBankSend executes threshold_bank_send Method of the contract.
 func (c *ContractClient) ThresholdBankSend(ctx context.Context, sender sdk.AccAddress, requests ...ThresholdBankSendRequest) (*sdk.TxResponse, error) {
 	msgs := make([]interface{}, 0)
 	for _, req := range requests {
-		msgs = append(msgs, map[method]ThresholdBankSendRequest{
-			methodThresholdBankSend: {
+		msgs = append(msgs, map[ExecMethod]ThresholdBankSendRequest{
+			ExecMethodThresholdBankSend: {
 				ID:        req.ID,
 				Amount:    req.Amount,
 				Recipient: req.Recipient,
@@ -251,49 +265,49 @@ func (c *ContractClient) ThresholdBankSend(ctx context.Context, sender sdk.AccAd
 	}
 	txRes, err := c.execute(ctx, sender, msgs...)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute %s method", methodThresholdBankSend)
+		return nil, errors.Wrapf(err, "failed to execute %s Method", ExecMethodThresholdBankSend)
 	}
 
 	return txRes, nil
 }
 
-// UpdateMinAmount executes update_min_amount method of the contract.
+// UpdateMinAmount executes update_min_amount Method of the contract.
 func (c *ContractClient) UpdateMinAmount(ctx context.Context, sender sdk.AccAddress, minAmount sdk.Int) (*sdk.TxResponse, error) {
-	txRes, err := c.execute(ctx, sender, map[method]updateMinAmountRequest{
-		methodUpdateMinAmount: {
+	txRes, err := c.execute(ctx, sender, map[ExecMethod]UpdateMinAmountRequest{
+		ExecMethodUpdateMinAmount: {
 			MinAmount: minAmount,
 		},
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute %s method", methodUpdateMinAmount)
+		return nil, errors.Wrapf(err, "failed to execute %s Method", ExecMethodUpdateMinAmount)
 	}
 
 	return txRes, nil
 }
 
-// UpdateMaxAmount executes update_max_amount method of the contract.
+// UpdateMaxAmount executes update_max_amount Method of the contract.
 func (c *ContractClient) UpdateMaxAmount(ctx context.Context, sender sdk.AccAddress, maxAmount sdk.Int) (*sdk.TxResponse, error) {
-	txRes, err := c.execute(ctx, sender, map[method]updateMaxAmountRequest{
-		methodUpdateMaxAmount: {
+	txRes, err := c.execute(ctx, sender, map[ExecMethod]UpdateMaxAmountRequest{
+		ExecMethodUpdateMaxAmount: {
 			MaxAmount: maxAmount,
 		},
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute %s method", methodUpdateMaxAmount)
+		return nil, errors.Wrapf(err, "failed to execute %s Method", ExecMethodUpdateMaxAmount)
 	}
 
 	return txRes, nil
 }
 
-// ExecutePending executes execute_pending method of the contract.
+// ExecutePending executes execute_pending Method of the contract.
 func (c *ContractClient) ExecutePending(ctx context.Context, sender sdk.AccAddress, funds sdk.Coin, evidenceID string) (*sdk.TxResponse, error) {
-	txRes, err := c.executeWithFunds(ctx, sender, sdk.NewCoins(funds), map[method]executePendingRequest{
-		methodExecutePending: {
+	txRes, err := c.executeWithFunds(ctx, sender, sdk.NewCoins(funds), map[ExecMethod]ExecutePendingRequest{
+		ExecMethodExecutePending: {
 			EvidenceID: evidenceID,
 		},
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute %s method", methodExecutePending)
+		return nil, errors.Wrapf(err, "failed to execute %s Method", ExecMethodExecutePending)
 	}
 
 	return txRes, nil
@@ -314,13 +328,13 @@ func (c *ContractClient) BuildExecutePendingMessages(ctx context.Context, sender
 	includeAll := len(evidenceIDsMap) == 0
 	for _, tx := range approvedTransactions {
 		if _, ok := evidenceIDsMap[tx.EvidenceID]; includeAll || ok {
-			msg, err := c.buildExecuteWithFunds(sender, sdk.NewCoins(tx.Amount), map[method]executePendingRequest{
-				methodExecutePending: {
+			msg, err := c.buildExecuteWithFunds(sender, sdk.NewCoins(tx.Amount), map[ExecMethod]ExecutePendingRequest{
+				ExecMethodExecutePending: {
 					EvidenceID: tx.EvidenceID,
 				},
 			})
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to execute %s method", methodExecutePending)
+				return nil, errors.Wrapf(err, "failed to execute %s Method", ExecMethodExecutePending)
 			}
 			msgs = append(msgs, msg)
 			delete(evidenceIDsMap, tx.EvidenceID)
@@ -337,13 +351,13 @@ func (c *ContractClient) BuildExecutePendingMessages(ctx context.Context, sender
 	return msgs, nil
 }
 
-// Withdraw executes withdraw method of the contract.
+// Withdraw executes withdraw Method of the contract.
 func (c *ContractClient) Withdraw(ctx context.Context, sender sdk.AccAddress) (*sdk.TxResponse, error) {
-	txRes, err := c.execute(ctx, sender, map[method]struct{}{
-		methodWithdraw: {},
+	txRes, err := c.execute(ctx, sender, map[ExecMethod]WithdrawRequest{
+		ExecMethodWithdraw: {},
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute %s method", methodWithdraw)
+		return nil, errors.Wrapf(err, "failed to execute %s Method", ExecMethodWithdraw)
 	}
 
 	return txRes, nil
@@ -439,11 +453,11 @@ func (c *ContractClient) calculateGas(ctx context.Context, sender sdk.AccAddress
 // GetContractConfig returns contract config.
 func (c *ContractClient) GetContractConfig(ctx context.Context) (Config, error) {
 	var config Config
-	err := c.query(ctx, map[method]struct{}{
-		methodGetConfig: {},
+	err := c.query(ctx, map[QueryMethod]struct{}{
+		QueryMethodGetConfig: {},
 	}, &config)
 	if err != nil {
-		return Config{}, errors.Wrapf(err, "failed to query %s", methodGetConfig)
+		return Config{}, errors.Wrapf(err, "failed to query %s", QueryMethodGetConfig)
 	}
 
 	return config, nil
@@ -452,13 +466,13 @@ func (c *ContractClient) GetContractConfig(ctx context.Context) (Config, error) 
 // GetPendingTx returns a pending transaction.
 func (c *ContractClient) GetPendingTx(ctx context.Context, evidenceID string) (Transaction, error) {
 	var tx Transaction
-	err := c.query(ctx, map[method]pendingTxQueryRequest{
-		methodGetPendingTransaction: {
+	err := c.query(ctx, map[QueryMethod]pendingTxQueryRequest{
+		QueryMethodGetPendingTransaction: {
 			EvidenceID: evidenceID,
 		},
 	}, &tx)
 	if err != nil {
-		return Transaction{}, errors.Wrapf(err, "failed to query %s", methodGetPendingTransaction)
+		return Transaction{}, errors.Wrapf(err, "failed to query %s", QueryMethodGetPendingTransaction)
 	}
 
 	return tx, nil
@@ -467,14 +481,14 @@ func (c *ContractClient) GetPendingTx(ctx context.Context, evidenceID string) (T
 // GetPendingTxs returns a list of pending transactions.
 func (c *ContractClient) GetPendingTxs(ctx context.Context, offset *uint64, limit *uint32) ([]PendingTransaction, error) {
 	var txs queryTxsResponse[PendingTransaction]
-	err := c.query(ctx, map[method]pagingRequest{
-		methodGetPendingTransactions: {
+	err := c.query(ctx, map[QueryMethod]pagingRequest{
+		QueryMethodGetPendingTransactions: {
 			Offset: offset,
 			Limit:  limit,
 		},
 	}, &txs)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to query %s", methodGetPendingTransactions)
+		return nil, errors.Wrapf(err, "failed to query %s", QueryMethodGetPendingTransactions)
 	}
 
 	return txs.Transactions, nil
@@ -483,13 +497,13 @@ func (c *ContractClient) GetPendingTxs(ctx context.Context, offset *uint64, limi
 // GetSentTx returns a sent transaction.
 func (c *ContractClient) GetSentTx(ctx context.Context, id string) (Transaction, error) {
 	var tx Transaction
-	err := c.query(ctx, map[method]sentTxQueryRequest{
-		methodGetSentTransaction: {
+	err := c.query(ctx, map[QueryMethod]sentTxQueryRequest{
+		QueryMethodGetSentTransaction: {
 			ID: id,
 		},
 	}, &tx)
 	if err != nil {
-		return Transaction{}, errors.Wrapf(err, "failed to query %s", methodGetSentTransaction)
+		return Transaction{}, errors.Wrapf(err, "failed to query %s", QueryMethodGetSentTransaction)
 	}
 
 	return tx, nil
@@ -498,14 +512,14 @@ func (c *ContractClient) GetSentTx(ctx context.Context, id string) (Transaction,
 // GetSentTxs returns a list of sent transactions.
 func (c *ContractClient) GetSentTxs(ctx context.Context, offset *uint64, limit *uint32) ([]SentTransaction, error) {
 	var txs queryTxsResponse[SentTransaction]
-	err := c.query(ctx, map[method]pagingRequest{
-		methodGetSentTransactions: {
+	err := c.query(ctx, map[QueryMethod]pagingRequest{
+		QueryMethodGetSentTransactions: {
 			Offset: offset,
 			Limit:  limit,
 		},
 	}, &txs)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to query %s", methodGetSentTransactions)
+		return nil, errors.Wrapf(err, "failed to query %s", QueryMethodGetSentTransactions)
 	}
 
 	return txs.Transactions, nil

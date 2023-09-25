@@ -6,8 +6,11 @@ import (
 	"encoding/json"
 	"math/big"
 	"net/http"
+	"strings"
+	"sync"
 	"time"
 
+	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -96,6 +99,12 @@ type accountTxResTransactionsItem struct {
 	Validated bool                      `json:"validated"`
 }
 
+type txResTransactionsItem struct {
+	accountTxResTransactionTx
+	Meta      metaRes `json:"meta"`
+	Validated bool    `json:"validated"`
+}
+
 type accountTxRes struct {
 	Transactions []accountTxResTransactionsItem `json:"transactions"`
 	Marker       pageMarker                     `json:"marker"`
@@ -105,6 +114,11 @@ type accountTxRes struct {
 type ledgerCurrentTxRes struct {
 	LedgerCurrentIndex int64  `json:"ledger_current_index"`
 	Status             string `json:"status"`
+}
+
+type txReq struct {
+	Hash   string `json:"transaction"`
+	Binary bool   `json:"binary"`
 }
 
 func convertJSONToDeliveredAmount(amount json.RawMessage) (DeliveredAmount, bool) {
@@ -122,7 +136,7 @@ func convertHexMemosToStrings(memos []memoRes) ([]string, error) {
 	for _, memo := range memos {
 		memoStr, err := hex.DecodeString(memo.Memo.MemoData)
 		if err != nil {
-			return nil, errors.Wrapf(err, "can't decode xrpl memo")
+			return nil, errors.Wrapf(err, "failed to decode xrpl memo")
 		}
 		memoStrings = append(memoStrings, string(memoStr))
 	}
@@ -188,15 +202,17 @@ type PageMarker struct {
 
 // RPCClientConfig defines the config for the RPCClient.
 type RPCClientConfig struct {
-	URL       string
-	PageLimit int
+	URL            string
+	PageLimit      int
+	WorkerPoolSize int
 }
 
 // DefaultRPCClientConfig returns default RPCClientConfig.
 func DefaultRPCClientConfig(url string) RPCClientConfig {
 	return RPCClientConfig{
-		URL:       url,
-		PageLimit: 100,
+		URL:            url,
+		PageLimit:      100,
+		WorkerPoolSize: 20,
 	}
 }
 
@@ -205,6 +221,7 @@ type RPCClient struct {
 	cfg        RPCClientConfig
 	log        logger.Logger
 	httpClient HTTPClient
+	workerPool *workerpool.WorkerPool
 }
 
 // NewRPCClient returns new instance of the RPCClient.
@@ -213,6 +230,7 @@ func NewRPCClient(cfg RPCClientConfig, log logger.Logger, httpClient HTTPClient)
 		cfg:        cfg,
 		log:        log,
 		httpClient: httpClient,
+		workerPool: workerpool.New(cfg.WorkerPoolSize),
 	}
 }
 
@@ -289,7 +307,7 @@ func (c *RPCClient) GetAccountTransactions(ctx context.Context, account string, 
 	err := c.callPRC(ctx, accountTxRPCReq, &accountTxRPCRes)
 	latestIndex := startLedger
 	if err != nil {
-		return nil, latestIndex - 1, errors.Wrap(err, "can't call `account_tx` method")
+		return nil, latestIndex - 1, errors.Wrap(err, "failed to call `account_tx` method")
 	}
 
 	totalValidCount := 0
@@ -334,10 +352,67 @@ func (c *RPCClient) GetCurrentLedger(ctx context.Context) (int64, error) {
 	var ledgerCurrentRPCRes rpcRes[ledgerCurrentTxRes]
 	err := c.callPRC(ctx, ledgerCurrentRPCReq, &ledgerCurrentRPCRes)
 	if err != nil {
-		return 0, errors.Wrap(err, "can't call `ledger_current` method")
+		return 0, errors.Wrap(err, "failed to call `ledger_current` method")
 	}
 
 	return ledgerCurrentRPCRes.Result.LedgerCurrentIndex, nil
+}
+
+// GetTransactions return the transactions by hashes.
+func (c *RPCClient) GetTransactions(ctx context.Context, hashes []string) (map[string]Transaction, error) {
+	txs := make(map[string]Transaction, 0)
+	mu := sync.Mutex{}
+	wg := sync.WaitGroup{}
+	wg.Add(len(hashes))
+	var fetchErr error
+	for _, hash := range hashes {
+		hashToFetch := hash
+		c.workerPool.Submit(func() {
+			defer wg.Done()
+			// if the sub-process is already set error no need to continue
+			if fetchErr != nil {
+				return
+			}
+			tx, ok, err := c.GetTransaction(ctx, hashToFetch)
+			if err != nil {
+				fetchErr = err
+				return
+			}
+			if !ok {
+				c.log.Warn("The transaction will be skipped, since its data isn't fully valid", zap.String("hash", hashToFetch))
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			txs[hashToFetch] = tx
+		})
+	}
+	wg.Wait()
+	if fetchErr != nil {
+		return nil, fetchErr
+	}
+
+	return txs, nil
+}
+
+// GetTransaction returns transaction by its hash.
+func (c *RPCClient) GetTransaction(ctx context.Context, hash string) (Transaction, bool, error) {
+	txRPCReq := rpcReq{
+		Method: "tx",
+		Params: []any{
+			txReq{
+				Hash:   strings.ToUpper(hash),
+				Binary: false,
+			},
+		},
+	}
+
+	var txRPCRes rpcRes[txResTransactionsItem]
+	err := c.callPRC(ctx, txRPCReq, &txRPCRes)
+	if err != nil {
+		return Transaction{}, false, errors.Wrap(err, "failed to call `tx` method")
+	}
+
+	return convertTxInfoToTransaction(txRPCRes.Result.baseTx, txRPCRes.Result.Meta, txRPCRes.Result.LedgerIndex, txRPCRes.Result.Validated)
 }
 
 func (c *RPCClient) callPRC(ctx context.Context, req rpcReq, res any) error {
@@ -346,20 +421,20 @@ func (c *RPCClient) callPRC(ctx context.Context, req rpcReq, res any) error {
 	err := c.httpClient.DoJSON(ctx, http.MethodPost, c.cfg.URL, req, func(resBytes []byte) error {
 		var rpcErrRes rpcRes[rpcErrResult]
 		if err := json.Unmarshal(resBytes, &rpcErrRes); err != nil {
-			return errors.Wrapf(err, "can't decode http result to error result, raw http result:%s", string(resBytes))
+			return errors.Wrapf(err, "failed to decode http result to error result, raw http result:%s", string(resBytes))
 		}
 		if rpcErrRes.Result.ErrorCode != 0 {
-			return errors.Errorf("can't call xrpl RPC, error:%s, error code:%d, error message:%s", rpcErrRes.Result.Error, rpcErrRes.Result.ErrorCode, rpcErrRes.Result.ErrorMessage)
+			return errors.Errorf("failed to call xrpl RPC, error:%s, error code:%d, error message:%s", rpcErrRes.Result.Error, rpcErrRes.Result.ErrorCode, rpcErrRes.Result.ErrorMessage)
 		}
 
 		if err := json.Unmarshal(resBytes, res); err != nil {
-			return errors.Wrapf(err, "can't decode http result to expected struct, raw http result:%s", string(resBytes))
+			return errors.Wrapf(err, "failed to decode http result to expected struct, raw http result:%s", string(resBytes))
 		}
 
 		return nil
 	})
 	if err != nil {
-		return errors.Wrap(err, "can't call xrpl RPC")
+		return errors.Wrap(err, "failed to call xrpl RPC")
 	}
 
 	return nil
