@@ -20,9 +20,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
 
-	integrationtests "github.com/CoreumFoundation/coreum/integration-tests"
-	"github.com/CoreumFoundation/coreum/pkg/client"
-	"github.com/CoreumFoundation/coreum/testutil/event"
+	"github.com/CoreumFoundation/coreum/v3/pkg/client"
+	"github.com/CoreumFoundation/coreum/v3/testutil/event"
+	integrationtests "github.com/CoreumFoundation/coreum/v3/testutil/integration"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
 )
 
@@ -41,7 +41,7 @@ var emptyTx = coreum.Transaction{
 func TestWASMContractThresholdBankSend(t *testing.T) {
 	t.Parallel()
 
-	ctx, chain := integrationtests.NewCoreumTestingContext(t)
+	ctx, chain := NewCoreumTestingContext(t)
 
 	owner := chain.GenAccount()
 	trustedAddress1 := chain.GenAccount()
@@ -220,7 +220,7 @@ func TestWASMContractThresholdBankSend(t *testing.T) {
 func TestWASMContractExecutePending(t *testing.T) {
 	t.Parallel()
 
-	ctx, chain := integrationtests.NewCoreumTestingContext(t)
+	ctx, chain := NewCoreumTestingContext(t)
 
 	owner := chain.GenAccount()
 	trustedAddress1 := chain.GenAccount()
@@ -387,7 +387,7 @@ func TestWASMContractExecutePending(t *testing.T) {
 func TestWASMContractExecutePendingWithMultisig(t *testing.T) {
 	t.Parallel()
 
-	ctx, chain := integrationtests.NewCoreumTestingContext(t)
+	ctx, chain := NewCoreumTestingContext(t)
 
 	owner := chain.GenAccount()
 	trustedAddress1 := chain.GenAccount()
@@ -538,7 +538,7 @@ func TestWASMContractExecutePendingWithMultisig(t *testing.T) {
 func TestWASMUpdateMinMaxAmounts(t *testing.T) {
 	t.Parallel()
 
-	ctx, chain := integrationtests.NewCoreumTestingContext(t)
+	ctx, chain := NewCoreumTestingContext(t)
 
 	owner := chain.GenAccount()
 	anyAddress := chain.GenAccount()
@@ -609,7 +609,7 @@ func TestWASMUpdateMinMaxAmounts(t *testing.T) {
 func TestWASMContractExecuteWithdraw(t *testing.T) {
 	t.Parallel()
 
-	ctx, chain := integrationtests.NewCoreumTestingContext(t)
+	ctx, chain := NewCoreumTestingContext(t)
 
 	owner := chain.GenAccount()
 	trustedAddress1 := chain.GenAccount()
@@ -640,7 +640,7 @@ func TestWASMContractExecuteWithdraw(t *testing.T) {
 	})
 	requireT.NoError(err)
 
-	coinToFundContract := chain.NewCoin(sdk.NewInt(10_000))
+	coinToFundContract := chain.NewCoin(sdk.NewInt(100_000))
 	chain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(contractAddr, coinToFundContract))
 
 	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
@@ -689,7 +689,7 @@ func TestWASMContractExecuteWithdraw(t *testing.T) {
 func TestWASMContractQueryPagination(t *testing.T) {
 	t.Parallel()
 
-	ctx, chain := integrationtests.NewCoreumTestingContext(t)
+	ctx, chain := NewCoreumTestingContext(t)
 
 	owner := chain.GenAccount()
 	trustedAddress1 := chain.GenAccount()

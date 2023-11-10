@@ -26,7 +26,7 @@ jobs:
             linter-cache: true
             docker-cache: false
           - ci_step: "integration tests"
-            command: "crust images && crust znet start --profiles=integration-tests-ibc && make build-contract && make test-integration"
+            command: "make build-contract && make rebuild-dev-env && make restart-dev-env && make test-integration"
             go-cache: true
             wasm-cache: true
             linter-cache: false
@@ -52,13 +52,11 @@ jobs:
         with:
           repository: CoreumFoundation/crust
           path: crust
-          ref: coreum-v2.0.2
       - name: Checkout coreum
         uses: actions/checkout@v3
         with:
           repository: CoreumFoundation/coreum
           path: coreum
-          ref: v2.0.2
       - name: Set up crust
         run: echo "$(pwd)/crust/bin" >> $GITHUB_PATH
       - name: Setup go cache

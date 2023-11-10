@@ -6,12 +6,12 @@ import (
 	"fmt"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	tmtypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
-	tmtypes "github.com/tendermint/tendermint/abci/types"
 	"go.uber.org/zap"
 
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"

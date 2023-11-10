@@ -17,16 +17,9 @@ ifeq ($(BUILD_VERSION),)
     BUILD_VERSION = $(shell echo $(shell git describe --tags) | sed 's/^v//')
 endif
 
-LD_FLAGS = -X main.BuildVersion="${BUILD_VERSION}"
-
-ifeq ($(LINK_STATICALLY),true)
-    LD_FLAGS +=	-linkmode=external -extldflags "-Wl,-z,muldefs -static"
-    BUILD_FLAGS := -tags muslc
-endif
-
 .PHONY: build
 build:
-	go build --trimpath -mod=readonly $(BUILD_FLAGS) -ldflags '$(LD_FLAGS)' -o build/relayer ./relayer/cmd
+	CGO_ENABLED=0 go build --trimpath -mod=readonly -ldflags '-X main.BuildVersion="${BUILD_VERSION} -extldflags=-static' -o build/relayer ./relayer/cmd
 
 .PHONY: build-in-docker
 build-in-docker:
@@ -66,3 +59,11 @@ build-contract:
       --mount type=volume,source="contract_cache",target=/code/target \
       --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
       cosmwasm/rust-optimizer:0.13.0
+
+.PHONY: restart-dev-env
+restart-dev-env:
+	crust znet remove && crust znet start --profiles=1cored,xrpl --timeout-commit 0.5s
+
+.PHONY: rebuild-dev-env
+rebuild-dev-env:
+	crust build/crust images/cored

@@ -18,9 +18,9 @@ import (
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/logger"
 	"github.com/CoreumFoundation/coreum-tools/pkg/run"
-	coruemapp "github.com/CoreumFoundation/coreum/app"
-	"github.com/CoreumFoundation/coreum/pkg/config"
-	"github.com/CoreumFoundation/coreum/pkg/config/constant"
+	coruemapp "github.com/CoreumFoundation/coreum/v3/app"
+	"github.com/CoreumFoundation/coreum/v3/pkg/config"
+	"github.com/CoreumFoundation/coreum/v3/pkg/config/constant"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/service"
 )
@@ -456,8 +456,12 @@ func BuildExecutePendingApprovedTransactionsCmd(ctx context.Context) *cobra.Comm
 				WithChainID(cfg.CoreumChainID).
 				WithGenerateOnly(true)
 
-			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).
-				WithFees(fees.String()).
+			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return errors.Wrapf(err, "failed to create tx factory")
+			}
+
+			txf = txf.WithFees(fees.String()).
 				WithGas(gas)
 
 			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msgs...)
@@ -509,7 +513,7 @@ func AuditCmd(ctx context.Context) *cobra.Command {
 					services.Logger.Info("Found discrepancy", fields...)
 				}
 				services.Logger.Warn("!!! The audit is failed !!!", zap.Int("discrepanciesCount", len(discrepancies)))
-				
+
 				return nil
 			}
 

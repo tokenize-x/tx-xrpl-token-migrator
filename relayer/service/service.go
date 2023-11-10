@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/google/uuid"
@@ -13,12 +14,13 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/http"
-	"github.com/CoreumFoundation/coreum/app"
-	"github.com/CoreumFoundation/coreum/pkg/client"
-	"github.com/CoreumFoundation/coreum/pkg/config"
-	"github.com/CoreumFoundation/coreum/pkg/config/constant"
+	"github.com/CoreumFoundation/coreum/v3/app"
+	"github.com/CoreumFoundation/coreum/v3/pkg/client"
+	"github.com/CoreumFoundation/coreum/v3/pkg/config"
+	"github.com/CoreumFoundation/coreum/v3/pkg/config/constant"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/audit"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/xrpl"
@@ -100,12 +102,12 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 			return nil, errors.Wrapf(err, fmt.Sprintf("failed to get key from keyring for address:%s", cfg.CoreumSenderAddress))
 		}
 		pass := uuid.NewString()
-		armor, err := kr.ExportPrivKeyArmor(keyInfo.GetName(), pass)
+		armor, err := kr.ExportPrivKeyArmor(keyInfo.Name, pass)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to export key")
 		}
-		kr = keyring.NewInMemory()
-		if err := kr.ImportPrivKey(keyInfo.GetName(), armor, pass); err != nil {
+		kr = keyring.NewInMemory(config.NewEncodingConfig(app.ModuleBasics).Codec)
+		if err := kr.ImportPrivKey(keyInfo.Name, armor, pass); err != nil {
 			return nil, errors.Wrapf(err, "failed to import key")
 		}
 	}
@@ -126,7 +128,7 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 		if err != nil {
 			return nil, errors.Wrapf(err, "faild to create coreum RPC client")
 		}
-		coreumClientCtx = coreumClientCtx.WithRPCClient(coreumRPCClient)
+		coreumClientCtx = coreumClientCtx.WithClient(coreumRPCClient)
 	}
 
 	if cfg.CoreumGRPCURL != "" {
@@ -194,19 +196,39 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 func getGRPCClientConn(grpcURL string) (*grpc.ClientConn, error) {
 	parsedURL, err := url.Parse(grpcURL)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed parse grpc URL")
+		return nil, errors.Wrap(err, "failed to parse grpc URL")
 	}
 
-	// tls grpc
+	encodingConfig := config.NewEncodingConfig(app.ModuleBasics)
+	pc, ok := encodingConfig.Codec.(codec.GRPCCodecProvider)
+	if !ok {
+		return nil, errors.New("failed to cast codec to codec.GRPCCodecProvider)")
+	}
+
+	host := parsedURL.Host
+
+	// https - tls grpc
 	if parsedURL.Scheme == "https" {
-		grpcClient, err := grpc.Dial(parsedURL.Host, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+		grpcClient, err := grpc.Dial(
+			host,
+			grpc.WithDefaultCallOptions(grpc.ForceCodec(pc.GRPCCodec())),
+			grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})),
+		)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to dial grpc")
 		}
 		return grpcClient, nil
 	}
 
-	grpcClient, err := grpc.Dial(parsedURL.Host, grpc.WithInsecure())
+	// handling of host:port URL without the protocol
+	if host == "" {
+		host = fmt.Sprintf("%s:%s", parsedURL.Scheme, parsedURL.Opaque)
+	}
+	// http - insecure
+	grpcClient, err := grpc.Dial(
+		host,
+		grpc.WithDefaultCallOptions(grpc.ForceCodec(pc.GRPCCodec())),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to dial grpc")
 	}

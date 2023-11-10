@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	sdkmath "cosmossdk.io/math"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -17,9 +18,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 
-	"github.com/CoreumFoundation/coreum/pkg/client"
-	"github.com/CoreumFoundation/coreum/testutil/event"
-	feemodeltypes "github.com/CoreumFoundation/coreum/x/feemodel/types"
+	"github.com/CoreumFoundation/coreum/v3/pkg/client"
+	"github.com/CoreumFoundation/coreum/v3/testutil/event"
+	feemodeltypes "github.com/CoreumFoundation/coreum/v3/x/feemodel/types"
 	contractembed "github.com/CoreumFoundation/xrpl-bridge/contract"
 )
 
@@ -63,8 +64,8 @@ type DeployAndInstantiateConfig struct {
 	Admin            string
 	TrustedAddresses []string
 	Threshold        int
-	MinAmount        sdk.Int
-	MaxAmount        sdk.Int
+	MinAmount        sdkmath.Int
+	MaxAmount        sdkmath.Int
 	Label            string
 }
 
@@ -72,11 +73,11 @@ type DeployAndInstantiateConfig struct {
 //
 //nolint:tagliatelle //contract spec
 type Config struct {
-	Owner            string   `json:"owner"`
-	TrustedAddresses []string `json:"trusted_addresses"`
-	Threshold        int      `json:"threshold"`
-	MinAmount        sdk.Int  `json:"min_amount"`
-	MaxAmount        sdk.Int  `json:"max_amount"`
+	Owner            string      `json:"owner"`
+	TrustedAddresses []string    `json:"trusted_addresses"`
+	Threshold        int         `json:"threshold"`
+	MinAmount        sdkmath.Int `json:"min_amount"`
+	MaxAmount        sdkmath.Int `json:"max_amount"`
 }
 
 // ThresholdBankSendRequest holds attributes for the send transaction.
@@ -93,12 +94,12 @@ type ExecutePendingRequest struct {
 
 // UpdateMinAmountRequest is the `update_min_amount_request` request payload.
 type UpdateMinAmountRequest struct {
-	MinAmount sdk.Int `json:"min_amount"` //nolint:tagliatelle //contract spec
+	MinAmount sdkmath.Int `json:"min_amount"` //nolint:tagliatelle //contract spec
 }
 
 // UpdateMaxAmountRequest is the `update_max_amount_request` request payload.
 type UpdateMaxAmountRequest struct {
-	MaxAmount sdk.Int `json:"max_amount"` //nolint:tagliatelle //contract spec
+	MaxAmount sdkmath.Int `json:"max_amount"` //nolint:tagliatelle //contract spec
 }
 
 // WithdrawRequest is the `withdraw` request payload.
@@ -125,11 +126,11 @@ type SentTransaction struct {
 
 //nolint:tagliatelle //contract spec
 type instantiateRequest struct {
-	Owner            string   `json:"owner"`
-	TrustedAddresses []string `json:"trusted_addresses"`
-	Threshold        int      `json:"threshold"`
-	MinAmount        sdk.Int  `json:"min_amount"`
-	MaxAmount        sdk.Int  `json:"max_amount"`
+	Owner            string      `json:"owner"`
+	TrustedAddresses []string    `json:"trusted_addresses"`
+	Threshold        int         `json:"threshold"`
+	MinAmount        sdkmath.Int `json:"min_amount"`
+	MaxAmount        sdkmath.Int `json:"max_amount"`
 }
 
 type queryTxsResponse[T any] struct {
@@ -153,19 +154,21 @@ type sentTxQueryRequest struct {
 
 // ContractClientConfig represent the ContractClient config.
 type ContractClientConfig struct {
-	ContractAddress  sdk.AccAddress
-	CoreumDenom      string
-	GasMultiplier    float64
-	ContractPageSize uint32
+	ContractAddress    sdk.AccAddress
+	CoreumDenom        string
+	GasMultiplier      float64
+	GasPriceMultiplier sdkmath.LegacyDec
+	ContractPageSize   uint32
 }
 
 // DefaultContractClientConfig returns default ContractClient config.
 func DefaultContractClientConfig(contractAddress sdk.AccAddress, coreumDenom string) ContractClientConfig {
 	return ContractClientConfig{
-		ContractAddress:  contractAddress,
-		CoreumDenom:      coreumDenom,
-		GasMultiplier:    1.3,
-		ContractPageSize: 500,
+		ContractAddress:    contractAddress,
+		CoreumDenom:        coreumDenom,
+		GasMultiplier:      1.5,
+		GasPriceMultiplier: sdk.MustNewDecFromStr("1.2"),
+		ContractPageSize:   500,
 	}
 }
 
@@ -180,8 +183,11 @@ type ContractClient struct {
 // NewContractClient returns a new instance of the ContractClient.
 func NewContractClient(cfg ContractClientConfig, clientCtx client.Context) *ContractClient {
 	return &ContractClient{
-		cfg:                 cfg,
-		clientCtx:           clientCtx.WithBroadcastMode(flags.BroadcastBlock),
+		cfg: cfg,
+		clientCtx: clientCtx.
+			WithBroadcastMode(flags.BroadcastSync).
+			WithAwaitTx(true).
+			WithGasPriceAdjustment(cfg.GasPriceMultiplier),
 		wasmClient:          wasmtypes.NewQueryClient(clientCtx),
 		feemodelQueryClient: feemodeltypes.NewQueryClient(clientCtx),
 	}
@@ -272,7 +278,7 @@ func (c *ContractClient) ThresholdBankSend(ctx context.Context, sender sdk.AccAd
 }
 
 // UpdateMinAmount executes update_min_amount Method of the contract.
-func (c *ContractClient) UpdateMinAmount(ctx context.Context, sender sdk.AccAddress, minAmount sdk.Int) (*sdk.TxResponse, error) {
+func (c *ContractClient) UpdateMinAmount(ctx context.Context, sender sdk.AccAddress, minAmount sdkmath.Int) (*sdk.TxResponse, error) {
 	txRes, err := c.execute(ctx, sender, map[ExecMethod]UpdateMinAmountRequest{
 		ExecMethodUpdateMinAmount: {
 			MinAmount: minAmount,
@@ -286,7 +292,7 @@ func (c *ContractClient) UpdateMinAmount(ctx context.Context, sender sdk.AccAddr
 }
 
 // UpdateMaxAmount executes update_max_amount Method of the contract.
-func (c *ContractClient) UpdateMaxAmount(ctx context.Context, sender sdk.AccAddress, maxAmount sdk.Int) (*sdk.TxResponse, error) {
+func (c *ContractClient) UpdateMaxAmount(ctx context.Context, sender sdk.AccAddress, maxAmount sdkmath.Int) (*sdk.TxResponse, error) {
 	txRes, err := c.execute(ctx, sender, map[ExecMethod]UpdateMaxAmountRequest{
 		ExecMethodUpdateMaxAmount: {
 			MaxAmount: maxAmount,

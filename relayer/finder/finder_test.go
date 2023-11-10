@@ -7,14 +7,15 @@ import (
 	"sync"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/CoreumFoundation/coreum/pkg/config"
-	"github.com/CoreumFoundation/coreum/pkg/config/constant"
+	"github.com/CoreumFoundation/coreum/v3/pkg/config"
+	"github.com/CoreumFoundation/coreum/v3/pkg/config/constant"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/xrpl"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/metric"
@@ -203,7 +204,7 @@ func TestFinder_convertXRPLAmountToCoreumCoin(t *testing.T) {
 				v, _ := big.NewFloat(0).SetString("1000000000")
 				return v
 			}(),
-			wantAmount: sdk.NewCoin(denom, func() sdk.Int {
+			wantAmount: sdk.NewCoin(denom, func() sdkmath.Int {
 				v, _ := sdk.NewIntFromString("1000000000000000")
 				return v
 			}()),

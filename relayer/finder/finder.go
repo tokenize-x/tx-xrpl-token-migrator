@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"strings"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"go.uber.org/zap"
 
@@ -139,7 +140,7 @@ func ExtractAddressFromMemo(memos []string, suffix string) (sdk.AccAddress, bool
 }
 
 // ConvertXRPLAmountToCoreumAmount converts xrpl amount to coreum using the coreum decimals.
-func ConvertXRPLAmountToCoreumAmount(xrplAmount *big.Float, decimals int) sdk.Int {
+func ConvertXRPLAmountToCoreumAmount(xrplAmount *big.Float, decimals int) sdkmath.Int {
 	if xrplAmount == nil {
 		return sdk.NewInt(0)
 	}

@@ -7,15 +7,15 @@ import (
 	"sync"
 	"time"
 
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sdkclient "github.com/cosmos/cosmos-sdk/client"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	"go.uber.org/zap"
 
-	"github.com/CoreumFoundation/coreum/pkg/client"
+	"github.com/CoreumFoundation/coreum/v3/pkg/client"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
 )
 
@@ -119,10 +119,7 @@ func (c *ChainClient) queryTransactionsByEvents(ctx context.Context, event strin
 func queryTxsByEvents(ctx context.Context, clientCtx client.Context, events []string, page, limit int, orderBy string) (*sdk.SearchTxsResult, error) {
 	query := strings.Join(events, " AND ")
 
-	node, err := clientCtx.SDKContext().GetNode()
-	if err != nil {
-		return nil, err
-	}
+	node := clientCtx.RPCClient()
 	if node == nil {
 		return nil, errors.Errorf("the RPC node is not initialized")
 	}

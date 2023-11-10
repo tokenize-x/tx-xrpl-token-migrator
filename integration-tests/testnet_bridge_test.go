@@ -21,8 +21,8 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
-	integrationtests "github.com/CoreumFoundation/coreum/integration-tests"
-	"github.com/CoreumFoundation/coreum/pkg/client"
+	"github.com/CoreumFoundation/coreum/v3/pkg/client"
+	"github.com/CoreumFoundation/coreum/v3/testutil/integration"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/service"
 )
@@ -30,7 +30,7 @@ import (
 func TestWASMTestnetBridging(t *testing.T) {
 	t.Parallel()
 
-	ctx, chain := integrationtests.NewCoreumTestingContext(t)
+	ctx, chain := NewCoreumTestingContext(t)
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
 
@@ -62,10 +62,10 @@ func TestWASMTestnetBridging(t *testing.T) {
 	requireT.True(balanceRes.Balance.IsZero())
 
 	chain.Faucet.FundAccounts(ctx, t,
-		integrationtests.NewFundedAccount(owner, chain.NewCoin(sdk.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(trustedAddress1, chain.NewCoin(sdk.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(trustedAddress2, chain.NewCoin(sdk.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(trustedAddress3, chain.NewCoin(sdk.NewInt(5000000000))),
+		integration.NewFundedAccount(owner, chain.NewCoin(sdk.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress1, chain.NewCoin(sdk.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress2, chain.NewCoin(sdk.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress3, chain.NewCoin(sdk.NewInt(5000000000))),
 	)
 
 	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil, ""), chain.ClientContext)
@@ -87,7 +87,7 @@ func TestWASMTestnetBridging(t *testing.T) {
 	requireT.NoError(err)
 
 	coinToFundContract := chain.NewCoin(sdk.NewInt(10_000_000_000))
-	chain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(contractAddr, coinToFundContract))
+	chain.Faucet.FundAccounts(ctx, t, integration.NewFundedAccount(contractAddr, coinToFundContract))
 
 	requireT.NoError(contractClient.SetContractAddress(contractAddr))
 	t.Logf("Contract deployed and instantiated, address:%s.", contractAddr)

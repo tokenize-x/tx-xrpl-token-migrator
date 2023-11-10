@@ -400,3 +400,36 @@ If you wish to run two instances of bridge on the same VM, makes sure:
    `ex. /etc/systemd/system/promtail.service => /etc/systemd/system/promtail_*instance_name_two*.service`
 
 4. Edit `promtail` instance specific service to read from instance specific promtail `config.yaml`
+
+
+
+
+## Upgrade relayer to V2
+
+The guide contains the instructions on how to update the relayer from `v1.x.x` version to `v2.x.x` version.
+
+* Export relayer key (optional but recommended) and save it in safe place
+
+```bash
+./relayer keys export relayer
+```
+
+* Stop service
+
+```bash
+systemctl stop xrpl-bridge-relayer
+```
+
+* Download new `V2` version of the relayer and replace current binary
+
+* Check the version
+```bash
+./relayer version
+```
+
+* Start service and check logs
+
+```bash
+systemctl start xrpl-bridge-relayer
+journalctl -u xrpl-bridge-relayer -f
+```
