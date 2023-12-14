@@ -16,7 +16,11 @@ import (
 
 // ContractClient is coreum contract client interface.
 type ContractClient interface {
-	ThresholdBankSend(ctx context.Context, sender sdk.AccAddress, requests ...coreum.ThresholdBankSendRequest) (*sdk.TxResponse, error)
+	ThresholdBankSend(
+		ctx context.Context,
+		sender sdk.AccAddress,
+		requests ...coreum.ThresholdBankSendRequest,
+	) (*sdk.TxResponse, error)
 	GetContractConfig(ctx context.Context) (coreum.Config, error)
 }
 
@@ -126,7 +130,12 @@ func (e *Executor) Start(ctx context.Context) error {
 						return nil
 					}
 
-					e.log.Error("Can't execute coreum contract transaction, the execution will be repeated", zap.Any("request", sendReq), zap.String("delay", e.cfg.RetryDelay.String()), zap.Error(err))
+					e.log.Error(
+						"Can't execute coreum contract transaction, the execution will be repeated",
+						zap.Any("request", sendReq),
+						zap.String("delay", e.cfg.RetryDelay.String()),
+						zap.Error(err),
+					)
 
 					return retry.Retryable(err)
 				})

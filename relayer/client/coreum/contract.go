@@ -194,7 +194,11 @@ func NewContractClient(cfg ContractClientConfig, clientCtx client.Context) *Cont
 }
 
 // DeployAndInstantiate deploys the contract bytecode and instantiate it.
-func (c *ContractClient) DeployAndInstantiate(ctx context.Context, sender sdk.AccAddress, config DeployAndInstantiateConfig) (sdk.AccAddress, error) {
+func (c *ContractClient) DeployAndInstantiate(
+	ctx context.Context,
+	sender sdk.AccAddress,
+	config DeployAndInstantiateConfig,
+) (sdk.AccAddress, error) {
 	msgStoreCode := &wasmtypes.MsgStoreCode{
 		Sender:       sender.String(),
 		WASMByteCode: contractembed.Bytecode,
@@ -233,7 +237,11 @@ func (c *ContractClient) DeployAndInstantiate(ctx context.Context, sender sdk.Ac
 		return nil, errors.Wrap(err, "can't instantiate bytecode")
 	}
 
-	contractAddr, err := event.FindStringEventAttribute(res.Events, wasmtypes.EventTypeInstantiate, wasmtypes.AttributeKeyContractAddr)
+	contractAddr, err := event.FindStringEventAttribute(
+		res.Events,
+		wasmtypes.EventTypeInstantiate,
+		wasmtypes.AttributeKeyContractAddr,
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't find contract address in the tx result")
 	}
@@ -258,7 +266,11 @@ func (c *ContractClient) SetContractAddress(contractAddress sdk.AccAddress) erro
 }
 
 // ThresholdBankSend executes threshold_bank_send Method of the contract.
-func (c *ContractClient) ThresholdBankSend(ctx context.Context, sender sdk.AccAddress, requests ...ThresholdBankSendRequest) (*sdk.TxResponse, error) {
+func (c *ContractClient) ThresholdBankSend(
+	ctx context.Context,
+	sender sdk.AccAddress,
+	requests ...ThresholdBankSendRequest,
+) (*sdk.TxResponse, error) {
 	msgs := make([]interface{}, 0)
 	for _, req := range requests {
 		msgs = append(msgs, map[ExecMethod]ThresholdBankSendRequest{
@@ -278,7 +290,11 @@ func (c *ContractClient) ThresholdBankSend(ctx context.Context, sender sdk.AccAd
 }
 
 // UpdateMinAmount executes update_min_amount Method of the contract.
-func (c *ContractClient) UpdateMinAmount(ctx context.Context, sender sdk.AccAddress, minAmount sdkmath.Int) (*sdk.TxResponse, error) {
+func (c *ContractClient) UpdateMinAmount(
+	ctx context.Context,
+	sender sdk.AccAddress,
+	minAmount sdkmath.Int,
+) (*sdk.TxResponse, error) {
 	txRes, err := c.execute(ctx, sender, map[ExecMethod]UpdateMinAmountRequest{
 		ExecMethodUpdateMinAmount: {
 			MinAmount: minAmount,
@@ -292,7 +308,11 @@ func (c *ContractClient) UpdateMinAmount(ctx context.Context, sender sdk.AccAddr
 }
 
 // UpdateMaxAmount executes update_max_amount Method of the contract.
-func (c *ContractClient) UpdateMaxAmount(ctx context.Context, sender sdk.AccAddress, maxAmount sdkmath.Int) (*sdk.TxResponse, error) {
+func (c *ContractClient) UpdateMaxAmount(
+	ctx context.Context,
+	sender sdk.AccAddress,
+	maxAmount sdkmath.Int,
+) (*sdk.TxResponse, error) {
 	txRes, err := c.execute(ctx, sender, map[ExecMethod]UpdateMaxAmountRequest{
 		ExecMethodUpdateMaxAmount: {
 			MaxAmount: maxAmount,
@@ -306,7 +326,12 @@ func (c *ContractClient) UpdateMaxAmount(ctx context.Context, sender sdk.AccAddr
 }
 
 // ExecutePending executes execute_pending Method of the contract.
-func (c *ContractClient) ExecutePending(ctx context.Context, sender sdk.AccAddress, funds sdk.Coin, evidenceID string) (*sdk.TxResponse, error) {
+func (c *ContractClient) ExecutePending(
+	ctx context.Context,
+	sender sdk.AccAddress,
+	funds sdk.Coin,
+	evidenceID string,
+) (*sdk.TxResponse, error) {
 	txRes, err := c.executeWithFunds(ctx, sender, sdk.NewCoins(funds), map[ExecMethod]ExecutePendingRequest{
 		ExecMethodExecutePending: {
 			EvidenceID: evidenceID,
@@ -320,7 +345,11 @@ func (c *ContractClient) ExecutePending(ctx context.Context, sender sdk.AccAddre
 }
 
 // BuildExecutePendingMessages builds execute_pending messages of the contract.
-func (c *ContractClient) BuildExecutePendingMessages(ctx context.Context, sender sdk.AccAddress, evidenceIDs []string) ([]sdk.Msg, error) {
+func (c *ContractClient) BuildExecutePendingMessages(
+	ctx context.Context,
+	sender sdk.AccAddress,
+	evidenceIDs []string,
+) ([]sdk.Msg, error) {
 	_, approvedTransactions, err := c.GetAllPendingTransactions(ctx)
 	if err != nil {
 		return nil, err
@@ -370,7 +399,11 @@ func (c *ContractClient) Withdraw(ctx context.Context, sender sdk.AccAddress) (*
 }
 
 // EstimateExecuteMessages estimates the cost for execute contract messages.
-func (c *ContractClient) EstimateExecuteMessages(ctx context.Context, sender sdk.AccAddress, msgs ...sdk.Msg) (sdk.Coin, uint64, error) {
+func (c *ContractClient) EstimateExecuteMessages(
+	ctx context.Context,
+	sender sdk.AccAddress,
+	msgs ...sdk.Msg,
+) (sdk.Coin, uint64, error) {
 	gas, err := c.calculateGas(ctx, sender, c.txFactory(), msgs...)
 	if err != nil {
 		return sdk.Coin{}, 0, err
@@ -379,13 +412,19 @@ func (c *ContractClient) EstimateExecuteMessages(ctx context.Context, sender sdk
 	if err != nil {
 		return sdk.Coin{}, 0, err
 	}
-	amount := feemodelParamsRes.Params.Model.InitialGasPrice.Mul(sdk.NewDecFromInt(sdk.NewIntFromUint64(gas))).TruncateInt()
+	amount := feemodelParamsRes.Params.Model.InitialGasPrice.Mul(sdk.NewDecFromInt(sdk.NewIntFromUint64(gas))).
+		TruncateInt()
 
 	return sdk.NewCoin(c.cfg.CoreumDenom, amount), gas, nil
 }
 
 // calculateGas calculates gas using legacy amino codec to cover both multisig and basic accounts.
-func (c *ContractClient) calculateGas(ctx context.Context, sender sdk.AccAddress, txf client.Factory, msgs ...sdk.Msg) (uint64, error) {
+func (c *ContractClient) calculateGas(
+	ctx context.Context,
+	sender sdk.AccAddress,
+	txf client.Factory,
+	msgs ...sdk.Msg,
+) (uint64, error) {
 	modeInfo, signature := authtx.SignatureDataToModeInfoAndSig(&signing.MultiSignatureData{
 		Signatures: []signing.SignatureData{
 			&signing.SingleSignatureData{
@@ -485,7 +524,11 @@ func (c *ContractClient) GetPendingTx(ctx context.Context, evidenceID string) (T
 }
 
 // GetPendingTxs returns a list of pending transactions.
-func (c *ContractClient) GetPendingTxs(ctx context.Context, offset *uint64, limit *uint32) ([]PendingTransaction, error) {
+func (c *ContractClient) GetPendingTxs(
+	ctx context.Context,
+	offset *uint64,
+	limit *uint32,
+) ([]PendingTransaction, error) {
 	var txs queryTxsResponse[PendingTransaction]
 	err := c.query(ctx, map[QueryMethod]pagingRequest{
 		QueryMethodGetPendingTransactions: {
@@ -532,7 +575,9 @@ func (c *ContractClient) GetSentTxs(ctx context.Context, offset *uint64, limit *
 }
 
 // GetAllPendingTransactions queries all unapproved and approved pending transactions.
-func (c *ContractClient) GetAllPendingTransactions(ctx context.Context) ([]PendingTransaction, []PendingTransaction, error) {
+func (c *ContractClient) GetAllPendingTransactions(ctx context.Context) (
+	[]PendingTransaction, []PendingTransaction, error,
+) {
 	offset := uint64(0)
 	limit := c.cfg.ContractPageSize
 
@@ -633,7 +678,12 @@ func (c *ContractClient) execute(ctx context.Context, sender sdk.AccAddress, req
 	return res, nil
 }
 
-func (c *ContractClient) executeWithFunds(ctx context.Context, sender sdk.AccAddress, funds sdk.Coins, req any) (*sdk.TxResponse, error) {
+func (c *ContractClient) executeWithFunds(
+	ctx context.Context,
+	sender sdk.AccAddress,
+	funds sdk.Coins,
+	req any,
+) (*sdk.TxResponse, error) {
 	msg, err := c.buildExecuteWithFunds(sender, funds, req)
 	if err != nil {
 		return nil, err
@@ -646,7 +696,11 @@ func (c *ContractClient) executeWithFunds(ctx context.Context, sender sdk.AccAdd
 	return res, nil
 }
 
-func (c *ContractClient) buildExecuteWithFunds(sender sdk.AccAddress, funds sdk.Coins, req any) (*wasmtypes.MsgExecuteContract, error) {
+func (c *ContractClient) buildExecuteWithFunds(
+	sender sdk.AccAddress,
+	funds sdk.Coins,
+	req any,
+) (*wasmtypes.MsgExecuteContract, error) {
 	if c.cfg.ContractAddress == nil {
 		return nil, errors.New("failed to execute with empty contract address")
 	}

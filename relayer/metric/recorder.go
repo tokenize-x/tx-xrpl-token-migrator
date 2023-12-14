@@ -71,7 +71,8 @@ func NewRecorder() (*Recorder, error) {
 		return nil, errors.Wrapf(err, "failed to register errors сounter")
 	}
 
-	coreumPendingUnapprovedTransactionsTotal := prometheus.NewGauge(prometheus.GaugeOpts{ //nolint:promlinter // the name is expected
+	//nolint:promlinter // the name is expected
+	coreumPendingUnapprovedTransactionsTotal := prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "coreum_pending_unapproved_transactions_count",
 		Help: "Coreum pending unapproved transactions count",
 	})
@@ -79,7 +80,8 @@ func NewRecorder() (*Recorder, error) {
 		return nil, errors.Wrapf(err, "failed to register xrpl coreum pending unapproved transactions count gauge")
 	}
 
-	coreumPendingApprovedTransactionsTotal := prometheus.NewGauge(prometheus.GaugeOpts{ //nolint:promlinter // the name is expected
+	//nolint:promlinter // the name is expected
+	coreumPendingApprovedTransactionsTotal := prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "coreum_pending_approved_transactions_count",
 		Help: "Coreum pending approved transactions count",
 	})
@@ -138,7 +140,7 @@ func (r *Recorder) GetTotalErrors() (float64, error) {
 		return 0, err
 	}
 
-	return *metric.Counter.Value, nil
+	return metric.GetCounter().GetValue(), nil
 }
 
 // SetCoreumPendingUnapprovedTransactionsCount sets coreum contract pending unapproved transactions count.

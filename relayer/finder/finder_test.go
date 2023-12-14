@@ -2,7 +2,6 @@ package finder
 
 import (
 	"fmt"
-	"math/big"
 	"reflect"
 	"sync"
 	"testing"
@@ -11,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/golang/mock/gomock"
+	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
@@ -40,8 +40,8 @@ func TestBuildPendingTransaction(t *testing.T) {
 	setSDKConfig()
 
 	cfg := Config{
-		XRPLIssuer:                 "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
-		XRPLCurrency:               "434F524500000000000000000000000000000000",
+		XRPLIssuer:                 convertStringToRippleAccount(t, "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D"),
+		XRPLCurrency:               convertStringToRippleCurrency(t, "434F524500000000000000000000000000000000"),
 		XRPLHistoryScanStartLedger: 8000,
 		XRPLMemoSuffix:             "=cored",
 		CoreumDenom:                "ucore",
@@ -51,15 +51,16 @@ func TestBuildPendingTransaction(t *testing.T) {
 	coreumAddress := sdk.AccAddress(ed25519.GenPrivKey().PubKey().Address())
 
 	validXRPLTransaction := xrpl.Transaction{
-		DeliveryAmount: xrpl.DeliveredAmount{
+		DeliveryAmount: rippledata.Amount{
 			Currency: cfg.XRPLCurrency,
 			Issuer:   cfg.XRPLIssuer,
-			Value: func() *big.Float {
-				v, _ := big.NewFloat(0).SetString("1.23456789")
-				return v
-			}(),
+			Value:    convertStringToRippleValue(t, "1.23456789", false),
 		},
-		Memos:             []string{fmt.Sprintf("none-address%s", cfg.XRPLMemoSuffix), fmt.Sprintf("%s%s", coreumAddress, cfg.XRPLMemoSuffix), "any-string"},
+		Memos: []string{
+			fmt.Sprintf("none-address%s", cfg.XRPLMemoSuffix),
+			fmt.Sprintf("%s%s", coreumAddress, cfg.XRPLMemoSuffix),
+			"any-string",
+		},
 		Hash:              "xrpl-tx-hash",
 		TransactionType:   xrpl.TransactionTypePayment,
 		TransactionResult: xrpl.TransactionResultSuccess,
@@ -132,7 +133,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 		{
 			name: "invalid_currency",
 			xrplTxFunc: func(tx xrpl.Transaction) xrpl.Transaction {
-				tx.DeliveryAmount.Currency = "invalid"
+				tx.DeliveryAmount.Currency = convertStringToRippleCurrency(t, "IND")
 				return tx
 			},
 			wantMatches: false,
@@ -141,7 +142,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 		{
 			name: "invalid_issuer",
 			xrplTxFunc: func(tx xrpl.Transaction) xrpl.Transaction {
-				tx.DeliveryAmount.Issuer = "invalid"
+				tx.DeliveryAmount.Issuer = convertStringToRippleAccount(t, rippledata.Account{}.String())
 				return tx
 			},
 			wantMatches: false,
@@ -150,10 +151,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 		{
 			name: "zero_amount",
 			xrplTxFunc: func(tx xrpl.Transaction) xrpl.Transaction {
-				tx.DeliveryAmount.Value = func() *big.Float {
-					v, _ := big.NewFloat(0).SetString("0.0000001")
-					return v
-				}()
+				tx.DeliveryAmount.Value = convertStringToRippleValue(t, "0.0000001", false)
 				return tx
 			},
 			wantMatches: false,
@@ -190,40 +188,36 @@ func TestFinder_convertXRPLAmountToCoreumCoin(t *testing.T) {
 	const denom = "ucore"
 	tests := []struct {
 		name       string
-		xrplAmount *big.Float
+		xrplAmount *rippledata.Value
 		wantAmount sdk.Coin
 	}{
 		{
 			name:       "no_truncation",
-			xrplAmount: big.NewFloat(10.123456),
+			xrplAmount: convertStringToRippleValue(t, "10.123456", false),
 			wantAmount: sdk.NewCoin(denom, sdk.NewInt(10123456)),
 		},
 		{
-			name: "max_amount",
-			xrplAmount: func() *big.Float {
-				v, _ := big.NewFloat(0).SetString("1000000000")
-				return v
-			}(),
+			name:       "max_amount",
+			xrplAmount: convertStringToRippleValue(t, "1000000000", false),
 			wantAmount: sdk.NewCoin(denom, func() sdkmath.Int {
 				v, _ := sdk.NewIntFromString("1000000000000000")
 				return v
 			}()),
 		},
 		{
-			name: "many_decimals",
-			xrplAmount: func() *big.Float {
-				v, _ := big.NewFloat(0).SetString("0.100001000000000000001")
-				return v
-			}(),
+			name:       "many_decimals",
+			xrplAmount: convertStringToRippleValue(t, "0.100001000000001", false),
 			wantAmount: sdk.NewInt64Coin(denom, 100001),
 		},
 		{
-			name: "many_decimals_to_zero",
-			xrplAmount: func() *big.Float {
-				v, _ := big.NewFloat(0).SetString("0.000000000000000000001")
-				return v
-			}(),
+			name:       "many_decimals_to_zero",
+			xrplAmount: convertStringToRippleValue(t, "0.000000000000001", false),
 			wantAmount: sdk.NewInt64Coin(denom, 0),
+		},
+		{
+			name:       "default_float_rounding",
+			xrplAmount: convertStringToRippleValue(t, "0.001", false),
+			wantAmount: sdk.NewInt64Coin(denom, 1000),
 		},
 	}
 	for _, tt := range tests {
@@ -240,4 +234,26 @@ func TestFinder_convertXRPLAmountToCoreumCoin(t *testing.T) {
 			}
 		})
 	}
+}
+
+func convertStringToRippleCurrency(t *testing.T, s string) rippledata.Currency {
+	currency, err := rippledata.NewCurrency(s)
+	require.NoError(t, err)
+
+	return currency
+}
+
+func convertStringToRippleAccount(t *testing.T, s string) rippledata.Account {
+	acc, err := rippledata.NewAccountFromAddress(s)
+	require.NoError(t, err)
+
+	return *acc
+}
+
+//nolint:unparam // helper func
+func convertStringToRippleValue(t *testing.T, s string, native bool) *rippledata.Value {
+	v, err := rippledata.NewValue(s, native)
+	require.NoError(t, err)
+
+	return v
 }

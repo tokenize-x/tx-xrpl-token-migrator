@@ -2,6 +2,7 @@ package audit
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
@@ -11,6 +12,7 @@ import (
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/pkg/errors"
+	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
 
@@ -32,6 +34,29 @@ const (
 	DiscrepancyTypeNotBurningXRPLTransaction  = "NotBurningTransfer"
 	DiscrepancyTypeAmountMismatch             = "AmountMismatch"
 )
+
+// KnownDiscrepancies are known discrepancies.
+var KnownDiscrepancies = map[string]DiscrepancyType{
+	// Those txs are expected to be difference since we had and issue with the conversion from the
+	// XRPL to Coreum amount.
+	// testnet
+	"D0B28A44955C37F0E06D2CA63177461B18522639F1EF4E5AC171D2C45F7EA1FB": DiscrepancyTypeAmountMismatch,
+	"F3E46D6FB811FAA57B57BA8DB4D345F9620BBAA40CDE2036DADBB24B6DBE66F3": DiscrepancyTypeAmountMismatch,
+	"E3CB1679BA5F361F786B0FD2158DF6769C543E4DB3BC98CA4AE2C49F4D4A4BAC": DiscrepancyTypeAmountMismatch,
+	"8CC3097C7D10E539488B981C6E314EE5717D5E0BB3764B099A072F4CE8E394C1": DiscrepancyTypeAmountMismatch,
+	// mainnet
+	"21B22F298BF359D43B3CBFB4CC0CEB93CEFC2C43CE889880262F5B2A8A5AEE1A": DiscrepancyTypeAmountMismatch,
+	"D28775A1B3F4D17CD4F6CA5639E200B95F770E394558BACFBD91C0668A1BC384": DiscrepancyTypeAmountMismatch,
+	"03A8ED4177CCFEA0D72C62FB2AC432C3CB9B29F06F8E0E377BF19270BED1A7E1": DiscrepancyTypeAmountMismatch,
+	"269DB1DD2265F0115F92B1FB3865BA803BB29E8906D67A06ADAA66D550B5A107": DiscrepancyTypeAmountMismatch,
+	"7FB045596AAC1CCB63D70B7D2688807A79910705F1CA8CE2A525756DBCB56BF8": DiscrepancyTypeAmountMismatch,
+	"49E41F712B938FDB35A88555E9E6B172BA3CC5CC87AD9F663A1D9AAC5FF2C459": DiscrepancyTypeAmountMismatch,
+	"01984404B349763D7D5A7716D9A85A4F26C359E03A6598C0BE7298CBFAAA4D06": DiscrepancyTypeAmountMismatch,
+	"CA6D531A777E7F863A5B4B9A12E30F093043B6D83689FA361D741296E940440F": DiscrepancyTypeAmountMismatch,
+	"E4D09529FC126F34A1780E172F1EB4F9FA4BC236EF45B008CF3970E46D820AF8": DiscrepancyTypeAmountMismatch,
+	"78AA3733D4E1B906D09CD20CCC09D93979F95EFC8D4289C815A1CE2E06C18AE5": DiscrepancyTypeAmountMismatch,
+	"FC17D74D459D201ABD8BB5C2F36335D7A04F6ACFE5C403A13DAAB22D81760DC4": DiscrepancyTypeAmountMismatch,
+}
 
 // Discrepancy is the bridge audit discrepancy.
 type Discrepancy struct {
@@ -86,8 +111,8 @@ type AuditorConfig struct {
 	CoreumDenom     string
 	CoreumDecimals  int
 	XRPLMemoSuffix  string
-	XRPLCurrency    string
-	XRPLIssuer      string
+	XRPLCurrency    rippledata.Currency
+	XRPLIssuer      rippledata.Account
 }
 
 // Auditor is the bridge auditor.
@@ -99,7 +124,12 @@ type Auditor struct {
 }
 
 // NewAuditor returns a new instance of the Auditor.
-func NewAuditor(cfg AuditorConfig, log logger.Logger, coreumChainClient CoreumChainClient, xrplRPCClient XRPLRPCClient) *Auditor {
+func NewAuditor(
+	cfg AuditorConfig,
+	log logger.Logger,
+	coreumChainClient CoreumChainClient,
+	xrplRPCClient XRPLRPCClient,
+) *Auditor {
 	return &Auditor{
 		cfg:               cfg,
 		log:               log,
@@ -118,9 +148,10 @@ func (a *Auditor) Audit(ctx context.Context) ([]Discrepancy, error) {
 	if err != nil {
 		return nil, err
 	}
-	xrplTxHashes := lo.Map(contractCallReport.ThresholdBankSendRequests, func(req ContractCallTx[coreum.ThresholdBankSendRequest], _ int) string {
-		return req.Payload.ID
-	})
+	xrplTxHashes := lo.Map(contractCallReport.ThresholdBankSendRequests,
+		func(req ContractCallTx[coreum.ThresholdBankSendRequest], _ int) string {
+			return req.Payload.ID
+		})
 	a.log.Info("Fetching xrpl transactions.", zap.Int("count", len(xrplTxHashes)))
 	xrplTxs, err := a.xrplRPCClient.GetTransactions(ctx, xrplTxHashes)
 	if err != nil {
@@ -128,6 +159,11 @@ func (a *Auditor) Audit(ctx context.Context) ([]Discrepancy, error) {
 	}
 	a.log.Info("Fetched xrpl transactions.", zap.Int("count", len(xrplTxHashes)))
 	discrepancies = append(discrepancies, a.analiseXrplToCoreumDiscrepancies(contractCallReport, xrplTxs)...)
+
+	discrepancies = lo.Filter(discrepancies, func(d Discrepancy, _ int) bool {
+		dtype, ok := KnownDiscrepancies[d.XRPLTx.Hash]
+		return ok && dtype == d.Type
+	})
 
 	return discrepancies, nil
 }
@@ -184,11 +220,39 @@ func (a *Auditor) analizeContractCallDiscrepancies(contractCallReport ContractCa
 		if err != nil {
 			return nil, err
 		}
-		if len(sentCoins) != 1 && (sentCoins.AmountOf(a.cfg.CoreumDenom).String() != thresholdBankSendRequest.Payload.Amount.String()) {
+		if sentCoins.Empty() {
+			// workaround to use v3 client with v2 chain
+			events, err := convertFromBase64ToStringAttributes(thresholdBankSendRequest.Tx.Events)
+			if err != nil {
+				return nil, err
+			}
+			sentCoins, err = sumCoinsEventsSiblingAttributeValues(
+				events,
+				banktypes.EventTypeTransfer,
+				banktypes.AttributeKeySender,
+				a.cfg.ContractAddress,
+				sdk.AttributeKeyAmount,
+			)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if sentCoins.Empty() {
+			return nil, errors.Errorf(
+				"the tx does not contain the sent coins, tx hash:%s, events:%v",
+				thresholdBankSendRequest.Tx.TxHash, thresholdBankSendRequest.Tx.Events,
+			)
+		}
+
+		if len(sentCoins) != 1 &&
+			(sentCoins.AmountOf(a.cfg.CoreumDenom).String() != thresholdBankSendRequest.Payload.Amount.String()) {
 			discrepancies = append(discrepancies, Discrepancy{
-				CoreumTx:    thresholdBankSendRequest.Tx,
-				Type:        DiscrepancyTypeContractSentAmountMismatch,
-				Description: fmt.Sprintf("The amount in the tx is different from sent, txAmount:%s, sentAmount:%s", thresholdBankSendRequest.Payload.Amount.String(), sentCoins.String()),
+				CoreumTx: thresholdBankSendRequest.Tx,
+				Type:     DiscrepancyTypeContractSentAmountMismatch,
+				Description: fmt.Sprintf(
+					"The amount in the tx is different from sent, txAmount:%s, sentAmount:%s",
+					thresholdBankSendRequest.Payload.Amount.String(), sentCoins.String(),
+				),
 			})
 		}
 	}
@@ -197,7 +261,10 @@ func (a *Auditor) analizeContractCallDiscrepancies(contractCallReport ContractCa
 	return discrepancies, nil
 }
 
-func (a *Auditor) analiseXrplToCoreumDiscrepancies(contractCallReport ContractCallReport, xrplTransactions map[string]xrpl.Transaction) []Discrepancy {
+func (a *Auditor) analiseXrplToCoreumDiscrepancies(
+	contractCallReport ContractCallReport,
+	xrplTransactions map[string]xrpl.Transaction,
+) []Discrepancy {
 	discrepancies := make([]Discrepancy, 0)
 	for _, thresholdBankSendRequest := range contractCallReport.ThresholdBankSendRequests {
 		xrplTxHash := thresholdBankSendRequest.Payload.ID
@@ -214,16 +281,19 @@ func (a *Auditor) analiseXrplToCoreumDiscrepancies(contractCallReport ContractCa
 		xrplRecipient, found := finder.ExtractAddressFromMemo(xrplTx.Memos, a.cfg.XRPLMemoSuffix)
 		if !found || (thresholdBankSendRequest.Payload.Recipient != xrplRecipient.String()) {
 			discrepancies = append(discrepancies, Discrepancy{
-				CoreumTx:    thresholdBankSendRequest.Tx,
-				XRPLTx:      xrplTx,
-				Type:        DiscrepancyTypeInvalidRecipient,
-				Description: fmt.Sprintf("XRPL recipient different from corem, xrplRecipient:%s, coreumRecipient:%s", xrplRecipient.String(), thresholdBankSendRequest.Payload.Recipient),
+				CoreumTx: thresholdBankSendRequest.Tx,
+				XRPLTx:   xrplTx,
+				Type:     DiscrepancyTypeInvalidRecipient,
+				Description: fmt.Sprintf(
+					"XRPL recipient different from corem, xrplRecipient:%s, coreumRecipient:%s",
+					xrplRecipient.String(), thresholdBankSendRequest.Payload.Recipient,
+				),
 			})
 		}
 
-		if xrplTx.Destination != a.cfg.XRPLIssuer ||
-			xrplTx.DeliveryAmount.Issuer != a.cfg.XRPLIssuer ||
-			xrplTx.DeliveryAmount.Currency != a.cfg.XRPLCurrency {
+		if xrplTx.Destination != a.cfg.XRPLIssuer.String() ||
+			xrplTx.DeliveryAmount.Issuer.String() != a.cfg.XRPLIssuer.String() ||
+			xrplTx.DeliveryAmount.Currency.String() != a.cfg.XRPLCurrency.String() {
 			discrepancies = append(discrepancies, Discrepancy{
 				CoreumTx:    thresholdBankSendRequest.Tx,
 				XRPLTx:      xrplTx,
@@ -236,10 +306,13 @@ func (a *Auditor) analiseXrplToCoreumDiscrepancies(contractCallReport ContractCa
 		coreumAmount := thresholdBankSendRequest.Payload.Amount.Amount
 		if xrplAmount.String() != coreumAmount.String() {
 			discrepancies = append(discrepancies, Discrepancy{
-				CoreumTx:    thresholdBankSendRequest.Tx,
-				XRPLTx:      xrplTx,
-				Type:        DiscrepancyTypeAmountMismatch,
-				Description: fmt.Sprintf("XRPL tx amount if different from coreum, xrplAmount:%s, coreumAmount:%s", xrplAmount.String(), coreumAmount.String()),
+				CoreumTx: thresholdBankSendRequest.Tx,
+				XRPLTx:   xrplTx,
+				Type:     DiscrepancyTypeAmountMismatch,
+				Description: fmt.Sprintf(
+					"XRPL tx amount if different from coreum, xrplAmount:%s, coreumAmount:%s",
+					xrplAmount.String(), coreumAmount.String(),
+				),
 			})
 		}
 	}
@@ -265,11 +338,12 @@ func decodeMessagePayloadToReport(tx *sdk.TxResponse, msg sdk.Msg, report *Contr
 			if err := json.Unmarshal(methodPayload, &req); err != nil {
 				return err
 			}
-			report.ThresholdBankSendRequests = append(report.ThresholdBankSendRequests, ContractCallTx[coreum.ThresholdBankSendRequest]{
-				Tx:      tx,
-				Msg:     msg,
-				Payload: req,
-			})
+			report.ThresholdBankSendRequests = append(
+				report.ThresholdBankSendRequests, ContractCallTx[coreum.ThresholdBankSendRequest]{
+					Tx:      tx,
+					Msg:     msg,
+					Payload: req,
+				})
 		case coreum.ExecMethodExecutePending:
 			var req coreum.ExecutePendingRequest
 			if err := json.Unmarshal(methodPayload, &req); err != nil {
@@ -285,21 +359,23 @@ func decodeMessagePayloadToReport(tx *sdk.TxResponse, msg sdk.Msg, report *Contr
 			if err := json.Unmarshal(methodPayload, &req); err != nil {
 				return err
 			}
-			report.UpdateMinAmountRequests = append(report.UpdateMinAmountRequests, ContractCallTx[coreum.UpdateMinAmountRequest]{
-				Tx:      tx,
-				Msg:     msg,
-				Payload: req,
-			})
+			report.UpdateMinAmountRequests = append(
+				report.UpdateMinAmountRequests, ContractCallTx[coreum.UpdateMinAmountRequest]{
+					Tx:      tx,
+					Msg:     msg,
+					Payload: req,
+				})
 		case coreum.ExecMethodUpdateMaxAmount:
 			var req coreum.UpdateMaxAmountRequest
 			if err := json.Unmarshal(methodPayload, &req); err != nil {
 				return err
 			}
-			report.UpdateMaxAmountRequests = append(report.UpdateMaxAmountRequests, ContractCallTx[coreum.UpdateMaxAmountRequest]{
-				Tx:      tx,
-				Msg:     msg,
-				Payload: req,
-			})
+			report.UpdateMaxAmountRequests = append(
+				report.UpdateMaxAmountRequests, ContractCallTx[coreum.UpdateMaxAmountRequest]{
+					Tx:      tx,
+					Msg:     msg,
+					Payload: req,
+				})
 		case coreum.ExecMethodWithdraw:
 			var req coreum.WithdrawRequest
 			if err := json.Unmarshal(methodPayload, &req); err != nil {
@@ -318,7 +394,10 @@ func decodeMessagePayloadToReport(tx *sdk.TxResponse, msg sdk.Msg, report *Contr
 	return nil
 }
 
-func sumCoinsEventsSiblingAttributeValues(events []tmtypes.Event, etype, siblingKey, siblingValue, nextAttrKey string) (sdk.Coins, error) {
+func sumCoinsEventsSiblingAttributeValues(
+	events []tmtypes.Event,
+	etype, siblingKey, siblingValue, nextAttrKey string,
+) (sdk.Coins, error) {
 	values := findEventsSiblingAttributeValues(events, etype, siblingKey, siblingValue, nextAttrKey)
 	coins := sdk.NewCoins()
 	for _, v := range values {
@@ -332,7 +411,38 @@ func sumCoinsEventsSiblingAttributeValues(events []tmtypes.Event, etype, sibling
 	return coins, nil
 }
 
-func findEventsSiblingAttributeValues(events []tmtypes.Event, etype, siblingKey, siblingValue, nextAttrKey string) []string {
+func convertFromBase64ToStringAttributes(events []tmtypes.Event) ([]tmtypes.Event, error) {
+	result := make([]tmtypes.Event, 0, len(events))
+	for _, evt := range events {
+		attrs := make([]tmtypes.EventAttribute, 0, len(evt.Attributes))
+		for _, attr := range evt.Attributes {
+			key, err := base64.StdEncoding.DecodeString(attr.Key)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to decode base64 key string, value:%s", attr.Key)
+			}
+			value, err := base64.StdEncoding.DecodeString(attr.Value)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to decode base64 value string, value:%s", attr.Value)
+			}
+			attrs = append(attrs, tmtypes.EventAttribute{
+				Key:   string(key),
+				Value: string(value),
+				Index: attr.Index,
+			})
+		}
+		result = append(result, tmtypes.Event{
+			Type:       evt.Type,
+			Attributes: attrs,
+		})
+	}
+
+	return result, nil
+}
+
+func findEventsSiblingAttributeValues(
+	events []tmtypes.Event,
+	etype, siblingKey, siblingValue, nextAttrKey string,
+) []string {
 	values := make([]string, 0)
 	for _, ev := range sdk.StringifyEvents(events) {
 		if ev.Type == etype {
@@ -343,7 +453,8 @@ func findEventsSiblingAttributeValues(events []tmtypes.Event, etype, siblingKey,
 	return values
 }
 
-// findEventSiblingAttributeValues find and returns all attribute values if sibling key with values is found in the same event.
+// findEventSiblingAttributeValues find and returns all attribute values if sibling key with values is found in the
+// same event.
 func findEventSiblingAttributeValues(ev sdk.StringEvent, siblingKey, siblingValue, nextAttrKey string) []string {
 	attrValues := make([]string, 0)
 	for i, attrItem := range ev.Attributes {

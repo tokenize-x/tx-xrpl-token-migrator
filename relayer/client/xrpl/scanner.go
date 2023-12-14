@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	rippledata "github.com/rubblelabs/ripple/data"
 	"go.uber.org/zap"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
@@ -13,7 +14,12 @@ import (
 
 // RPCTxProvider is RPC transactions provider.
 type RPCTxProvider interface {
-	SubscribeAccountTransactions(ctx context.Context, account string, startLedger, endLedger int64, ch chan<- Transaction) (int64, error)
+	SubscribeAccountTransactions(
+		ctx context.Context,
+		account rippledata.Account,
+		startLedger, endLedger int64,
+		ch chan<- Transaction,
+	) (int64, error)
 	GetCurrentLedger(ctx context.Context) (int64, error)
 }
 
@@ -45,7 +51,12 @@ type TxScanner struct {
 }
 
 // NewTxScanner returns a nw instance of the TxScanner.
-func NewTxScanner(cfg TxScannerConfig, log logger.Logger, rpcTxScanner RPCTxProvider, metricRecorder MetricRecorder) *TxScanner {
+func NewTxScanner(
+	cfg TxScannerConfig,
+	log logger.Logger,
+	rpcTxScanner RPCTxProvider,
+	metricRecorder MetricRecorder,
+) *TxScanner {
 	return &TxScanner{
 		cfg:            cfg,
 		log:            log,
@@ -57,7 +68,7 @@ func NewTxScanner(cfg TxScannerConfig, log logger.Logger, rpcTxScanner RPCTxProv
 // Subscribe subscribes on rpc and ws client account transactions.
 func (t *TxScanner) Subscribe(
 	ctx context.Context,
-	account string,
+	account rippledata.Account,
 	historyScanStartLedger,
 	recentScanIndexesBack int64,
 	ch chan<- Transaction,
@@ -80,7 +91,7 @@ func (t *TxScanner) Subscribe(
 
 	t.log.Info(
 		"Subscribing xrpl scanner",
-		zap.String("account", account),
+		zap.String("account", account.String()),
 		zap.Int64("historyScanStartLedger", historyScanStartLedger),
 		zap.Int64("recentScanIndexesBack", recentScanIndexesBack),
 		zap.Int64("initialLedger", initialLedger),

@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"testing"
 	"time"
 
+	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
@@ -36,7 +36,7 @@ func TestRPCClient_SubscribeAccountTransactions(t *testing.T) {
 	txsCh := make(chan Transaction)
 
 	startLedger := int64(mainnetInitialBridgeLedgerIndex)
-	endLedger := int64(mainnetInitialBridgeLedgerIndex + 1000)
+	endLedger := int64(mainnetInitialBridgeLedgerIndex + 100)
 
 	txs := make([]Transaction, 0)
 
@@ -57,9 +57,15 @@ func TestRPCClient_SubscribeAccountTransactions(t *testing.T) {
 		}
 	}()
 
-	latestProcessedIndex, err := rpcClient.SubscribeAccountTransactions(ctx, mainnetCoreAccount, startLedger, endLedger, txsCh)
+	latestProcessedIndex, err := rpcClient.SubscribeAccountTransactions(
+		ctx,
+		convertStringToRippleAccount(t, mainnetCoreAccount),
+		startLedger,
+		endLedger,
+		txsCh,
+	)
 	require.NoError(t, err)
-	require.Equal(t, int64(80176263), latestProcessedIndex)
+	require.Equal(t, int64(80175363), latestProcessedIndex)
 
 	close(txsCh)
 
@@ -68,7 +74,7 @@ func TestRPCClient_SubscribeAccountTransactions(t *testing.T) {
 		t.FailNow()
 	case <-doneRead:
 	}
-	require.Equal(t, 14, len(txs))
+	require.Len(t, txs, 1018)
 	for _, tx := range txs {
 		require.GreaterOrEqual(t, tx.LedgerIndex, startLedger, fmt.Sprintf("tx:%+v", tx))
 		require.LessOrEqual(t, tx.LedgerIndex, endLedger, fmt.Sprintf("tx:%+v", tx))
@@ -111,7 +117,14 @@ func TestRPCClient_GetAccountTransactions(t *testing.T) {
 			}
 		}
 	}()
-	_, latestProcessedIndex, err := rpcClient.GetAccountTransactions(ctx, mainnetCoreAccount, 0, 0, markerPtr, txsCh)
+	_, latestProcessedIndex, err := rpcClient.GetAccountTransactions(
+		ctx,
+		convertStringToRippleAccount(t, mainnetCoreAccount),
+		0,
+		0,
+		markerPtr,
+		txsCh,
+	)
 	require.NoError(t, err)
 	require.Equal(t, int64(80175276), latestProcessedIndex)
 	close(txsCh)
@@ -122,7 +135,7 @@ func TestRPCClient_GetAccountTransactions(t *testing.T) {
 	case <-doneRead:
 	}
 
-	require.Equal(t, 1, len(txs))
+	require.Len(t, txs, 100)
 	tx := txs[0]
 
 	expectedTime, err := time.Parse(time.DateTime, "2023-06-01 16:00:02")
@@ -130,10 +143,10 @@ func TestRPCClient_GetAccountTransactions(t *testing.T) {
 	expectedTx := Transaction{
 		Account:     "rL54wzknUXxqiC8Tzs6mzLi3QJTtX5uVK6",
 		Destination: "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
-		DeliveryAmount: DeliveredAmount{
-			Currency: "434F524500000000000000000000000000000000",
-			Issuer:   "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
-			Value:    big.NewFloat(1),
+		DeliveryAmount: rippledata.Amount{
+			Currency: convertStringToRippleCurrency(t, "434F524500000000000000000000000000000000"),
+			Issuer:   convertStringToRippleAccount(t, "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D"),
+			Value:    convertStringToRippleValue(t, "1", false),
 		},
 		Memos: []string{
 			"core12zs7nt7p73mzzplnl0ye8txzvxjgnqd4h2c8uy=coreum",
@@ -158,7 +171,7 @@ func TestRPCClient_GetAccountTransactions(t *testing.T) {
 	// fetch same transaction by its hash
 	txsMap, err := rpcClient.GetTransactions(ctx, []string{expectedTx.Hash})
 	require.NoError(t, err)
-	require.Len(t, txs, 1)
+	require.Len(t, txsMap, 1)
 	tx = txsMap[expectedTx.Hash]
 	txBytes, err = json.Marshal(tx)
 	require.NoError(t, err)
@@ -201,8 +214,15 @@ func TestRPCClient_RPCErrorHandling(t *testing.T) {
 			}
 		}
 	}()
-	_, _, err = rpcClient.GetAccountTransactions(ctx, "invalid-account", 0, 0, markerPtr, txsCh)
-	require.ErrorContains(t, err, "actMalformed")
+	_, _, err = rpcClient.GetAccountTransactions(
+		ctx,
+		convertStringToRippleAccount(t, mainnetCoreAccount),
+		1000000000000000000,
+		0,
+		markerPtr,
+		txsCh,
+	)
+	require.ErrorContains(t, err, "error code:57, error message:Ledger indexes invalid")
 }
 
 func TestRPCClient_GetCurrentLedger(t *testing.T) {
@@ -220,67 +240,27 @@ func TestRPCClient_GetCurrentLedger(t *testing.T) {
 
 	currentLedger, err := rpcClient.GetCurrentLedger(ctx)
 	require.NoError(t, err)
-	require.True(t, currentLedger > 0)
+	require.Greater(t, currentLedger, int64(0))
 }
 
-func Test_convertJsonToDeliveredAmount(t *testing.T) {
-	t.Parallel()
+func convertStringToRippleCurrency(t *testing.T, s string) rippledata.Currency {
+	currency, err := rippledata.NewCurrency(s)
+	require.NoError(t, err)
 
-	type args struct {
-		amount json.RawMessage
-	}
-	tests := []struct {
-		name       string
-		args       args
-		wantValid  bool
-		wantAmount DeliveredAmount
-	}{
-		{
-			name: "empty_string",
-			args: args{
-				amount: json.RawMessage(""),
-			},
-			wantValid:  false,
-			wantAmount: DeliveredAmount{},
-		},
-		{
-			name: "xrp_amount",
-			args: args{
-				amount: json.RawMessage("10000000"),
-			},
-			wantValid: false,
-			// For the case with the native token we expect empty result
-			wantAmount: DeliveredAmount{},
-		},
-		{
-			name: "coreum_amount",
-			args: args{
-				amount: json.RawMessage(`{
-           "currency": "434F524500000000000000000000000000000000",
-           "issuer": "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
-           "value": "1.72361980446674"
-         }`),
-			},
-			wantValid: true,
-			wantAmount: DeliveredAmount{
-				Currency: "434F524500000000000000000000000000000000",
-				Issuer:   "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
-				Value: func() *big.Float {
-					v, _ := big.NewFloat(0).SetString("1.72361980446674")
-					return v
-				}(),
-			},
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			gotAmount, gotValid := convertJSONToDeliveredAmount(tt.args.amount)
-			require.Equal(t, tt.wantValid, gotValid)
-			require.Equal(t, tt.wantAmount.Currency, gotAmount.Currency)
-			require.Equal(t, tt.wantAmount.Issuer, gotAmount.Issuer)
-			require.Equal(t, fmt.Sprintf("%s", tt.wantAmount.Value), fmt.Sprintf("%s", gotAmount.Value))
-		})
-	}
+	return currency
+}
+
+//nolint:unparam // helper func
+func convertStringToRippleAccount(t *testing.T, s string) rippledata.Account {
+	acc, err := rippledata.NewAccountFromAddress(s)
+	require.NoError(t, err)
+
+	return *acc
+}
+
+func convertStringToRippleValue(t *testing.T, s string, native bool) *rippledata.Value {
+	v, err := rippledata.NewValue(s, native)
+	require.NoError(t, err)
+
+	return v
 }

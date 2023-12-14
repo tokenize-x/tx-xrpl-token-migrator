@@ -26,7 +26,11 @@ import (
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
 )
 
-const txHash = "9752A1D96CA8C54400FD11DD19FD88FC6F386A9DD0E29DE92DDD1FD419389998"
+const (
+	txHash        = "9752A1D96CA8C54400FD11DD19FD88FC6F386A9DD0E29DE92DDD1FD419389998"
+	actionPending = "pending"
+	actionSent    = "sent"
+)
 
 // used for the empty responses.
 var emptyTx = coreum.Transaction{
@@ -134,7 +138,7 @@ func TestWASMContractThresholdBankSend(t *testing.T) {
 
 	action, err := event.FindStringEventAttribute(txRes.Events, wasmtypes.ModuleName, "result")
 	requireT.NoError(err)
-	requireT.Equal(action, "pending")
+	requireT.Equal(actionPending, action)
 
 	evidenceID, err := event.FindStringEventAttribute(txRes.Events, wasmtypes.ModuleName, "evidence_id")
 	requireT.NoError(err)
@@ -168,7 +172,7 @@ func TestWASMContractThresholdBankSend(t *testing.T) {
 
 	action, err = event.FindStringEventAttribute(txRes.Events, wasmtypes.ModuleName, "result")
 	requireT.NoError(err)
-	requireT.Equal(action, "pending")
+	requireT.Equal(actionPending, action)
 
 	evidenceIDWithModifierPayload, err := event.FindStringEventAttribute(txRes.Events, wasmtypes.ModuleName, "evidence_id")
 	requireT.NoError(err)
@@ -197,7 +201,7 @@ func TestWASMContractThresholdBankSend(t *testing.T) {
 
 	action, err = event.FindStringEventAttribute(txRes.Events, wasmtypes.ModuleName, "result")
 	requireT.NoError(err)
-	requireT.Equal(action, "sent")
+	requireT.Equal(actionSent, action)
 
 	pendingTx, err = contractClient.GetPendingTx(ctx, evidenceID)
 	requireT.NoError(err)
@@ -312,7 +316,7 @@ func TestWASMContractExecutePending(t *testing.T) {
 	assertBankBalance(ctx, t, bankClient, txSendRecipient, chain.NewCoin(sdk.ZeroInt()))
 	action, err := event.FindStringEventAttribute(txRes.Events, wasmtypes.ModuleName, "result")
 	requireT.NoError(err)
-	requireT.Equal(action, "pending")
+	requireT.Equal(actionPending, action)
 
 	pendingTx, err := contractClient.GetPendingTx(ctx, evidenceID)
 	requireT.NoError(err)
@@ -361,7 +365,7 @@ func TestWASMContractExecutePending(t *testing.T) {
 
 	action, err = event.FindStringEventAttribute(txRes.Events, wasmtypes.ModuleName, "result")
 	requireT.NoError(err)
-	requireT.Equal(action, "sent")
+	requireT.Equal(actionSent, action)
 
 	pendingTx, err = contractClient.GetPendingTx(ctx, evidenceID)
 	requireT.NoError(err)
@@ -424,7 +428,10 @@ func TestWASMContractExecutePendingWithMultisig(t *testing.T) {
 	)
 
 	bankClient := banktypes.NewQueryClient(chain.ClientContext)
-	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil, chain.ChainSettings.Denom), chain.ClientContext)
+	contractClient := coreum.NewContractClient(
+		coreum.DefaultContractClientConfig(nil, chain.ChainSettings.Denom),
+		chain.ClientContext,
+	)
 
 	t.Log("Deploying and instantiating the smart contract.")
 	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
@@ -479,11 +486,11 @@ func TestWASMContractExecutePendingWithMultisig(t *testing.T) {
 	// filter by id
 	msgs, err := contractClient.BuildExecutePendingMessages(ctx, multisigAddress, []string{evidenceID})
 	requireT.NoError(err)
-	requireT.Equal(1, len(msgs))
+	requireT.Len(msgs, 1)
 	// get all
 	msgs, err = contractClient.BuildExecutePendingMessages(ctx, multisigAddress, nil)
 	requireT.NoError(err)
-	requireT.Equal(1, len(msgs))
+	requireT.Len(msgs, 1)
 
 	fees, gas, err := contractClient.EstimateExecuteMessages(ctx, multisigAddress, msgs...)
 	requireT.NoError(err)
@@ -759,19 +766,19 @@ func TestWASMContractQueryPagination(t *testing.T) {
 	pendingTxs, err := contractClient.GetPendingTxs(ctx, nil, nil)
 	require.NoError(t, err)
 	for _, tx := range pendingTxs {
-		require.Equal(t, 1, len(tx.EvidenceProviders))
+		require.Len(t, tx.EvidenceProviders, 1)
 	}
-	require.Equal(t, 100, len(pendingTxs))
+	require.Len(t, pendingTxs, 100)
 
 	t.Logf("Quering pending transactions with pagination greater than max.")
 	pendingTxs, err = contractClient.GetPendingTxs(ctx, nil, lo.ToPtr(uint32(10000)))
 	require.NoError(t, err)
-	require.Equal(t, 100, len(pendingTxs))
+	require.Len(t, pendingTxs, 100)
 
 	t.Logf("Quering pending transactions with offet.")
 	pendingTxs, err = contractClient.GetPendingTxs(ctx, lo.ToPtr(uint64(90)), nil)
 	require.NoError(t, err)
-	require.Equal(t, 10, len(pendingTxs))
+	require.Len(t, pendingTxs, 10)
 
 	t.Logf("Confirming %d pending tansactions from second trusted address.", transactionsCount)
 	_, err = contractClient.ThresholdBankSend(ctx, trustedAddress2, sendExecuteReqBatch...)
@@ -780,9 +787,9 @@ func TestWASMContractQueryPagination(t *testing.T) {
 	t.Logf("Quering sent transactions with default pagination.")
 	sentTxs, err := contractClient.GetSentTxs(ctx, nil, nil)
 	require.NoError(t, err)
-	require.Equal(t, 100, len(sentTxs))
+	require.Len(t, sentTxs, 100)
 	for _, tx := range sentTxs {
-		require.Equal(t, 2, len(tx.EvidenceProviders))
+		require.Len(t, tx.EvidenceProviders, 2)
 	}
 }
 
@@ -804,7 +811,12 @@ func assertBankBalance(
 	require.Equal(t, expectedBalance.Amount.String(), recipientBalance.Balance.Amount.String())
 }
 
-func createMulisignTx(requireT *require.Assertions, txBuilder sdkclient.TxBuilder, accSec uint64, multisigPublicKey *sdkmultisig.LegacyAminoPubKey) authsigning.Tx {
+func createMulisignTx(
+	requireT *require.Assertions,
+	txBuilder sdkclient.TxBuilder,
+	accSec uint64,
+	multisigPublicKey *sdkmultisig.LegacyAminoPubKey,
+) authsigning.Tx {
 	signs, err := txBuilder.GetTx().GetSignaturesV2()
 	requireT.NoError(err)
 

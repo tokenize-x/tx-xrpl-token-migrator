@@ -95,9 +95,30 @@ func TestWASMTestnetBridging(t *testing.T) {
 	log := zaptest.NewLogger(t)
 
 	instances := []*service.Services{
-		buildTestingServices(t, log, chain.ChainSettings.ChainID, chain.ClientContext.Keyring(), trustedAddress1, contractAddr),
-		buildTestingServices(t, log, chain.ChainSettings.ChainID, chain.ClientContext.Keyring(), trustedAddress2, contractAddr),
-		buildTestingServices(t, log, chain.ChainSettings.ChainID, chain.ClientContext.Keyring(), trustedAddress3, contractAddr),
+		buildTestingServices(
+			t,
+			log,
+			chain.ChainSettings.ChainID,
+			chain.ClientContext.Keyring(),
+			trustedAddress1,
+			contractAddr,
+		),
+		buildTestingServices(
+			t,
+			log,
+			chain.ChainSettings.ChainID,
+			chain.ClientContext.Keyring(),
+			trustedAddress2,
+			contractAddr,
+		),
+		buildTestingServices(
+			t,
+			log,
+			chain.ChainSettings.ChainID,
+			chain.ClientContext.Keyring(),
+			trustedAddress3,
+			contractAddr,
+		),
 	}
 
 	executionErrors := make([]error, 0)
@@ -145,7 +166,13 @@ func TestWASMTestnetBridging(t *testing.T) {
 	// execute the pending transaction
 	_, err = instances[0].CoreumContractClient.ExecutePending(ctx, trustedAddress1, highAmount, highAmountTxEvidenceID)
 	requireT.NoError(err)
-	awaitForBalance(ctx, t, chain.ClientContext, recipient3Address, chain.NewCoin(recipient3ExpectedBalance.Add(highAmount.Amount)))
+	awaitForBalance(
+		ctx,
+		t,
+		chain.ClientContext,
+		recipient3Address,
+		chain.NewCoin(recipient3ExpectedBalance.Add(highAmount.Amount)),
+	)
 
 	cancel()
 	wg.Wait()
@@ -225,7 +252,12 @@ func awaitForBalance(
 		}
 
 		if balancesRes.Balances.AmountOf(expectedBalance.Denom).String() != expectedBalance.Amount.String() {
-			return retry.Retryable(errors.Errorf("account %s %s balance is still not equal to expected, all balances: %s", address, expectedBalance, balancesRes))
+			return retry.Retryable(
+				errors.Errorf(
+					"account %s %s balance is still not equal to expected, all balances: %s",
+					address, expectedBalance, balancesRes,
+				),
+			)
 		}
 
 		return nil

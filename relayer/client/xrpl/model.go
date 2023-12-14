@@ -1,8 +1,9 @@
 package xrpl
 
 import (
-	"math/big"
 	"time"
+
+	rippledata "github.com/rubblelabs/ripple/data"
 )
 
 const (
@@ -10,22 +11,13 @@ const (
 	TransactionTypePayment = "Payment"
 	// TransactionResultSuccess is success result of the transaction.
 	TransactionResultSuccess = "tesSUCCESS"
-	// MessageTypeTransaction is transaction message type.
-	MessageTypeTransaction = "transaction"
 )
-
-// DeliveredAmount is delivered amount of the transaction.
-type DeliveredAmount struct {
-	Currency string // the currency might be empty if it's native XRP coin
-	Issuer   string
-	Value    *big.Float
-}
 
 // Transaction is general transaction struct.
 type Transaction struct { //nolint:musttag //json used in the tests only
 	Account           string
 	Destination       string
-	DeliveryAmount    DeliveredAmount
+	DeliveryAmount    rippledata.Amount
 	Memos             []string
 	Hash              string
 	TransactionType   string

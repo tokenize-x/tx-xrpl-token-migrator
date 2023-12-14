@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	rippledata "github.com/rubblelabs/ripple/data"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -139,11 +140,25 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 		coreumClientCtx = coreumClientCtx.WithGRPCClient(coreumGRPCClient)
 	}
 
-	coreumContractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(contractAddress, network.Denom()), coreumClientCtx)
+	coreumContractClient := coreum.NewContractClient(
+		coreum.DefaultContractClientConfig(
+			contractAddress,
+			network.Denom(),
+		),
+		coreumClientCtx,
+	)
 
+	xrplIssuer, err := rippledata.NewAccountFromAddress(cfg.XRPLIssuer)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert XRPLIssuer string to type, value:%s", cfg.XRPLIssuer)
+	}
+	xrplCurrency, err := rippledata.NewCurrency(cfg.XRPLCurrency)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert XRPLCurrency string to type, value:%s", cfg.XRPLCurrency)
+	}
 	txFinder := finder.NewFinder(finder.Config{
-		XRPLIssuer:                 cfg.XRPLIssuer,
-		XRPLCurrency:               cfg.XRPLCurrency,
+		XRPLIssuer:                 *xrplIssuer,
+		XRPLCurrency:               xrplCurrency,
 		XRPLHistoryScanStartLedger: cfg.XRPLHistoryScanStartLedger,
 		XRPLRecentScanIndexesBack:  cfg.XRPLRecentScanIndexesBack,
 		XRPLMemoSuffix:             cfg.XRPLMemoSuffix,
@@ -155,7 +170,16 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 
 	var metricPusher *metric.Pusher
 	if cfg.PrometheusURL != "" {
-		metricPusher, err = metric.NewPusher(metric.DefaultPusherConfig(cfg.PrometheusURL, cfg.PrometheusUsername, cfg.PrometheusPassword, cfg.PrometheusInstanceName), log, metricRecorder.GetRegistry())
+		metricPusher, err = metric.NewPusher(
+			metric.DefaultPusherConfig(
+				cfg.PrometheusURL,
+				cfg.PrometheusUsername,
+				cfg.PrometheusPassword,
+				cfg.PrometheusInstanceName,
+			),
+			log,
+			metricRecorder.GetRegistry(),
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -173,8 +197,8 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 
 	auditor := audit.NewAuditor(audit.AuditorConfig{
 		ContractAddress: contractAddress.String(),
-		XRPLIssuer:      cfg.XRPLIssuer,
-		XRPLCurrency:    cfg.XRPLCurrency,
+		XRPLIssuer:      *xrplIssuer,
+		XRPLCurrency:    xrplCurrency,
 		XRPLMemoSuffix:  cfg.XRPLMemoSuffix,
 		CoreumDenom:     network.Denom(),
 		CoreumDecimals:  6,

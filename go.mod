@@ -27,6 +27,7 @@ require (
 	github.com/gammazero/workerpool v1.1.3
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.0
+	github.com/rubblelabs/ripple v0.0.0-20230908201244-7f73b1fe5e22
 	github.com/samber/lo v1.38.1
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
@@ -36,6 +37,7 @@ require (
 
 require (
 	github.com/benbjohnson/clock v1.1.0 // indirect
+	github.com/bits-and-blooms/bitset v1.2.1 // indirect
 	github.com/gammazero/deque v0.2.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

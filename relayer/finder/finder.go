@@ -7,6 +7,7 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	rippledata "github.com/rubblelabs/ripple/data"
 	"go.uber.org/zap"
 
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/xrpl"
@@ -22,13 +23,19 @@ type PendingCoreumSendTransaction struct {
 
 // XRPLScanner is XRPL scanner which provides XRPL transactions.
 type XRPLScanner interface {
-	Subscribe(ctx context.Context, account string, historyScanStartLedger, recentScanIndexesBack int64, ch chan<- xrpl.Transaction) error
+	Subscribe(
+		ctx context.Context,
+		account rippledata.Account,
+		historyScanStartLedger,
+		recentScanIndexesBack int64,
+		ch chan<- xrpl.Transaction,
+	) error
 }
 
 // Config is Finder config.
 type Config struct {
-	XRPLIssuer                 string
-	XRPLCurrency               string
+	XRPLIssuer                 rippledata.Account
+	XRPLCurrency               rippledata.Currency
 	XRPLHistoryScanStartLedger int64
 	XRPLRecentScanIndexesBack  int64
 	XRPLMemoSuffix             string
@@ -98,8 +105,13 @@ func (f *Finder) buildPendingTransaction(tx xrpl.Transaction) (PendingCoreumSend
 	if !matches {
 		return PendingCoreumSendTransaction{}, false
 	}
+	// we don't include the native coins
+	if tx.DeliveryAmount.IsNative() {
+		return PendingCoreumSendTransaction{}, false
+	}
 
-	if tx.DeliveryAmount.Currency != f.cfg.XRPLCurrency || tx.DeliveryAmount.Issuer != f.cfg.XRPLIssuer {
+	if tx.DeliveryAmount.Currency.String() != f.cfg.XRPLCurrency.String() ||
+		tx.DeliveryAmount.Issuer.String() != f.cfg.XRPLIssuer.String() {
 		return PendingCoreumSendTransaction{}, false
 	}
 
@@ -116,7 +128,7 @@ func (f *Finder) buildPendingTransaction(tx xrpl.Transaction) (PendingCoreumSend
 	}, true
 }
 
-func (f *Finder) convertXRPLAmountToCoreumCoin(xrplAmount *big.Float) sdk.Coin {
+func (f *Finder) convertXRPLAmountToCoreumCoin(xrplAmount *rippledata.Value) sdk.Coin {
 	amount := ConvertXRPLAmountToCoreumAmount(xrplAmount, f.cfg.CoreumDecimals)
 	return sdk.NewCoin(f.cfg.CoreumDenom, amount)
 }
@@ -140,18 +152,21 @@ func ExtractAddressFromMemo(memos []string, suffix string) (sdk.AccAddress, bool
 }
 
 // ConvertXRPLAmountToCoreumAmount converts xrpl amount to coreum using the coreum decimals.
-func ConvertXRPLAmountToCoreumAmount(xrplAmount *big.Float, decimals int) sdkmath.Int {
+func ConvertXRPLAmountToCoreumAmount(xrplAmount *rippledata.Value, decimals int) sdkmath.Int {
 	if xrplAmount == nil {
 		return sdk.NewInt(0)
 	}
 
 	// 10^CoreumDecimals
-	var tenPowerDecimals big.Int
-	tenPowerDecimals.Exp(big.NewInt(10), big.NewInt(int64(decimals)), nil)
+	tenPowerDecimals := big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(decimals)), nil)
+	xrplRatAmount := xrplAmount.Rat()
+	xrplRatAmountNumerator := xrplRatAmount.Num()
+	xrplRatAmountDenominator := xrplRatAmount.Denom()
+	coreumAmount := big.NewInt(0).Quo(
+		big.NewInt(0).Mul(
+			tenPowerDecimals, xrplRatAmountNumerator,
+		),
+		xrplRatAmountDenominator)
 
-	var coreumFloatAmount big.Float
-	coreumFloatAmount.Mul(big.NewFloat(0).SetInt(&tenPowerDecimals), xrplAmount)
-
-	truncatedAmount, _ := coreumFloatAmount.Int(nil)
-	return sdk.NewIntFromBigInt(truncatedAmount)
+	return sdk.NewIntFromBigInt(coreumAmount)
 }

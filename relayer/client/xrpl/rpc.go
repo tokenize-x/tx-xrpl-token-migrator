@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
-	"math/big"
 	"net/http"
 	"strings"
 	"sync"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
+	rippledata "github.com/rubblelabs/ripple/data"
 	"go.uber.org/zap"
 
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
@@ -37,16 +37,10 @@ type rpcErrResult struct {
 
 // ******************** Unexported common ********************
 
-type metaDeliveredAmount struct {
-	Currency string     `json:"currency"`
-	Issuer   string     `json:"issuer"`
-	Value    *big.Float `json:"value,string"` //nolint:staticcheck // expected string tag
-}
-
 //nolint:tagliatelle //contract spec
 type metaRes struct {
-	DeliveredAmount   json.RawMessage `json:"delivered_amount"` // can be float string or metaDeliveredAmount
-	TransactionResult string          `json:"TransactionResult"`
+	DeliveredAmount   rippledata.Amount `json:"delivered_amount"`
+	TransactionResult string            `json:"TransactionResult"`
 }
 
 //nolint:tagliatelle //contract spec
@@ -121,16 +115,6 @@ type txReq struct {
 	Binary bool   `json:"binary"`
 }
 
-func convertJSONToDeliveredAmount(amount json.RawMessage) (DeliveredAmount, bool) {
-	var amt metaDeliveredAmount
-	err := json.Unmarshal(amount, &amt)
-	if err != nil {
-		return DeliveredAmount{}, false
-	}
-
-	return DeliveredAmount(amt), true
-}
-
 func convertHexMemosToStrings(memos []memoRes) ([]string, error) {
 	memoStrings := make([]string, 0, len(memos))
 	for _, memo := range memos {
@@ -168,14 +152,10 @@ func convertTxInfoToTransaction(tx baseTx, meta metaRes, ledgerIndex int64, vali
 		return Transaction{}, false, err
 	}
 
-	deliveredAmount, ok := convertJSONToDeliveredAmount(meta.DeliveredAmount)
-	if !ok {
-		return Transaction{}, false, nil
-	}
 	return Transaction{
 		Account:           tx.Account,
 		Destination:       tx.Destination,
-		DeliveryAmount:    deliveredAmount,
+		DeliveryAmount:    meta.DeliveredAmount,
 		Memos:             memos,
 		Hash:              tx.Hash,
 		TransactionType:   tx.TransactionType,
@@ -237,13 +217,13 @@ func NewRPCClient(cfg RPCClientConfig, log logger.Logger, httpClient HTTPClient)
 // SubscribeAccountTransactions sends the list of all account transitions using pagination to the inout channel.
 func (c *RPCClient) SubscribeAccountTransactions(
 	ctx context.Context,
-	account string,
+	account rippledata.Account,
 	startLedger, endLedger int64,
 	ch chan<- Transaction,
 ) (int64, error) {
 	c.log.Debug(
 		"Subscribing RPC account transactions",
-		zap.String("account", account),
+		zap.String("account", account.String()),
 		zap.Int64("startLedger", startLedger),
 		zap.Int64("endLedger", endLedger),
 	)
@@ -270,10 +250,17 @@ func (c *RPCClient) SubscribeAccountTransactions(
 }
 
 // GetAccountTransactions returns the list account transactions with fully filled delivery amount using pagination.
-func (c *RPCClient) GetAccountTransactions(ctx context.Context, account string, startLedger, endLedger int64, marker *PageMarker, ch chan<- Transaction) (*PageMarker, int64, error) {
+func (c *RPCClient) GetAccountTransactions(
+	ctx context.Context,
+	account rippledata.Account,
+	startLedger,
+	endLedger int64,
+	marker *PageMarker,
+	ch chan<- Transaction,
+) (*PageMarker, int64, error) {
 	c.log.Debug(
 		"Getting account transactions",
-		append(convertMarkerToZapFields(marker), zap.String("account", account))...,
+		append(convertMarkerToZapFields(marker), zap.String("account", account.String()))...,
 	)
 
 	if endLedger <= 0 {
@@ -283,7 +270,7 @@ func (c *RPCClient) GetAccountTransactions(ctx context.Context, account string, 
 		startLedger = -1
 	}
 	accountTxReqParam := accountTxReq{
-		Account:        account,
+		Account:        account.String(),
 		Binary:         false,
 		Forward:        true,
 		LedgerIndexMin: startLedger,
@@ -412,7 +399,12 @@ func (c *RPCClient) GetTransaction(ctx context.Context, hash string) (Transactio
 		return Transaction{}, false, errors.Wrap(err, "failed to call `tx` method")
 	}
 
-	return convertTxInfoToTransaction(txRPCRes.Result.baseTx, txRPCRes.Result.Meta, txRPCRes.Result.LedgerIndex, txRPCRes.Result.Validated)
+	return convertTxInfoToTransaction(
+		txRPCRes.Result.baseTx,
+		txRPCRes.Result.Meta,
+		txRPCRes.Result.LedgerIndex,
+		txRPCRes.Result.Validated,
+	)
 }
 
 func (c *RPCClient) callPRC(ctx context.Context, req rpcReq, res any) error {
@@ -424,7 +416,10 @@ func (c *RPCClient) callPRC(ctx context.Context, req rpcReq, res any) error {
 			return errors.Wrapf(err, "failed to decode http result to error result, raw http result:%s", string(resBytes))
 		}
 		if rpcErrRes.Result.ErrorCode != 0 {
-			return errors.Errorf("failed to call xrpl RPC, error:%s, error code:%d, error message:%s", rpcErrRes.Result.Error, rpcErrRes.Result.ErrorCode, rpcErrRes.Result.ErrorMessage)
+			return errors.Errorf(
+				"failed to call xrpl RPC, error:%s, error code:%d, error message:%s",
+				rpcErrRes.Result.Error, rpcErrRes.Result.ErrorCode, rpcErrRes.Result.ErrorMessage,
+			)
 		}
 
 		if err := json.Unmarshal(resBytes, res); err != nil {

@@ -33,7 +33,7 @@ func TestTxScanner_Scan(t *testing.T) {
 	txsCh := make(chan Transaction)
 	err = txScanner.Subscribe(
 		ctx,
-		mainnetCoreAccount,
+		convertStringToRippleAccount(t, mainnetCoreAccount),
 		mainnetInitialBridgeLedgerIndex,
 		10,
 		txsCh)

@@ -248,7 +248,10 @@ func DeployCmd(ctx context.Context) *cobra.Command { //nolint:funlen // long log
 			}
 			maxAmount, ok := sdk.NewIntFromString(maxAmountString)
 			if !ok || maxAmount.LT(minAmount) {
-				return errors.Errorf("%s must be greater or equal than %s", flagCoreumContractMaxAmount, flagCoreumContractMinAmount)
+				return errors.Errorf(
+					"%s must be greater or equal than %s",
+					flagCoreumContractMaxAmount, flagCoreumContractMinAmount,
+				)
 			}
 
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -553,9 +556,17 @@ func preProcessFlags() error {
 }
 
 func addKeyringFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().String(flags.FlagKeyringBackend, flags.DefaultKeyringBackend, "Select keyring's backend (os|file|kwallet|pass|test)")
+	cmd.PersistentFlags().String(
+		flags.FlagKeyringBackend,
+		flags.DefaultKeyringBackend,
+		"Select keyring's backend (os|file|kwallet|pass|test)",
+	)
 	cmd.PersistentFlags().String(flags.FlagHome, defaultHome, "The application home directory")
-	cmd.PersistentFlags().String(flags.FlagKeyringDir, "", "The client Keyring directory; if omitted, the default 'home' directory will be used")
+	cmd.PersistentFlags().String(
+		flags.FlagKeyringDir,
+		"",
+		"The client Keyring directory; if omitted, the default 'home' directory will be used",
+	)
 }
 
 func addCoreumFlags(cmd *cobra.Command) {

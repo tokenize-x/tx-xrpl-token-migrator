@@ -30,7 +30,7 @@ type ChainClientConfig struct {
 func DefaultChainClientConfig() ChainClientConfig {
 	return ChainClientConfig{
 		EventsPageSize: 100,
-		WorkerPoolSize: 20,
+		WorkerPoolSize: 10,
 		RequestTimeout: time.Minute,
 	}
 }
@@ -92,7 +92,11 @@ func (c *ChainClient) queryTransactionsByEvents(ctx context.Context, event strin
 			res, err = queryTxsByEvents(reqCtx, c.clientCtx, tmEvents, pageToFetch, c.cfg.EventsPageSize, "asc")
 			if err != nil {
 				fetchError = err
-				c.log.Error("Failed to fetch page", zap.String("Page", fmt.Sprintf("%d/%d", pageToFetch, pagesTotal)), zap.Error(err))
+				c.log.Error(
+					"Failed to fetch page",
+					zap.String("Page", fmt.Sprintf("%d/%d", pageToFetch, pagesTotal)),
+					zap.Error(err),
+				)
 				return
 			}
 			mu.Lock()
@@ -116,7 +120,13 @@ func (c *ChainClient) queryTransactionsByEvents(ctx context.Context, event strin
 	return txs, nil
 }
 
-func queryTxsByEvents(ctx context.Context, clientCtx client.Context, events []string, page, limit int, orderBy string) (*sdk.SearchTxsResult, error) {
+func queryTxsByEvents(
+	ctx context.Context,
+	clientCtx client.Context,
+	events []string,
+	page, limit int,
+	orderBy string,
+) (*sdk.SearchTxsResult, error) {
 	query := strings.Join(events, " AND ")
 
 	node := clientCtx.RPCClient()

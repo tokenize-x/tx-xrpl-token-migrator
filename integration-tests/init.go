@@ -28,8 +28,18 @@ var (
 )
 
 func init() {
-	flag.StringVar(&coreumCfg.GRPCAddress, "coreum-grpc-address", "localhost:9090", "GRPC address of cored node started by coreum")
-	flag.StringVar(&coreumCfg.FundingMnemonic, "coreum-funding-mnemonic", "sad hobby filter tray ordinary gap half web cat hard call mystery describe member round trend friend beyond such clap frozen segment fan mistake", "Funding coreum account mnemonic required by tests")
+	flag.StringVar(
+		&coreumCfg.GRPCAddress,
+		"coreum-grpc-address",
+		"localhost:9090",
+		"GRPC address of cored node started by coreum",
+	)
+	flag.StringVar(
+		&coreumCfg.FundingMnemonic,
+		"coreum-funding-mnemonic",
+		//nolint:lll // one line mnemonic
+		"sad hobby filter tray ordinary gap half web cat hard call mystery describe member round trend friend beyond such clap frozen segment fan mistake",
+		"Funding coreum account mnemonic required by tests")
 
 	// accept testing flags
 	testing.Init()
@@ -57,7 +67,10 @@ type CoreumChain struct {
 
 // NewCoreumChain returns new instance of the coreum chain.
 func NewCoreumChain(cfg CoreumChainConfig) (CoreumChain, error) {
-	queryCtx, queryCtxCancel := context.WithTimeout(context.Background(), getTestContextConfig().TimeoutConfig.RequestTimeout)
+	queryCtx, queryCtxCancel := context.WithTimeout(
+		context.Background(),
+		getTestContextConfig().TimeoutConfig.RequestTimeout,
+	)
 	defer queryCtxCancel()
 
 	coreumGRPCClient := integration.DialGRPCClient(cfg.GRPCAddress)
@@ -66,7 +79,8 @@ func NewCoreumChain(cfg CoreumChainConfig) (CoreumChain, error) {
 	coreumClientCtx := client.NewContext(getTestContextConfig(), app.ModuleBasics).
 		WithGRPCClient(coreumGRPCClient)
 
-	coreumFeemodelParamsRes, err := feemodeltypes.NewQueryClient(coreumClientCtx).Params(queryCtx, &feemodeltypes.QueryParamsRequest{})
+	coreumFeemodelParamsRes, err := feemodeltypes.NewQueryClient(coreumClientCtx).
+		Params(queryCtx, &feemodeltypes.QueryParamsRequest{})
 	if err != nil {
 		return CoreumChain{}, errors.WithStack(err)
 	}
