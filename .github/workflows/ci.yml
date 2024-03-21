@@ -43,24 +43,26 @@ jobs:
       - name: Go version used to build crust tool
         run: go version
       - name: Checkout xrpl bridge
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
           path: xrpl-bridge
       - name: Checkout crust
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: CoreumFoundation/crust
           path: crust
+          ref: coreum-v3.0.3
       - name: Checkout coreum
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: CoreumFoundation/coreum
           path: coreum
+          ref: v3.0.3
       - name: Set up crust
         run: echo "$(pwd)/crust/bin" >> $GITHUB_PATH
       - name: Setup go cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: ${{ matrix.go-cache }}
         with:
           path: |
@@ -70,7 +72,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Setup WASM cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: ${{ matrix.wasm-cache }}
         with:
           path: ~/.cache/crust/wasm
@@ -78,7 +80,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-wasm-cache
       - name: Setup linter cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: ${{ matrix.linter-cache }}
         with:
           path: ~/.cache/golangci-lint

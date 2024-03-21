@@ -11,7 +11,7 @@ jobs:
       - name: Go version used for the build
         run: go version
       - name: Checkout xrpl bridge
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
           path: xrpl-bridge
@@ -31,7 +31,7 @@ jobs:
         run: |
           ln xrpl-bridge/build/relayer relayer-linux-amd64
       - name: Create release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           generate_release_notes: true
