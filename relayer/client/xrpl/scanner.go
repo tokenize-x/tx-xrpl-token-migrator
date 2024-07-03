@@ -171,6 +171,10 @@ func (t *TxScanner) doWithResubscribe(
 ) {
 	err := retry.Do(ctx, t.cfg.RetryDelay, func() error {
 		if err := f(); err != nil {
+			// exit before the logging
+			if errors.Is(err, context.Canceled) {
+				return err
+			}
 			t.log.Error("Error on scan subscription", zap.Error(err))
 			return retry.Retryable(err)
 		}

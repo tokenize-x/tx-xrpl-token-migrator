@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -18,9 +19,9 @@ import (
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/logger"
 	"github.com/CoreumFoundation/coreum-tools/pkg/run"
-	coruemapp "github.com/CoreumFoundation/coreum/v3/app"
-	"github.com/CoreumFoundation/coreum/v3/pkg/config"
-	"github.com/CoreumFoundation/coreum/v3/pkg/config/constant"
+	coruemapp "github.com/CoreumFoundation/coreum/v4/app"
+	"github.com/CoreumFoundation/coreum/v4/pkg/config"
+	"github.com/CoreumFoundation/coreum/v4/pkg/config/constant"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/service"
 )
@@ -46,6 +47,7 @@ const (
 	flagCoreumSenderAddress       = "coreum-sender-address"
 	flagCoreumContractAddress     = "coreum-contract-address"
 	flagCoreumContractEvidenceIDs = "coreum-contract-evidence-ids"
+	flagCoreumTrustedAddress      = "coreum-contract-trusted-addresses"
 
 	flagCoreumContractTrustedAddresses = "coreum-contract-trusted-addresses"
 	flagCoreumContractOwnerAddress     = "coreum-contract-owner-address"
@@ -124,11 +126,14 @@ func RootCmd(ctx context.Context) (*cobra.Command, error) {
 
 	cmd.AddCommand(VersionCmd(ctx))
 	cmd.AddCommand(StartCmd(ctx))
+	cmd.AddCommand(DeployAndInstantiateCmd(ctx))
 	cmd.AddCommand(DeployCmd(ctx))
 	cmd.AddCommand(GetContractConfigCmd(ctx))
 	cmd.AddCommand(GetPendingUnapprovedTransactionsCmd(ctx))
 	cmd.AddCommand(GetPendingApprovedTransactionsCmd(ctx))
 	cmd.AddCommand(BuildExecutePendingApprovedTransactionsCmd(ctx))
+	cmd.AddCommand(BuildMigrateContractTransactionCmd(ctx))
+	cmd.AddCommand(BuildUpdateTrustedAddressesTransactionCmd(ctx))
 	cmd.AddCommand(AuditCmd(ctx))
 
 	cmd.AddCommand(keys.Commands(defaultHome))
@@ -191,11 +196,11 @@ func StartCmd(ctx context.Context) *cobra.Command {
 	return cmd
 }
 
-// DeployCmd returns the deployment cmd.
-func DeployCmd(ctx context.Context) *cobra.Command { //nolint:funlen // long logic of flags reading
+// DeployAndInstantiateCmd returns the deploy and instantiate cmd.
+func DeployAndInstantiateCmd(ctx context.Context) *cobra.Command { //nolint:funlen // long logic of flags reading
 	cmd := &cobra.Command{
-		Use:   "deploy",
-		Short: "Deploy contract to coreum chain.",
+		Use:   "deploy-and-instantiate",
+		Short: "Deploy and instantiate contract to coreum chain.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := readServicesConfig(cmd)
 			if err != nil {
@@ -300,6 +305,52 @@ func DeployCmd(ctx context.Context) *cobra.Command { //nolint:funlen // long log
 	cmd.PersistentFlags().Int(flagCoreumContractThreshold, 0, "")
 	cmd.PersistentFlags().String(flagCoreumContractMinAmount, "", "")
 	cmd.PersistentFlags().String(flagCoreumContractMaxAmount, "", "")
+
+	return cmd
+}
+
+// DeployCmd returns the deployment cmd.
+func DeployCmd(ctx context.Context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "deploy",
+		Short: "Deploy contract to coreum chain.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := readServicesConfig(cmd)
+			if err != nil {
+				return err
+			}
+
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			if err != nil {
+				return err
+			}
+
+			services.Logger.Info("Deploying contract.")
+
+			senderAddress, err := sdk.AccAddressFromBech32(cfg.CoreumSenderAddress)
+			if err != nil {
+				return errors.Wrapf(err, "invalid sender address")
+			}
+
+			codeID, err := services.CoreumContractClient.Deploy(
+				ctx,
+				senderAddress,
+			)
+			if err != nil {
+				return err
+			}
+			services.Logger.Info("Contract deployed", zap.Uint64("codeID", codeID))
+
+			return nil
+		},
+	}
+
+	addCoreumFlags(cmd)
+	addKeyringFlags(cmd)
 
 	return cmd
 }
@@ -532,6 +583,132 @@ func AuditCmd(ctx context.Context) *cobra.Command {
 	return cmd
 }
 
+// BuildMigrateContractTransactionCmd builds transaction for the contract migration.
+func BuildMigrateContractTransactionCmd(ctx context.Context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "build-migrate-contract-transaction [codeID]",
+		Short: "Builds transaction for the contract migration",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := readServicesConfig(cmd)
+			if err != nil {
+				return err
+			}
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			if err != nil {
+				return err
+			}
+			senderAddress, err := sdk.AccAddressFromBech32(cfg.CoreumSenderAddress)
+			if err != nil {
+				return errors.Wrapf(err, "invalid signer address")
+			}
+
+			codeID, err := strconv.ParseUint(args[0], 10, 64)
+			if err != nil {
+				return errors.Wrapf(err, "failed to parse codeID")
+			}
+
+			msg := services.CoreumContractClient.BuildMigrateContractMessage(senderAddress, codeID)
+
+			fees, gas, err := services.CoreumContractClient.EstimateExecuteMessages(ctx, senderAddress, msg)
+			if err != nil {
+				return err
+			}
+
+			clientCtx = clientCtx.
+				WithChainID(cfg.CoreumChainID).
+				WithGenerateOnly(true)
+
+			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return errors.Wrapf(err, "failed to create tx factory")
+			}
+
+			txf = txf.WithFees(fees.String()).
+				WithGas(gas)
+
+			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
+		},
+	}
+
+	addCoreumFlags(cmd)
+
+	return cmd
+}
+
+// BuildUpdateTrustedAddressesTransactionCmd builds transaction for the update_trusted_addresses contract method.
+func BuildUpdateTrustedAddressesTransactionCmd(ctx context.Context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "build-update-trusted-addresses",
+		Short: "Builds transaction for the update_trusted_addresses method",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := readServicesConfig(cmd)
+			if err != nil {
+				return err
+			}
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			if err != nil {
+				return err
+			}
+			senderAddress, err := sdk.AccAddressFromBech32(cfg.CoreumSenderAddress)
+			if err != nil {
+				return errors.Wrapf(err, "invalid signer address")
+			}
+
+			trustedAddressesStr, err := cmd.Flags().GetStringSlice(flagCoreumTrustedAddress)
+			if err != nil {
+				return err
+			}
+
+			trustedAddresses := make([]sdk.AccAddress, 0, len(trustedAddressesStr))
+			for _, addrStr := range trustedAddressesStr {
+				addr, err := sdk.AccAddressFromBech32(addrStr)
+				if err != nil {
+					return errors.Wrapf(err, "invalid address %s", addrStr)
+				}
+				trustedAddresses = append(trustedAddresses, addr)
+			}
+
+			msg, err := services.CoreumContractClient.BuildUpdateTrustedAddressesTransaction(senderAddress, trustedAddresses)
+			if err != nil {
+				return err
+			}
+
+			fees, gas, err := services.CoreumContractClient.EstimateExecuteMessages(ctx, senderAddress, msg)
+			if err != nil {
+				return err
+			}
+
+			clientCtx = clientCtx.
+				WithChainID(cfg.CoreumChainID).
+				WithGenerateOnly(true)
+
+			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return errors.Wrapf(err, "failed to create tx factory")
+			}
+
+			txf = txf.WithFees(fees.String()).
+				WithGas(gas)
+
+			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
+		},
+	}
+
+	cmd.PersistentFlags().StringSlice(flagCoreumTrustedAddress, nil, "")
+	addCoreumFlags(cmd)
+
+	return cmd
+}
+
 func preProcessFlags() error {
 	flagSet := pflag.NewFlagSet("pre-process", pflag.ExitOnError)
 	flagSet.ParseErrorsWhitelist.UnknownFlags = true
@@ -607,6 +784,9 @@ func readServicesConfig(cmd *cobra.Command) (service.Config, error) {
 	}
 	var cfg service.Config
 	switch constant.ChainID(chainID) {
+	case constant.ChainIDDev:
+		cfg = defaultTestnetCfg
+		cfg.CoreumChainID = string(constant.ChainIDDev)
 	case constant.ChainIDTest:
 		cfg = defaultTestnetCfg
 	case constant.ChainIDMain:

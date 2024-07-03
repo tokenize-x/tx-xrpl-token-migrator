@@ -14,8 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/CoreumFoundation/coreum/v3/pkg/config"
-	"github.com/CoreumFoundation/coreum/v3/pkg/config/constant"
+	"github.com/CoreumFoundation/coreum/v4/pkg/config"
+	"github.com/CoreumFoundation/coreum/v4/pkg/config/constant"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/xrpl"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/metric"

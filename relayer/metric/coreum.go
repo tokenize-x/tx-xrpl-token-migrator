@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
-	"github.com/CoreumFoundation/coreum/v3/pkg/client"
+	"github.com/CoreumFoundation/coreum/v4/pkg/client"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
 )

@@ -8,6 +8,7 @@ import (
 	"math"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdkclient "github.com/cosmos/cosmos-sdk/client"
 	sdkmultisig "github.com/cosmos/cosmos-sdk/crypto/keys/multisig"
@@ -20,9 +21,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
 
-	"github.com/CoreumFoundation/coreum/v3/pkg/client"
-	"github.com/CoreumFoundation/coreum/v3/testutil/event"
-	integrationtests "github.com/CoreumFoundation/coreum/v3/testutil/integration"
+	"github.com/CoreumFoundation/coreum/v4/pkg/client"
+	"github.com/CoreumFoundation/coreum/v4/testutil/event"
+	integrationtests "github.com/CoreumFoundation/coreum/v4/testutil/integration"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
 )
 
@@ -611,6 +612,63 @@ func TestWASMUpdateMinMaxAmounts(t *testing.T) {
 	cfg, err = contractClient.GetContractConfig(ctx)
 	requireT.NoError(err)
 	requireT.Equal(newMaxAmount.String(), cfg.MaxAmount.String())
+}
+
+func TestWASMUpdateTrustedAddresses(t *testing.T) {
+	t.Parallel()
+
+	ctx, chain := NewCoreumTestingContext(t)
+
+	owner := chain.GenAccount()
+	anyAddress := chain.GenAccount()
+
+	requireT := require.New(t)
+	chain.Faucet.FundAccounts(ctx, t,
+		integrationtests.NewFundedAccount(owner, chain.NewCoin(sdk.NewInt(5000000000))),
+		integrationtests.NewFundedAccount(anyAddress, chain.NewCoin(sdk.NewInt(5000000000))),
+	)
+
+	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil, ""), chain.ClientContext)
+
+	t.Log("Deploying and instantiating the smart contract.")
+	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
+		Owner: owner.String(),
+		Admin: owner.String(),
+		TrustedAddresses: []string{
+			anyAddress.String(),
+		},
+		Threshold: 1,
+		MinAmount: sdkmath.NewInt(1),
+		MaxAmount: sdk.NewIntFromUint64(10_000),
+		Label:     "bank_threshold_send",
+	})
+	requireT.NoError(err)
+
+	requireT.NoError(contractClient.SetContractAddress(contractAddr))
+	t.Logf("Contract deployed and instantiated, address:%s.", contractAddr)
+
+	t.Logf("Trying to change trusted addresses from non-owner.")
+	newTrustedAddresses := []sdk.AccAddress{
+		chain.GenAccount(),
+		chain.GenAccount(),
+	}
+
+	_, err = contractClient.UpdateTrustedAddresses(
+		ctx, anyAddress, newTrustedAddresses,
+	)
+	requireT.True(coreum.IsUnauthorizedError(err))
+
+	t.Logf("Updating trusted addresses from the owner.")
+	_, err = contractClient.UpdateTrustedAddresses(
+		ctx, owner, newTrustedAddresses,
+	)
+	requireT.NoError(err)
+
+	cfg, err := contractClient.GetContractConfig(ctx)
+	requireT.NoError(err)
+	requireT.ElementsMatch(lo.Map(newTrustedAddresses, func(item sdk.AccAddress, index int) string {
+		return item.String()
+	}), cfg.TrustedAddresses)
 }
 
 func TestWASMContractExecuteWithdraw(t *testing.T) {

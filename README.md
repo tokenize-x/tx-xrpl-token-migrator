@@ -52,7 +52,7 @@ export COREUM_GRPC_URL="{GRPC URL of coreum node}"
 * Deploy smart contract
 
 ```
-./relayer deploy --coreum-chain-id $COREUM_CHAIN_ID \
+./relayer deploy-and-instantiate --coreum-chain-id $COREUM_CHAIN_ID \
     --coreum-contract-trusted-addresses $COREUM_CONTRACT_TRUSTED_ADDRESSES \
     --coreum-contract-threshold $COREUM_CONTRACT_THRESHOLD \
     --coreum-contract-owner-address $COREUM_CONTRACT_OWNER \
@@ -257,23 +257,7 @@ executed.
 cat unsigned.json
 ```
 
-* Export node URL
-
-```
-export COREUM_NODE="{Node RPC URL}"
-```
-
-* Sign with `cored` (the same can be done with the multisig account).
-
-```bash
-cored tx sign unsigned.json --from $COREUM_EXECUTOR_ADDRESS --output-document signed.json --chain-id $COREUM_CHAIN_ID --node $COREUM_NODE
-```
-
-* Broadcast with `cored`.
-
-```bash
-cored tx broadcast signed.json -y -b block --chain-id $COREUM_CHAIN_ID --node $COREUM_NODE
-```
+* [Sign and broadcast with cored](#Sign-and-broadcast-with-cored)
 
 ### Run audit.
 
@@ -401,8 +385,81 @@ If you wish to run two instances of bridge on the same VM, makes sure:
 
 4. Edit `promtail` instance specific service to read from instance specific promtail `config.yaml`
 
+## Update trusted addresses keys
 
+* Deploy new smart contract
 
+```bash
+./build/relayer deploy --coreum-chain-id $COREUM_CHAIN_ID \
+    --coreum-grpc-url $COREUM_GRPC_URL \
+    --coreum-sender-address $(./build/relayer keys show contract-deployer -a --coreum-chain-id $COREUM_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge) \
+    --keyring-backend os \
+    --home $HOME/.xrpl-bridge
+```
+
+Save generate codeID.
+
+* Generate tx to migrate the contract
+
+```bash
+export COREUM_CONTRACT_OWNER={Coreum contract owner}
+export COREUM_NEW_CONTRACT_CODE_ID={New contract code ID}
+export COREUM_CONTRACT_ADDRESS={Contract address}
+
+./build/relayer build-migrate-contract-transaction $COREUM_NEW_CONTRACT_CODE_ID \
+    --coreum-chain-id $COREUM_CHAIN_ID \
+    --coreum-grpc-url $COREUM_GRPC_URL \
+    --coreum-sender-address $COREUM_CONTRACT_OWNER \
+    --coreum-contract-address $COREUM_CONTRACT_ADDRESS > unsigned.json
+```
+
+* [Sign and broadcast with cored](#Sign-and-broadcast-with-cored)
+
+* Generate tx to update trusted addresses
+
+```bash
+export COREUM_CONTRACT_OWNER={Coreum contract owner}
+export COREUM_NEW_TRUSTED_ADDRESSES={New trusted addresses}
+export COREUM_CONTRACT_ADDRESS={Contract address}
+
+./build/relayer build-update-trusted-addresses \
+    --coreum-chain-id $COREUM_CHAIN_ID \
+    --coreum-grpc-url $COREUM_GRPC_URL \
+    --coreum-sender-address $COREUM_CONTRACT_OWNER \
+    --coreum-contract-trusted-addresses $COREUM_NEW_TRUSTED_ADDRESSES \
+    --coreum-contract-address $COREUM_CONTRACT_ADDRESS > unsigned.json
+```
+
+* [Sign and broadcast with cored](#Sign-and-broadcast-with-cored)
+
+* Check now that addresses are updated
+
+```
+./build/relayer get-contract-config \
+    --coreum-chain-id $COREUM_CHAIN_ID \
+    --coreum-grpc-url $COREUM_GRPC_URL \
+    --coreum-contract-address $COREUM_CONTRACT_ADDRESS
+```
+
+## Sign and broadcast with cored
+
+* Export node URL
+
+```
+export COREUM_NODE="{Node RPC URL}"
+```
+
+* Sign with `cored` (the same can be done with the multisig account).
+
+```bash
+cored tx sign unsigned.json --from $COREUM_EXECUTOR_ADDRESS --output-document signed.json --chain-id $COREUM_CHAIN_ID --node $COREUM_NODE
+```
+
+* Broadcast with `cored`.
+
+```bash
+cored tx broadcast signed.json -y -b block --chain-id $COREUM_CHAIN_ID --node $COREUM_NODE
+```
 
 ## Upgrade relayer to V2
 
@@ -423,6 +480,7 @@ systemctl stop xrpl-bridge-relayer
 * Download new `V2` version of the relayer and replace current binary
 
 * Check the version
+
 ```bash
 ./relayer version
 ```

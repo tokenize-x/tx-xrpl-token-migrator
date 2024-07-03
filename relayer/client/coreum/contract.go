@@ -18,9 +18,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 
-	"github.com/CoreumFoundation/coreum/v3/pkg/client"
-	"github.com/CoreumFoundation/coreum/v3/testutil/event"
-	feemodeltypes "github.com/CoreumFoundation/coreum/v3/x/feemodel/types"
+	"github.com/CoreumFoundation/coreum/v4/pkg/client"
+	"github.com/CoreumFoundation/coreum/v4/testutil/event"
+	feemodeltypes "github.com/CoreumFoundation/coreum/v4/x/feemodel/types"
 	contractembed "github.com/CoreumFoundation/xrpl-bridge/contract"
 )
 
@@ -29,11 +29,12 @@ type ExecMethod string
 
 // ExecMethods.
 const (
-	ExecMethodThresholdBankSend ExecMethod = "threshold_bank_send"
-	ExecMethodExecutePending    ExecMethod = "execute_pending"
-	ExecMethodUpdateMinAmount   ExecMethod = "update_min_amount"
-	ExecMethodUpdateMaxAmount   ExecMethod = "update_max_amount"
-	ExecMethodWithdraw          ExecMethod = "withdraw"
+	ExecMethodThresholdBankSend      ExecMethod = "threshold_bank_send"
+	ExecMethodExecutePending         ExecMethod = "execute_pending"
+	ExecMethodUpdateMinAmount        ExecMethod = "update_min_amount"
+	ExecMethodUpdateMaxAmount        ExecMethod = "update_max_amount"
+	ExecMethodUpdateTrustedAddresses ExecMethod = "update_trusted_addresses"
+	ExecMethodWithdraw               ExecMethod = "withdraw"
 )
 
 // QueryMethod is contract query method.
@@ -100,6 +101,11 @@ type UpdateMinAmountRequest struct {
 // UpdateMaxAmountRequest is the `update_max_amount_request` request payload.
 type UpdateMaxAmountRequest struct {
 	MaxAmount sdkmath.Int `json:"max_amount"` //nolint:tagliatelle //contract spec
+}
+
+// UpdateUpdateTrustedAddressesRequest is the `update_trusted_addresses` request payload.
+type UpdateUpdateTrustedAddressesRequest struct {
+	TrustedAddresses []sdk.AccAddress `json:"trusted_addresses"` //nolint:tagliatelle //contract spec
 }
 
 // WithdrawRequest is the `withdraw` request payload.
@@ -199,18 +205,9 @@ func (c *ContractClient) DeployAndInstantiate(
 	sender sdk.AccAddress,
 	config DeployAndInstantiateConfig,
 ) (sdk.AccAddress, error) {
-	msgStoreCode := &wasmtypes.MsgStoreCode{
-		Sender:       sender.String(),
-		WASMByteCode: contractembed.Bytecode,
-	}
-
-	res, err := client.BroadcastTx(ctx, c.clientCtx.WithFromAddress(sender), c.txFactory(), msgStoreCode)
+	codeID, err := c.Deploy(ctx, sender)
 	if err != nil {
-		return nil, errors.Wrap(err, "can't deploy wasm bytecode")
-	}
-	codeID, err := event.FindUint64EventAttribute(res.Events, wasmtypes.EventTypeStoreCode, wasmtypes.AttributeKeyCodeID)
-	if err != nil {
-		return nil, errors.Wrap(err, "can't find code ID in the tx result")
+		return nil, err
 	}
 
 	reqPayload, err := json.Marshal(instantiateRequest{
@@ -232,7 +229,7 @@ func (c *ContractClient) DeployAndInstantiate(
 		Msg:    reqPayload,
 	}
 
-	res, err = client.BroadcastTx(ctx, c.clientCtx.WithFromAddress(sender), c.txFactory(), msg)
+	res, err := client.BroadcastTx(ctx, c.clientCtx.WithFromAddress(sender), c.txFactory(), msg)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't instantiate bytecode")
 	}
@@ -252,6 +249,92 @@ func (c *ContractClient) DeployAndInstantiate(
 	}
 
 	return sdkContractAddr, nil
+}
+
+// Deploy deploys the contract bytecode.
+func (c *ContractClient) Deploy(
+	ctx context.Context,
+	sender sdk.AccAddress,
+) (uint64, error) {
+	msgStoreCode := &wasmtypes.MsgStoreCode{
+		Sender:       sender.String(),
+		WASMByteCode: contractembed.Bytecode,
+	}
+
+	res, err := client.BroadcastTx(ctx, c.clientCtx.WithFromAddress(sender), c.txFactory(), msgStoreCode)
+	if err != nil {
+		return 0, errors.Wrap(err, "can't deploy wasm bytecode")
+	}
+	codeID, err := event.FindUint64EventAttribute(res.Events, wasmtypes.EventTypeStoreCode, wasmtypes.AttributeKeyCodeID)
+	if err != nil {
+		return 0, errors.Wrap(err, "can't find code ID in the tx result")
+	}
+
+	return codeID, nil
+}
+
+// MigrateContract calls the executes the contract migration.
+func (c *ContractClient) MigrateContract(
+	ctx context.Context,
+	sender sdk.AccAddress,
+	codeID uint64,
+) (*sdk.TxResponse, error) {
+	msg := c.BuildMigrateContractMessage(sender, codeID)
+	txRes, err := client.BroadcastTx(ctx, c.clientCtx.WithFromAddress(sender), c.txFactory(), msg)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to migrate contract, codeID:%d", codeID)
+	}
+
+	return txRes, nil
+}
+
+// BuildMigrateContractMessage builds migrate contract message.
+func (c *ContractClient) BuildMigrateContractMessage(
+	sender sdk.AccAddress,
+	codeID uint64,
+) sdk.Msg {
+	return &wasmtypes.MsgMigrateContract{
+		Sender:   sender.String(),
+		Contract: c.cfg.ContractAddress.String(),
+		CodeID:   codeID,
+		Msg:      []byte("{}"),
+	}
+}
+
+// UpdateTrustedAddresses executes update_trusted_addresses Method of the contract.
+func (c *ContractClient) UpdateTrustedAddresses(
+	ctx context.Context,
+	sender sdk.AccAddress,
+	newTrustedAddresses []sdk.AccAddress,
+) (*sdk.TxResponse, error) {
+	msg, err := c.BuildUpdateTrustedAddressesTransaction(sender, newTrustedAddresses)
+	if err != nil {
+		return nil, err
+	}
+
+	txRes, err := client.BroadcastTx(ctx, c.clientCtx.WithFromAddress(sender), c.txFactory(), msg)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to update trusted addresses")
+	}
+
+	return txRes, nil
+}
+
+// BuildUpdateTrustedAddressesTransaction build update_trusted_addresses Method transaction.
+func (c *ContractClient) BuildUpdateTrustedAddressesTransaction(
+	sender sdk.AccAddress,
+	newTrustedAddresses []sdk.AccAddress,
+) (sdk.Msg, error) {
+	msg, err := c.buildExecuteWithFunds(sender, sdk.NewCoins(), map[ExecMethod]UpdateUpdateTrustedAddressesRequest{
+		ExecMethodUpdateTrustedAddresses: {
+			TrustedAddresses: newTrustedAddresses,
+		},
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build tx for %s Method", ExecMethodUpdateTrustedAddresses)
+	}
+
+	return msg, nil
 }
 
 // SetContractAddress sets the client contract address if it was not set before.

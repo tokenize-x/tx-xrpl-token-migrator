@@ -32,7 +32,7 @@ jobs:
             linter-cache: false
             docker-cache: true
           - ci_step: "contract lint and tests"
-            command: "cd contract && rustup update && cargo clippy --all && cargo test --verbose"
+            command: "cd contract && rustup default stable && cargo clippy --all && cargo test --verbose"
             go-cache: false
             wasm-cache: false
             linter-cache: false
@@ -63,7 +63,7 @@ jobs:
         run: echo "$(pwd)/crust/bin" >> $GITHUB_PATH
       - name: Run ${{ matrix.ci_step }}
         working-directory: ./xrpl-bridge
-        run: export XRPL_TESTNET_RPC_URL=${{ secrets.XRPL_TESTNET_RPC_URL }} && ${{ matrix.command }}
+        run: ${{ matrix.command }}
       - name: Dump docker logs on failure
         if: failure()
         uses: jwalton/gh-docker-logs@v2

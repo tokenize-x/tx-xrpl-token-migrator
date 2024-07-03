@@ -26,8 +26,14 @@ pub enum ExecuteMsg {
     UpdateMaxAmount {
         max_amount: Uint128,
     },
+    UpdateTrustedAddresses {
+        trusted_addresses: Vec<Addr>,
+    },
     Withdraw {},
 }
+
+#[cw_serde]
+pub struct MigrateMsg {}
 
 #[cw_serde]
 #[derive(QueryResponses)]

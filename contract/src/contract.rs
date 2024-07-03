@@ -1,16 +1,10 @@
-use cosmwasm_std::{
-    entry_point, to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Empty, Env,
-    MessageInfo, Order, Response, StdResult, Uint128,
-};
+use cosmwasm_std::{entry_point, to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Order, Response, StdResult, Uint128, StdError};
 use cw2::set_contract_version;
 use cw_storage_plus::Map;
 use cw_utils::one_coin;
 
 use crate::error::ContractError;
-use crate::msg::{
-    Config, ExecuteMsg, InstantiateMsg, PendingTransaction, PendingTransactions, QueryMsg,
-    SentTransaction, SentTransactions, Transaction,
-};
+use crate::msg::{Config, ExecuteMsg, InstantiateMsg, MigrateMsg, PendingTransaction, PendingTransactions, QueryMsg, SentTransaction, SentTransactions, Transaction};
 use crate::state::{
     MAX_AMOUNT, MIN_AMOUNT, OWNER, PENDING_TRANSACTIONS, SENT_TRANSACTIONS, THRESHOLD,
     TRUSTED_ADDRESSES,
@@ -69,7 +63,19 @@ pub fn execute(
         ExecuteMsg::ExecutePending { evidence_id } => execute_pending(deps, info, evidence_id),
         ExecuteMsg::UpdateMinAmount { min_amount } => update_min_amount(deps, info, min_amount),
         ExecuteMsg::UpdateMaxAmount { max_amount } => update_max_amount(deps, info, max_amount),
+        ExecuteMsg::UpdateTrustedAddresses { trusted_addresses } => update_trusted_addresses(deps, info, trusted_addresses)
     }
+}
+
+#[entry_point]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    let storage_version = cw2::get_contract_version(deps.storage)?;
+    if storage_version.contract != CONTRACT_NAME {
+        return Err(StdError::generic_err("Can only upgrade from same contract name").into());
+    }
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    Ok(Response::default())
 }
 
 pub fn threshold_bank_send(
@@ -209,6 +215,37 @@ pub fn update_max_amount(
 
     MAX_AMOUNT.save(deps.storage, &max_amount)?;
     Ok(Response::new().add_attribute("max_amount", max_amount))
+}
+
+pub fn update_trusted_addresses(
+    deps: DepsMut,
+    info: MessageInfo,
+    trusted_addresses: Vec<Addr>,
+) -> Result<Response, ContractError> {
+    let owner = OWNER.load(deps.storage)?;
+    if info.sender != owner {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    // remove addresses from the list
+    let current_trusted_addresses: Vec<Addr> = TRUSTED_ADDRESSES
+        .keys(deps.storage, None, None, Order::Ascending)
+        .map(|v| v.unwrap())
+        .collect();
+    for addr in current_trusted_addresses {
+        TRUSTED_ADDRESSES.remove(deps.storage, addr);
+    }
+
+    // insert new
+    for addr in &trusted_addresses {
+        deps.api.addr_validate(addr.as_str())?;
+        if TRUSTED_ADDRESSES.has(deps.storage, addr.clone()) {
+            return Err(ContractError::DuplicatedTrustedAddress {});
+        }
+        TRUSTED_ADDRESSES.save(deps.storage, addr.clone(), &Empty {})?;
+    }
+
+    Ok(Response::new())
 }
 
 pub fn withdraw(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
@@ -857,5 +894,30 @@ mod tests {
         assert_eq!(true, res.is_ok());
         let config = get_config(deps.as_ref()).unwrap();
         assert_eq!(new_max_amount, config.max_amount);
+    }
+
+    #[test]
+    fn test_update_trusted_addresses() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
+        assert_eq!(true, res.is_ok());
+
+        let new_trusted_addresses = vec![
+            Addr::unchecked(TEST_TRUSTED_ADDRESS1),
+            Addr::unchecked(TEST_TRUSTED_ADDRESS3),
+        ];
+        // execute from non-owner
+        let info = mock_info(TEST_ANY_ADDRESS, &[]);
+        let res = update_trusted_addresses(deps.as_mut(), info.clone(), new_trusted_addresses.clone());
+        assert_eq!(ContractError::Unauthorized {}, res.unwrap_err());
+        // execute from owner
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = update_trusted_addresses(deps.as_mut(), info.clone(), new_trusted_addresses.clone());
+        assert_eq!(true, res.is_ok());
+        let config = get_config(deps.as_ref()).unwrap();
+        assert_eq!(new_trusted_addresses, config.trusted_addresses);
     }
 }

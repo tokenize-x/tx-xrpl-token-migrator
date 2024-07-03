@@ -1,9 +1,11 @@
+//nolint:tagliatelle //contract spec
 package xrpl
 
 import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -14,6 +16,7 @@ import (
 	rippledata "github.com/rubblelabs/ripple/data"
 	"go.uber.org/zap"
 
+	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
 )
 
@@ -35,7 +38,39 @@ type rpcErrResult struct {
 	ErrorMessage string `json:"error_message"`
 }
 
-// ******************** Unexported common ********************
+// ******************** RPC method objects ********************
+
+// AccountDataWithSigners is account data with signers model.
+type AccountDataWithSigners struct {
+	rippledata.AccountRoot
+	SignerList []rippledata.SignerList `json:"signer_lists"`
+}
+
+// AccountInfoRequest is `account_info` method request.
+type AccountInfoRequest struct {
+	Account     rippledata.Account `json:"account"`
+	SignerLists bool               `json:"signer_lists"`
+}
+
+// AccountInfoResult is `account_info` method result.
+type AccountInfoResult struct {
+	LedgerSequence uint32                 `json:"ledger_current_index"`
+	AccountData    AccountDataWithSigners `json:"account_data"`
+}
+
+// SubmitRequest is `submit` method request.
+type SubmitRequest struct {
+	TxBlob string `json:"tx_blob"`
+}
+
+// SubmitResult is `submit` method result.
+type SubmitResult struct {
+	EngineResult        rippledata.TransactionResult `json:"engine_result"`
+	EngineResultCode    int                          `json:"engine_result_code"`
+	EngineResultMessage string                       `json:"engine_result_message"`
+	TxBlob              string                       `json:"tx_blob"`
+	Tx                  any                          `json:"tx_json"`
+}
 
 //nolint:tagliatelle //contract spec
 type metaRes struct {
@@ -291,7 +326,7 @@ func (c *RPCClient) GetAccountTransactions(
 	}
 
 	var accountTxRPCRes rpcRes[accountTxRes]
-	err := c.callPRC(ctx, accountTxRPCReq, &accountTxRPCRes)
+	err := c.callRPC(ctx, accountTxRPCReq, &accountTxRPCRes)
 	latestIndex := startLedger
 	if err != nil {
 		return nil, latestIndex - 1, errors.Wrap(err, "failed to call `account_tx` method")
@@ -337,7 +372,7 @@ func (c *RPCClient) GetCurrentLedger(ctx context.Context) (int64, error) {
 	}
 
 	var ledgerCurrentRPCRes rpcRes[ledgerCurrentTxRes]
-	err := c.callPRC(ctx, ledgerCurrentRPCReq, &ledgerCurrentRPCRes)
+	err := c.callRPC(ctx, ledgerCurrentRPCReq, &ledgerCurrentRPCRes)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to call `ledger_current` method")
 	}
@@ -394,8 +429,7 @@ func (c *RPCClient) GetTransaction(ctx context.Context, hash string) (Transactio
 	}
 
 	var txRPCRes rpcRes[txResTransactionsItem]
-	err := c.callPRC(ctx, txRPCReq, &txRPCRes)
-	if err != nil {
+	if err := c.callRPC(ctx, txRPCReq, &txRPCRes); err != nil {
 		return Transaction{}, false, errors.Wrap(err, "failed to call `tx` method")
 	}
 
@@ -407,7 +441,112 @@ func (c *RPCClient) GetTransaction(ctx context.Context, hash string) (Transactio
 	)
 }
 
-func (c *RPCClient) callPRC(ctx context.Context, req rpcReq, res any) error {
+// AccountInfo returns the account information for the given account.
+func (c *RPCClient) AccountInfo(ctx context.Context, acc rippledata.Account) (AccountInfoResult, error) {
+	req := rpcReq{
+		Method: "account_info",
+		Params: []any{
+			AccountInfoRequest{
+				Account:     acc,
+				SignerLists: true,
+			},
+		},
+	}
+
+	var result rpcRes[AccountInfoResult]
+	if err := c.callRPC(ctx, req, &result); err != nil {
+		return AccountInfoResult{}, err
+	}
+
+	return result.Result, nil
+}
+
+// AutoFillTx add seq number and fee for the transaction.
+func (c *RPCClient) AutoFillTx(
+	ctx context.Context,
+	tx rippledata.Transaction,
+	sender rippledata.Account,
+	txSignatureCount uint32,
+) error {
+	accInfo, err := c.AccountInfo(ctx, sender)
+	if err != nil {
+		return err
+	}
+	// update base settings
+	base := tx.GetBase()
+	if err != nil {
+		return err
+	}
+	fee, err := c.calculateFee(txSignatureCount, DefaultXRPLBaseFee)
+	if err != nil {
+		return err
+	}
+	base.Fee = *fee
+	base.Account = sender
+	base.Sequence = *accInfo.AccountData.Sequence
+
+	return nil
+}
+
+// SubmitAndAwaitSuccess submits tx a waits for its result, if result is not success returns an error.
+func (c *RPCClient) SubmitAndAwaitSuccess(ctx context.Context, tx rippledata.Transaction) error {
+	c.log.Info("Submitting XRPL transaction", zap.String("txHash", strings.ToUpper(tx.GetHash().String())))
+	// submit the transaction
+	res, err := c.Submit(ctx, tx)
+	if err != nil {
+		return err
+	}
+	if !res.EngineResult.Success() {
+		return errors.Errorf("the tx submition is failed, %+v", res)
+	}
+
+	retryCtx, retryCtxCancel := context.WithTimeout(ctx, time.Minute)
+	defer retryCtxCancel()
+	c.log.Info(
+		"Transaction is submitted, waiting for tx to be accepted",
+		zap.String("txHash", strings.ToUpper(tx.GetHash().String())),
+	)
+	return retry.Do(retryCtx, 250*time.Millisecond, func() error {
+		reqCtx, reqCtxCancel := context.WithTimeout(ctx, 3*time.Second)
+		defer reqCtxCancel()
+		txRes, ok, err := c.GetTransaction(reqCtx, tx.GetHash().String())
+		if err != nil {
+			return retry.Retryable(err)
+		}
+		if !ok {
+			return retry.Retryable(errors.Errorf("transaction is not valid"))
+		}
+		if !txRes.Validated {
+			return retry.Retryable(errors.Errorf("transaction is not validated"))
+		}
+		return nil
+	})
+}
+
+// Submit submits a transaction to the RPC server.
+func (c *RPCClient) Submit(ctx context.Context, tx rippledata.Transaction) (SubmitResult, error) {
+	_, raw, err := rippledata.Raw(tx)
+	if err != nil {
+		return SubmitResult{}, errors.Wrapf(err, "failed to convert transaction to raw data")
+	}
+	req := rpcReq{
+		Method: "submit",
+		Params: []any{
+			SubmitRequest{
+				TxBlob: fmt.Sprintf("%X", raw),
+			},
+		},
+	}
+	var result rpcRes[SubmitResult]
+
+	if err := c.callRPC(ctx, req, &result); err != nil {
+		return SubmitResult{}, err
+	}
+
+	return result.Result, nil
+}
+
+func (c *RPCClient) callRPC(ctx context.Context, req rpcReq, res any) error {
 	c.log.Debug("Executing XRPL RPC request", zap.Any("request", req))
 
 	err := c.httpClient.DoJSON(ctx, http.MethodPost, c.cfg.URL, req, func(resBytes []byte) error {
@@ -433,4 +572,16 @@ func (c *RPCClient) callPRC(ctx context.Context, req rpcReq, res any) error {
 	}
 
 	return nil
+}
+
+func (c *RPCClient) calculateFee(txSignatureCount, baseFee uint32) (*rippledata.Value, error) {
+	if txSignatureCount == 0 {
+		return nil, errors.New("tx signature count must be greater than 0")
+	} else if txSignatureCount == 1 {
+		// Single sig: base_fee
+		return rippledata.NewNativeValue(int64(baseFee))
+	}
+
+	// Multisig: base_fee × (1 + Number of Signatures Provided)
+	return rippledata.NewNativeValue(int64(baseFee * (1 + txSignatureCount)))
 }
