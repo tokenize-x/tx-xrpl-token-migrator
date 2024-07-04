@@ -92,10 +92,34 @@ export PROMETHEUS_URL="{Prometheus push URL}"
 
 * Create `start` script.
 
+**Mainnet** 
+
 ```bash
 echo "
 echo \$(systemd-ask-password \"Enter keyring password:\") | $PWD/relayer start \\
     --xrpl-rpc-url $XRPL_RPC_URL \\
+    --coreum-chain-id $COREUM_CHAIN_ID \\
+    --coreum-contract-address $COREUM_CONTRACT_ADDRESS \\
+    --coreum-grpc-url $COREUM_GRPC_URL \\
+    --coreum-sender-address $(./relayer keys show relayer -a --coreum-chain-id $COREUM_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge) \\
+    --prometheus-instance-name $PROMETHEUS_INSTANCE_NAME \\
+    --prometheus-username $PROMETHEUS_USERNAME \\
+    --prometheus-password $PROMETHEUS_PASSWORD \\
+    --prometheus-url $PROMETHEUS_URL \\
+    --keyring-backend os \\
+    --home $HOME/.xrpl-bridge
+    " > "run-xrpl-bridge-relayer.sh"
+chmod +x run-xrpl-bridge-relayer.sh
+```
+
+**Testnet**
+
+```bash
+echo "
+echo \$(systemd-ask-password \"Enter keyring password:\") | $PWD/relayer start \\
+    --xrpl-rpc-url $XRPL_RPC_URL \\
+    --xrpl-history-scan-start-ledger 1000 \\
+    --xrpl-recent-scan-indexes-back 1000 \\
     --coreum-chain-id $COREUM_CHAIN_ID \\
     --coreum-contract-address $COREUM_CONTRACT_ADDRESS \\
     --coreum-grpc-url $COREUM_GRPC_URL \\
@@ -162,6 +186,8 @@ You will be asked to `Enter keyring password`, enter it and press `Enter`.
 systemctl status xrpl-bridge-relayer --no-pager
 journalctl -u xrpl-bridge-relayer -n 100 --no-pager
 ```
+
+!!! Pass the [Run promtail](#run-promtail) step to send logs to the loki. !!!
 
 ## Relayer support
 
@@ -390,9 +416,9 @@ If you wish to run two instances of bridge on the same VM, makes sure:
 * Deploy new smart contract
 
 ```bash
-./build/relayer deploy --coreum-chain-id $COREUM_CHAIN_ID \
+./relayer deploy --coreum-chain-id $COREUM_CHAIN_ID \
     --coreum-grpc-url $COREUM_GRPC_URL \
-    --coreum-sender-address $(./build/relayer keys show contract-deployer -a --coreum-chain-id $COREUM_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge) \
+    --coreum-sender-address $(./relayer keys show contract-deployer -a --coreum-chain-id $COREUM_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge) \
     --keyring-backend os \
     --home $HOME/.xrpl-bridge
 ```
@@ -406,7 +432,7 @@ export COREUM_CONTRACT_OWNER={Coreum contract owner}
 export COREUM_NEW_CONTRACT_CODE_ID={New contract code ID}
 export COREUM_CONTRACT_ADDRESS={Contract address}
 
-./build/relayer build-migrate-contract-transaction $COREUM_NEW_CONTRACT_CODE_ID \
+./relayer build-migrate-contract-transaction $COREUM_NEW_CONTRACT_CODE_ID \
     --coreum-chain-id $COREUM_CHAIN_ID \
     --coreum-grpc-url $COREUM_GRPC_URL \
     --coreum-sender-address $COREUM_CONTRACT_OWNER \
@@ -422,7 +448,7 @@ export COREUM_CONTRACT_OWNER={Coreum contract owner}
 export COREUM_NEW_TRUSTED_ADDRESSES={New trusted addresses}
 export COREUM_CONTRACT_ADDRESS={Contract address}
 
-./build/relayer build-update-trusted-addresses \
+./relayer build-update-trusted-addresses \
     --coreum-chain-id $COREUM_CHAIN_ID \
     --coreum-grpc-url $COREUM_GRPC_URL \
     --coreum-sender-address $COREUM_CONTRACT_OWNER \
@@ -435,7 +461,7 @@ export COREUM_CONTRACT_ADDRESS={Contract address}
 * Check now that addresses are updated
 
 ```
-./build/relayer get-contract-config \
+./relayer get-contract-config \
     --coreum-chain-id $COREUM_CHAIN_ID \
     --coreum-grpc-url $COREUM_GRPC_URL \
     --coreum-contract-address $COREUM_CONTRACT_ADDRESS
@@ -446,6 +472,8 @@ export COREUM_CONTRACT_ADDRESS={Contract address}
 * Export node URL
 
 ```
+export COREUM_CHAIN_ID={Coreum chain ID}"
+export COREUM_EXECUTOR_ADDRESS="{The address which will execute the approved transactions and pay for them}"
 export COREUM_NODE="{Node RPC URL}"
 ```
 
