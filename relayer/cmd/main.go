@@ -390,7 +390,7 @@ func GetContractConfigCmd(ctx context.Context) *cobra.Command {
 }
 
 // GetPendingUnapprovedTransactionsCmd prints pending unapproved transactions.
-func GetPendingUnapprovedTransactionsCmd(ctx context.Context) *cobra.Command { //nolint:dupl // templated logic
+func GetPendingUnapprovedTransactionsCmd(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get-pending-unapproved-transactions",
 		Short: "Print pending unapproved transactions.",
@@ -411,13 +411,9 @@ func GetPendingUnapprovedTransactionsCmd(ctx context.Context) *cobra.Command { /
 			if err != nil {
 				return err
 			}
-			evidenceIDs := lo.Map(unapprovedTransactions, func(tx coreum.PendingTransaction, _ int) string {
-				return tx.EvidenceID
-			})
-
 			services.Logger.Info("Unapproved pending transactions:",
-				zap.Int("total", len(evidenceIDs)),
-				zap.Any("evidenceIDs", evidenceIDs),
+				zap.Int("total", len(unapprovedTransactions)),
+				zap.Any("txs", unapprovedTransactions),
 			)
 
 			return nil
@@ -430,7 +426,7 @@ func GetPendingUnapprovedTransactionsCmd(ctx context.Context) *cobra.Command { /
 }
 
 // GetPendingApprovedTransactionsCmd prints pending approved transactions.
-func GetPendingApprovedTransactionsCmd(ctx context.Context) *cobra.Command { //nolint:dupl // templated logic
+func GetPendingApprovedTransactionsCmd(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get-pending-approved-transactions",
 		Short: "Print pending approved transactions.",

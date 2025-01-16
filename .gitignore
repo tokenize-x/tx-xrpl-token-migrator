@@ -1,6 +1,7 @@
 .idea
 .vscode
-build
 vendor
 *.iml
 .xrpl-bridge
+/bin
+artifacts

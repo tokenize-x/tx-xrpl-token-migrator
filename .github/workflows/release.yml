@@ -6,15 +6,17 @@ on:
 
 jobs:
   release:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
-      - name: Go version used for the build
-        run: go version
       - name: Checkout xrpl bridge
         uses: actions/checkout@v4
         with:
           persist-credentials: false
           path: xrpl-bridge
+      - name: Install go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21.4'
       - name: Build linux amd64
         working-directory: ./xrpl-bridge
         run: GOOS=linux GOARCH=amd64 make build-in-docker
@@ -29,7 +31,7 @@ jobs:
           fi
       - name: Link released binaries under right names
         run: |
-          ln xrpl-bridge/build/relayer relayer-linux-amd64
+          ln xrpl-bridge/artifacts/relayer relayer-linux-amd64
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:

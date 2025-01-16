@@ -2,6 +2,8 @@ IMPORT_PREFIX=github.com/CoreumFoundation
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 CONTRACT_DIR:=$(ROOT_DIR)/contract
 SCAN_FILES := $(shell find . -type f -name '*.go' -not -name '*mock.go' -not -name '*_gen.go' -not -path "*/vendor/*")
+COREUM_BUILDER:=$(ROOT_DIR)/../coreum/bin/coreum-builder
+BUILDER = ./bin/xrpl-bridge-builder
 
 ###############################################################################
 ###                                 Build                                  ###
@@ -19,13 +21,13 @@ endif
 
 .PHONY: build
 build:
-	CGO_ENABLED=0 go build --trimpath -mod=readonly -ldflags '-X main.BuildVersion="${BUILD_VERSION} -extldflags=-static' -o build/relayer ./relayer/cmd
+	CGO_ENABLED=0 go build --trimpath -mod=readonly -ldflags '-X main.BuildVersion="${BUILD_VERSION} -extldflags=-static' -o artifacts/relayer ./relayer/cmd
 
 .PHONY: build-in-docker
 build-in-docker:
 	docker build --build-arg BUILD_VERSION=$(BUILD_VERSION) . -t xrpl-bridge-builder
 	mkdir -p build
-	docker run --rm --entrypoint cat xrpl-bridge-builder /code/build/relayer > build/relayer
+	docker run --rm --entrypoint cat xrpl-bridge-builder /code/artifacts/relayer > artifacts/relayer
 
 ###############################################################################
 ###                               Development                               ###
@@ -44,7 +46,7 @@ test-integration:
 
 .PHONY: lint
 lint:
-	crust lint/current-dir
+	$(BUILDER) lint
 
 .PHONY: fmt
 fmt:
@@ -60,10 +62,16 @@ build-contract:
       --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
       cosmwasm/rust-optimizer:0.13.0
 
+
+.PHONY: test-contract
+test-contract:
+	rustup install 1.81.0 && rustup default 1.81.0 && rustup component add clippy && \
+      cd contract   && cargo clippy --all && cargo test --verbose
+
 .PHONY: restart-dev-env
 restart-dev-env:
-	crust znet remove && crust znet start --profiles=1cored,xrpl --timeout-commit 0.5s
+	${COREUM_BUILDER} znet remove && ${COREUM_BUILDER} znet start --profiles=1cored,xrpl
 
 .PHONY: rebuild-dev-env
 rebuild-dev-env:
-	crust build/crust images/cored
+	${COREUM_BUILDER} build images

@@ -247,13 +247,19 @@ func TestXRPLToCoreumBridging(t *testing.T) {
 		}(instance)
 	}
 
-	awaitForBalance(ctx, t, coreumChain.ClientContext, recipient1Address.String(), coreumChain.NewCoin(sdk.NewInt(150000000+7654321)))
-	awaitForBalance(ctx, t, coreumChain.ClientContext, recipient2Address.String(), coreumChain.NewCoin(sdk.NewInt(42345679)))
+	awaitForBalance(
+		ctx, t, coreumChain.ClientContext, recipient1Address.String(), coreumChain.NewCoin(sdk.NewInt(150000000+7654321)),
+	)
+	awaitForBalance(
+		ctx, t, coreumChain.ClientContext, recipient2Address.String(), coreumChain.NewCoin(sdk.NewInt(42345679)),
+	)
 	// the third sender includes the low and high amount checks, the low amount will be skipped the high will be locked
 	// in the pending transactions. We use multiple amounts here since the low and high amounts are between
 	// the transactions with the valid amounts.
 	recipient3ExpectedBalance := sdk.NewInt(15000000 + 7000000)
-	awaitForBalance(ctx, t, coreumChain.ClientContext, recipient3Address.String(), coreumChain.NewCoin(recipient3ExpectedBalance))
+	awaitForBalance(
+		ctx, t, coreumChain.ClientContext, recipient3Address.String(), coreumChain.NewCoin(recipient3ExpectedBalance),
+	)
 
 	// check that one transaction is pending due to amount limit
 	highAmount := coreumChain.NewCoin(sdk.NewInt(250000000))
@@ -277,7 +283,9 @@ func TestXRPLToCoreumBridging(t *testing.T) {
 	requireT.Equal(expectedHighAmountPendingTx, highAmountPendingTx.Transaction)
 
 	// execute the pending transaction
-	_, err = instances[0].CoreumContractClient.ExecutePending(ctx, trustedAddress1, highAmount, highAmountPendingTx.EvidenceID)
+	_, err = instances[0].CoreumContractClient.ExecutePending(
+		ctx, trustedAddress1, highAmount, highAmountPendingTx.EvidenceID,
+	)
 	requireT.NoError(err)
 	awaitForBalance(
 		ctx,

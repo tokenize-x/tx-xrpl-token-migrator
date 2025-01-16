@@ -74,7 +74,7 @@ func TestRPCClient_SubscribeAccountTransactions(t *testing.T) {
 		t.FailNow()
 	case <-doneRead:
 	}
-	require.Len(t, txs, 1018)
+	require.Len(t, txs, 1028)
 	for _, tx := range txs {
 		require.GreaterOrEqual(t, tx.LedgerIndex, startLedger, fmt.Sprintf("tx:%+v", tx))
 		require.LessOrEqual(t, tx.LedgerIndex, endLedger, fmt.Sprintf("tx:%+v", tx))
