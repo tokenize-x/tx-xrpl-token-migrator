@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	rippledata "github.com/rubblelabs/ripple/data"
+	"github.com/samber/lo"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -31,16 +32,22 @@ import (
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/metric"
 )
 
+// XRPLTokenConfig is XRPL token config.
+type XRPLTokenConfig struct {
+	XRPLCurrency string
+	XRPLIssuer   string
+}
+
 // Config is services config.
 type Config struct {
 	XRPLRPCURL                    string
 	XRPLHistoryScanStartLedger    int64
 	XRPLRecentScanIndexesBack     int64
 	XRPLRecentScanSkipLastIndexes int64
-	XRPLAccount                   string
-	XRPLCurrency                  string
-	XRPLIssuer                    string
-	XRPLMemoSuffix                string
+
+	XRPLTokens []XRPLTokenConfig
+
+	XRPLMemoSuffix string
 
 	CoreumChainID         string
 	CoreumRPCURL          string
@@ -59,7 +66,7 @@ type Services struct {
 	Logger                logger.Logger
 	XRPLTxScanner         *xrpl.TxScanner
 	CoreumContractClient  *coreum.ContractClient
-	Finder                *finder.Finder
+	Finders               []*finder.Finder
 	Executor              *executor.Executor
 	MetricRecorder        *metric.Recorder
 	MetricPusher          *metric.Pusher
@@ -148,25 +155,42 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 		coreumClientCtx,
 	)
 
-	xrplIssuer, err := rippledata.NewAccountFromAddress(cfg.XRPLIssuer)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert XRPLIssuer string to type, value:%s", cfg.XRPLIssuer)
-	}
-	xrplCurrency, err := rippledata.NewCurrency(cfg.XRPLCurrency)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert XRPLCurrency string to type, value:%s", cfg.XRPLCurrency)
-	}
-	txFinder := finder.NewFinder(finder.Config{
-		XRPLIssuer:                 *xrplIssuer,
-		XRPLCurrency:               xrplCurrency,
-		XRPLHistoryScanStartLedger: cfg.XRPLHistoryScanStartLedger,
-		XRPLRecentScanIndexesBack:  cfg.XRPLRecentScanIndexesBack,
-		XRPLMemoSuffix:             cfg.XRPLMemoSuffix,
-		CoreumDenom:                network.Denom(),
-		CoreumDecimals:             6,
-	}, log, xrplTxScanner)
+	txFinders := make([]*finder.Finder, 0, len(cfg.XRPLTokens))
+	auditTokensCfg := make([]audit.XRPLTokenConfig, 0, len(cfg.XRPLTokens))
+	for _, tokenCfg := range cfg.XRPLTokens {
+		xrplIssuer, err := rippledata.NewAccountFromAddress(tokenCfg.XRPLIssuer)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert XRPLIssuer string to type, value:%s", tokenCfg.XRPLIssuer)
+		}
+		xrplCurrency, err := rippledata.NewCurrency(tokenCfg.XRPLCurrency)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert XRPLCurrency string to type, value:%s", tokenCfg.XRPLCurrency)
+		}
+		txFinder := finder.NewFinder(finder.Config{
+			XRPLIssuer:                 *xrplIssuer,
+			XRPLCurrency:               xrplCurrency,
+			XRPLHistoryScanStartLedger: cfg.XRPLHistoryScanStartLedger,
+			XRPLRecentScanIndexesBack:  cfg.XRPLRecentScanIndexesBack,
+			XRPLMemoSuffix:             cfg.XRPLMemoSuffix,
+			CoreumDenom:                network.Denom(),
+			CoreumDecimals:             6,
+		}, log, xrplTxScanner)
+		txFinders = append(txFinders, txFinder)
 
-	txExecutor := executor.NewExecutor(executor.DefaultConfig(senderAddress), log, coreumContractClient, txFinder)
+		auditTokensCfg = append(auditTokensCfg, audit.XRPLTokenConfig{
+			XRPLIssuer:   *xrplIssuer,
+			XRPLCurrency: xrplCurrency,
+		})
+	}
+
+	txExecutor := executor.NewExecutor(
+		executor.DefaultConfig(senderAddress),
+		log,
+		coreumContractClient,
+		lo.Map(txFinders, func(finder *finder.Finder, _ int) executor.Finder {
+			return finder
+		}),
+	)
 
 	var metricPusher *metric.Pusher
 	if cfg.PrometheusURL != "" {
@@ -197,18 +221,17 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 
 	auditor := audit.NewAuditor(audit.AuditorConfig{
 		ContractAddress: contractAddress.String(),
-		XRPLIssuer:      *xrplIssuer,
-		XRPLCurrency:    xrplCurrency,
 		XRPLMemoSuffix:  cfg.XRPLMemoSuffix,
 		CoreumDenom:     network.Denom(),
 		CoreumDecimals:  6,
+		XRPLTokens:      auditTokensCfg,
 	}, log, coreumChainClient, xrplRPCClient)
 
 	return &Services{
 		Logger:                log,
 		XRPLTxScanner:         xrplTxScanner,
 		CoreumContractClient:  coreumContractClient,
-		Finder:                txFinder,
+		Finders:               txFinders,
 		Executor:              txExecutor,
 		MetricRecorder:        metricRecorder,
 		MetricPusher:          metricPusher,

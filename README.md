@@ -118,8 +118,6 @@ chmod +x run-xrpl-bridge-relayer.sh
 echo "
 echo \$(systemd-ask-password \"Enter keyring password:\") | $PWD/relayer start \\
     --xrpl-rpc-url $XRPL_RPC_URL \\
-    --xrpl-history-scan-start-ledger 1000 \\
-    --xrpl-recent-scan-indexes-back 1000 \\
     --coreum-chain-id $COREUM_CHAIN_ID \\
     --coreum-contract-address $COREUM_CONTRACT_ADDRESS \\
     --coreum-grpc-url $COREUM_GRPC_URL \\

@@ -105,14 +105,19 @@ type XRPLRPCClient interface {
 	GetTransactions(ctx context.Context, hashes []string) (map[string]xrpl.Transaction, error)
 }
 
+// XRPLTokenConfig is XRPL token config.
+type XRPLTokenConfig struct {
+	XRPLIssuer   rippledata.Account
+	XRPLCurrency rippledata.Currency
+}
+
 // AuditorConfig is Auditor config.
 type AuditorConfig struct {
 	ContractAddress string
 	CoreumDenom     string
 	CoreumDecimals  int
 	XRPLMemoSuffix  string
-	XRPLCurrency    rippledata.Currency
-	XRPLIssuer      rippledata.Account
+	XRPLTokens      []XRPLTokenConfig
 }
 
 // Auditor is the bridge auditor.
@@ -291,15 +296,17 @@ func (a *Auditor) analiseXrplToCoreumDiscrepancies(
 			})
 		}
 
-		if xrplTx.Destination != a.cfg.XRPLIssuer.String() ||
-			xrplTx.DeliveryAmount.Issuer.String() != a.cfg.XRPLIssuer.String() ||
-			xrplTx.DeliveryAmount.Currency.String() != a.cfg.XRPLCurrency.String() {
-			discrepancies = append(discrepancies, Discrepancy{
-				CoreumTx:    thresholdBankSendRequest.Tx,
-				XRPLTx:      xrplTx,
-				Type:        DiscrepancyTypeNotBurningXRPLTransaction,
-				Description: "XRPL tx is not a burning tx",
-			})
+		for _, tokenCfg := range a.cfg.XRPLTokens {
+			if xrplTx.Destination != tokenCfg.XRPLIssuer.String() ||
+				xrplTx.DeliveryAmount.Issuer.String() != tokenCfg.XRPLIssuer.String() ||
+				xrplTx.DeliveryAmount.Currency.String() != tokenCfg.XRPLCurrency.String() {
+				discrepancies = append(discrepancies, Discrepancy{
+					CoreumTx:    thresholdBankSendRequest.Tx,
+					XRPLTx:      xrplTx,
+					Type:        DiscrepancyTypeNotBurningXRPLTransaction,
+					Description: "XRPL tx is not a burning tx",
+				})
+			}
 		}
 
 		xrplAmount := finder.ConvertXRPLAmountToCoreumAmount(xrplTx.DeliveryAmount.Value, a.cfg.CoreumDecimals)

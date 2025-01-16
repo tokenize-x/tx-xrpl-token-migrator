@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -36,9 +37,7 @@ const (
 	flagXRPLHistoryScanStartLedger    = "xrpl-history-scan-start-ledger"
 	flagXRPLRecentScanIndexesBack     = "xrpl-recent-scan-indexes-back"
 	flagXRPLRecentScanSkipLastIndexes = "xrpl-recent-scan-skip-last-indexes"
-	flagXRPLAccount                   = "xrpl-account"
-	flagXRPLCurrency                  = "xrpl-currency"
-	flagXRPLIssuer                    = "xrpl-issuer"
+	flagXRPLToken                     = "xrpl-token"
 	flagXRPLMemoSuffix                = "xrpl-memo-suffix"
 
 	flagCoreumChainID             = "coreum-chain-id"
@@ -65,13 +64,16 @@ const defaultHome = ".xrpl-bridge"
 
 var (
 	defaultTestnetCfg = service.Config{
-		XRPLHistoryScanStartLedger:    38500000,
+		XRPLHistoryScanStartLedger:    20_000,
 		XRPLRecentScanIndexesBack:     30_000,
 		XRPLRecentScanSkipLastIndexes: 20,
-		XRPLAccount:                   "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
-		XRPLCurrency:                  "434F524500000000000000000000000000000000",
-		XRPLIssuer:                    "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
-		XRPLMemoSuffix:                "/coreum-testnet-1/v1",
+		XRPLTokens: []service.XRPLTokenConfig{
+			{
+				XRPLCurrency: "434F524500000000000000000000000000000000",
+				XRPLIssuer:   "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
+			},
+		},
+		XRPLMemoSuffix: "/coreum-testnet-1/v1",
 
 		CoreumChainID: string(constant.ChainIDTest),
 	}
@@ -80,10 +82,17 @@ var (
 		XRPLHistoryScanStartLedger:    81400000,
 		XRPLRecentScanIndexesBack:     30_000,
 		XRPLRecentScanSkipLastIndexes: 20,
-		XRPLAccount:                   "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
-		XRPLCurrency:                  "434F524500000000000000000000000000000000",
-		XRPLIssuer:                    "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
-		XRPLMemoSuffix:                "/coreum-mainnet-1/v1",
+		XRPLTokens: []service.XRPLTokenConfig{
+			{
+				XRPLCurrency: "434F524500000000000000000000000000000000",
+				XRPLIssuer:   "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
+			},
+			{
+				XRPLCurrency: "58434F5245000000000000000000000000000000",
+				XRPLIssuer:   "r3dVizzUAS3U29WKaaSALqkieytA2LCoRe",
+			},
+		},
+		XRPLMemoSuffix: "/coreum-mainnet-1/v1",
 
 		CoreumChainID: string(constant.ChainIDMain),
 	}
@@ -753,9 +762,7 @@ func addXRPLFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().String(flagXRPLRPCURL, "", "")
 	cmd.PersistentFlags().Int64(flagXRPLHistoryScanStartLedger, 0, "")
 	cmd.PersistentFlags().Int64(flagXRPLRecentScanIndexesBack, 0, "")
-	cmd.PersistentFlags().String(flagXRPLAccount, "", "")
-	cmd.PersistentFlags().String(flagXRPLCurrency, "", "")
-	cmd.PersistentFlags().String(flagXRPLIssuer, "", "")
+	cmd.PersistentFlags().StringSlice(flagXRPLToken, []string{}, "isser/currency")
 	cmd.PersistentFlags().String(flagXRPLMemoSuffix, "", "")
 }
 
@@ -804,14 +811,30 @@ func readServicesConfig(cmd *cobra.Command) (service.Config, error) {
 		flagXRPLRecentScanSkipLastIndexes: func(flag string) error {
 			return setStringInt64IfNotZero(cmd, flag, &cfg.XRPLRecentScanSkipLastIndexes)
 		},
-		flagXRPLAccount: func(flag string) error {
-			return setStringIfNotEmpty(cmd, flag, &cfg.XRPLAccount)
-		},
-		flagXRPLCurrency: func(flag string) error {
-			return setStringIfNotEmpty(cmd, flag, &cfg.XRPLCurrency)
-		},
-		flagXRPLIssuer: func(flag string) error {
-			return setStringIfNotEmpty(cmd, flag, &cfg.XRPLIssuer)
+		flagXRPLToken: func(flagName string) error {
+			if cmd.Flags().Lookup(flagName) == nil {
+				return nil
+			}
+			val, err := cmd.Flags().GetStringSlice(flagName)
+			if err != nil {
+				return err
+			}
+			if len(val) == 0 {
+				return nil
+			}
+			xrplTokensCfg := make([]service.XRPLTokenConfig, 0, len(val))
+			for _, v := range val {
+				parts := strings.Split(v, "/")
+				if len(parts) != 2 {
+					return errors.Errorf("invalid %s value: %s, expected isser/currency", flagName, v)
+				}
+				xrplTokensCfg = append(xrplTokensCfg, service.XRPLTokenConfig{
+					XRPLIssuer:   parts[0],
+					XRPLCurrency: parts[1],
+				})
+			}
+			cfg.XRPLTokens = xrplTokensCfg
+			return nil
 		},
 		flagXRPLMemoSuffix: func(flag string) error {
 			return setStringIfNotEmpty(cmd, flag, &cfg.XRPLMemoSuffix)

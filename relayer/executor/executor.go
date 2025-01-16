@@ -48,16 +48,16 @@ type Executor struct {
 	cfg            Config
 	log            logger.Logger
 	contractClient ContractClient
-	finder         Finder
+	finders        []Finder
 }
 
 // NewExecutor returns a new instance of the Executor.
-func NewExecutor(cfg Config, log logger.Logger, contractClient ContractClient, finder Finder) *Executor {
+func NewExecutor(cfg Config, log logger.Logger, contractClient ContractClient, finders []Finder) *Executor {
 	return &Executor{
 		cfg:            cfg,
 		log:            log,
 		contractClient: contractClient,
-		finder:         finder,
+		finders:        finders,
 	}
 }
 
@@ -66,8 +66,10 @@ func (e *Executor) Start(ctx context.Context) error {
 	e.log.Info("Starting executor.")
 
 	txsCh := make(chan finder.PendingCoreumSendTransaction)
-	if err := e.finder.SubscribeCoreumSendTransactions(ctx, txsCh); err != nil {
-		return err
+	for _, f := range e.finders {
+		if err := f.SubscribeCoreumSendTransactions(ctx, txsCh); err != nil {
+			return err
+		}
 	}
 
 	executionDoneCh := make(chan struct{})
