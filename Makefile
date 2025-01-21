@@ -26,7 +26,7 @@ build:
 .PHONY: build-in-docker
 build-in-docker:
 	docker build --build-arg BUILD_VERSION=$(BUILD_VERSION) . -t xrpl-bridge-builder
-	mkdir -p build
+	mkdir -p artifacts
 	docker run --rm --entrypoint cat xrpl-bridge-builder /code/artifacts/relayer > artifacts/relayer
 
 ###############################################################################
