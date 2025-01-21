@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 	"strings"
+	"time"
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -36,6 +37,7 @@ type XRPLScanner interface {
 type Config struct {
 	XRPLIssuer                 rippledata.Account
 	XRPLCurrency               rippledata.Currency
+	ActivationDate             time.Time
 	XRPLHistoryScanStartLedger int64
 	XRPLRecentScanIndexesBack  int64
 	XRPLMemoSuffix             string
@@ -97,10 +99,16 @@ func (f *Finder) buildPendingTransaction(tx xrpl.Transaction) (PendingCoreumSend
 		tx.TransactionType != xrpl.TransactionTypePayment {
 		return PendingCoreumSendTransaction{}, false
 	}
-	if len(tx.Memos) == 0 {
+
+	// check activation date
+	if tx.Date.Before(f.cfg.ActivationDate) {
 		return PendingCoreumSendTransaction{}, false
 	}
 
+	// extract destination if there is a memo
+	if len(tx.Memos) == 0 {
+		return PendingCoreumSendTransaction{}, false
+	}
 	coreumDestination, matches := ExtractAddressFromMemo(tx.Memos, f.cfg.XRPLMemoSuffix)
 	if !matches {
 		return PendingCoreumSendTransaction{}, false

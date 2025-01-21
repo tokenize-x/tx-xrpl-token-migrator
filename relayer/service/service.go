@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/url"
+	"time"
 
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -34,8 +35,9 @@ import (
 
 // XRPLTokenConfig is XRPL token config.
 type XRPLTokenConfig struct {
-	XRPLCurrency string
-	XRPLIssuer   string
+	XRPLCurrency   string
+	XRPLIssuer     string
+	ActivationDate time.Time
 }
 
 // Config is services config.
@@ -63,6 +65,7 @@ type Config struct {
 
 // Services is the struct which aggregates application service.
 type Services struct {
+	Config                Config
 	Logger                logger.Logger
 	XRPLTxScanner         *xrpl.TxScanner
 	CoreumContractClient  *coreum.ContractClient
@@ -169,6 +172,7 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 		txFinder := finder.NewFinder(finder.Config{
 			XRPLIssuer:                 *xrplIssuer,
 			XRPLCurrency:               xrplCurrency,
+			ActivationDate:             tokenCfg.ActivationDate,
 			XRPLHistoryScanStartLedger: cfg.XRPLHistoryScanStartLedger,
 			XRPLRecentScanIndexesBack:  cfg.XRPLRecentScanIndexesBack,
 			XRPLMemoSuffix:             cfg.XRPLMemoSuffix,
@@ -228,6 +232,7 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 	}, log, coreumChainClient, xrplRPCClient)
 
 	return &Services{
+		Config:                cfg,
 		Logger:                log,
 		XRPLTxScanner:         xrplTxScanner,
 		CoreumContractClient:  coreumContractClient,

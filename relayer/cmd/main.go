@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -69,8 +70,14 @@ var (
 		XRPLRecentScanSkipLastIndexes: 20,
 		XRPLTokens: []service.XRPLTokenConfig{
 			{
-				XRPLCurrency: "434F524500000000000000000000000000000000",
-				XRPLIssuer:   "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
+				XRPLCurrency:   "434F524500000000000000000000000000000000",
+				XRPLIssuer:     "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
+				ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+			},
+			{
+				XRPLCurrency:   "58434F5245000000000000000000000000000000",
+				XRPLIssuer:     "rawnyFwFLkntQttzBgEFiASg5iB5ULdKpX",
+				ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
 		},
 		XRPLMemoSuffix: "/coreum-testnet-1/v1",
@@ -84,12 +91,15 @@ var (
 		XRPLRecentScanSkipLastIndexes: 20,
 		XRPLTokens: []service.XRPLTokenConfig{
 			{
-				XRPLCurrency: "434F524500000000000000000000000000000000",
-				XRPLIssuer:   "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
+				XRPLCurrency:   "434F524500000000000000000000000000000000",
+				XRPLIssuer:     "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
+				ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
 			{
 				XRPLCurrency: "58434F5245000000000000000000000000000000",
 				XRPLIssuer:   "r3dVizzUAS3U29WKaaSALqkieytA2LCoRe",
+				// March 24th, 2025, 04:00 AM UTC.
+				ActivationDate: time.Date(2025, 3, 24, 4, 0, 0, 0, time.UTC),
 			},
 		},
 		XRPLMemoSuffix: "/coreum-mainnet-1/v1",

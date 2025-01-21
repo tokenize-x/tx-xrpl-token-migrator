@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+	"time"
 
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
@@ -42,6 +43,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 	cfg := Config{
 		XRPLIssuer:                 convertStringToRippleAccount(t, "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D"),
 		XRPLCurrency:               convertStringToRippleCurrency(t, "434F524500000000000000000000000000000000"),
+		ActivationDate:             time.Date(2000, 5, 1, 0, 0, 0, 0, time.UTC),
 		XRPLHistoryScanStartLedger: 8000,
 		XRPLMemoSuffix:             "=cored",
 		CoreumDenom:                "ucore",
@@ -65,6 +67,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 		TransactionType:   xrpl.TransactionTypePayment,
 		TransactionResult: xrpl.TransactionResultSuccess,
 		Validated:         true,
+		Date:              time.Date(2000, 6, 1, 0, 0, 0, 0, time.UTC),
 	}
 
 	tests := []struct {
@@ -84,6 +87,15 @@ func TestBuildPendingTransaction(t *testing.T) {
 				CoreumAmount:      sdk.NewInt64Coin(cfg.CoreumDenom, 1234567),
 				XRPLTxHash:        "xrpl-tx-hash",
 			},
+		},
+		{
+			name: "negative_tx_before_activation_date",
+			xrplTxFunc: func(tx xrpl.Transaction) xrpl.Transaction {
+				tx.Date = time.Date(2000, 4, 1, 0, 0, 0, 0, time.UTC)
+				return tx
+			},
+			wantMatches: false,
+			want:        PendingCoreumSendTransaction{},
 		},
 		{
 			name: "negative_invalid_tx_validated",
