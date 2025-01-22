@@ -487,9 +487,7 @@ cored tx sign unsigned.json --from $COREUM_EXECUTOR_ADDRESS --output-document si
 cored tx broadcast signed.json -y -b block --chain-id $COREUM_CHAIN_ID --node $COREUM_NODE
 ```
 
-## Upgrade relayer to V2
-
-The guide contains the instructions on how to update the relayer from `v1.x.x` version to `v2.x.x` version.
+## Upgrade relayer to V2.2.x
 
 * Export relayer key (optional but recommended) and save it in safe place
 
@@ -497,13 +495,15 @@ The guide contains the instructions on how to update the relayer from `v1.x.x` v
 ./relayer keys export relayer
 ```
 
+The guide contains the instructions on how to update the relayer from `v2.1.x` version to `v2.2.x` version.
+
 * Stop service
 
 ```bash
 systemctl stop xrpl-bridge-relayer
 ```
 
-* Download new `V2` version of the relayer and replace current binary
+* Download new `v2.2.x` version of the relayer and replace current binary
 
 * Check the version
 
