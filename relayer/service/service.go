@@ -61,6 +61,8 @@ type Config struct {
 	PrometheusInstanceName string
 	PrometheusUsername     string
 	PrometheusPassword     string
+
+	AuditStartDate time.Time
 }
 
 // Services is the struct which aggregates application service.
@@ -229,6 +231,7 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 		CoreumDenom:     network.Denom(),
 		CoreumDecimals:  6,
 		XRPLTokens:      auditTokensCfg,
+		StartDate:       cfg.AuditStartDate,
 	}, log, coreumChainClient, xrplRPCClient)
 
 	return &Services{

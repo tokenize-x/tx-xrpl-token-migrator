@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	tmtypes "github.com/cometbft/cometbft/abci/types"
@@ -97,7 +98,7 @@ func NewContractCallReport() *ContractCallReport {
 
 // CoreumChainClient is coreum chain client.
 type CoreumChainClient interface {
-	GetSpendingTransactions(ctx context.Context, fromAddress string) ([]*sdk.TxResponse, error)
+	GetSpendingTransactions(ctx context.Context, fromAddress string, startDate time.Time) ([]*sdk.TxResponse, error)
 }
 
 // XRPLRPCClient is XRPL client.
@@ -118,6 +119,7 @@ type AuditorConfig struct {
 	CoreumDecimals  int
 	XRPLMemoSuffix  string
 	XRPLTokens      []XRPLTokenConfig
+	StartDate       time.Time
 }
 
 // Auditor is the bridge auditor.
@@ -149,7 +151,7 @@ func (a *Auditor) Audit(ctx context.Context) ([]Discrepancy, error) {
 	if err != nil {
 		return nil, err
 	}
-	discrepancies, err := a.analizeContractCallDiscrepancies(contractCallReport)
+	discrepancies, err := a.analyzeContractCallDiscrepancies(contractCallReport)
 	if err != nil {
 		return nil, err
 	}
@@ -166,8 +168,7 @@ func (a *Auditor) Audit(ctx context.Context) ([]Discrepancy, error) {
 	discrepancies = append(discrepancies, a.analiseXrplToCoreumDiscrepancies(contractCallReport, xrplTxs)...)
 
 	discrepancies = lo.Filter(discrepancies, func(d Discrepancy, _ int) bool {
-		dtype, ok := KnownDiscrepancies[d.XRPLTx.Hash]
-		return ok && dtype == d.Type
+		return d.Type != KnownDiscrepancies[d.XRPLTx.Hash]
 	})
 
 	return discrepancies, nil
@@ -175,7 +176,7 @@ func (a *Auditor) Audit(ctx context.Context) ([]Discrepancy, error) {
 
 func (a *Auditor) buildContractCallReport(ctx context.Context) (ContractCallReport, error) {
 	a.log.Info("Fetching contact transactions to analise.")
-	txs, err := a.coreumChainClient.GetSpendingTransactions(ctx, a.cfg.ContractAddress)
+	txs, err := a.coreumChainClient.GetSpendingTransactions(ctx, a.cfg.ContractAddress, a.cfg.StartDate)
 	if err != nil {
 		return ContractCallReport{}, err
 	}
@@ -198,7 +199,7 @@ func (a *Auditor) buildContractCallReport(ctx context.Context) (ContractCallRepo
 	return *report, nil
 }
 
-func (a *Auditor) analizeContractCallDiscrepancies(contractCallReport ContractCallReport) ([]Discrepancy, error) {
+func (a *Auditor) analyzeContractCallDiscrepancies(contractCallReport ContractCallReport) ([]Discrepancy, error) {
 	discrepancies := make([]Discrepancy, 0)
 
 	totalBridged := sdk.ZeroInt()
@@ -296,17 +297,23 @@ func (a *Auditor) analiseXrplToCoreumDiscrepancies(
 			})
 		}
 
+		// check if the recipient is issuer and tokes is allowed
+		isBurningTx := false
 		for _, tokenCfg := range a.cfg.XRPLTokens {
-			if xrplTx.Destination != tokenCfg.XRPLIssuer.String() ||
-				xrplTx.DeliveryAmount.Issuer.String() != tokenCfg.XRPLIssuer.String() ||
-				xrplTx.DeliveryAmount.Currency.String() != tokenCfg.XRPLCurrency.String() {
-				discrepancies = append(discrepancies, Discrepancy{
-					CoreumTx:    thresholdBankSendRequest.Tx,
-					XRPLTx:      xrplTx,
-					Type:        DiscrepancyTypeNotBurningXRPLTransaction,
-					Description: "XRPL tx is not a burning tx",
-				})
+			if xrplTx.Destination == tokenCfg.XRPLIssuer.String() &&
+				xrplTx.DeliveryAmount.Issuer.String() == tokenCfg.XRPLIssuer.String() &&
+				xrplTx.DeliveryAmount.Currency.String() == tokenCfg.XRPLCurrency.String() {
+				isBurningTx = true
+				break
 			}
+		}
+		if !isBurningTx {
+			discrepancies = append(discrepancies, Discrepancy{
+				CoreumTx:    thresholdBankSendRequest.Tx,
+				XRPLTx:      xrplTx,
+				Type:        DiscrepancyTypeNotBurningXRPLTransaction,
+				Description: "XRPL tx is not a burning tx",
+			})
 		}
 
 		xrplAmount := finder.ConvertXRPLAmountToCoreumAmount(xrplTx.DeliveryAmount.Value, a.cfg.CoreumDecimals)

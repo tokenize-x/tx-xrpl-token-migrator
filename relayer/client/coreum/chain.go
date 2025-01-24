@@ -30,7 +30,7 @@ type ChainClientConfig struct {
 func DefaultChainClientConfig() ChainClientConfig {
 	return ChainClientConfig{
 		EventsPageSize: 100,
-		WorkerPoolSize: 10,
+		WorkerPoolSize: 100,
 		RequestTimeout: time.Minute,
 	}
 }
@@ -54,18 +54,22 @@ func NewChainClient(cfg ChainClientConfig, log logger.Logger, clientCtx client.C
 }
 
 // GetSpendingTransactions returns all txs which spends coins from and address.
-func (c *ChainClient) GetSpendingTransactions(ctx context.Context, fromAddress string) ([]*sdk.TxResponse, error) {
-	return c.queryTransactionsByEvents(ctx, fmt.Sprintf("coin_spent.spender='%s'", fromAddress))
+func (c *ChainClient) GetSpendingTransactions(
+	ctx context.Context, fromAddress string, startDate time.Time,
+) ([]*sdk.TxResponse, error) {
+	return c.queryTransactionsByEvents(ctx, fmt.Sprintf("coin_spent.spender='%s'", fromAddress), startDate)
 }
 
-func (c *ChainClient) queryTransactionsByEvents(ctx context.Context, event string) ([]*sdk.TxResponse, error) {
+func (c *ChainClient) queryTransactionsByEvents(
+	ctx context.Context, event string, startDate time.Time,
+) ([]*sdk.TxResponse, error) {
 	c.log.Info("Fetching coreum transactions.", zap.String("event", event))
 
 	tmEvents := []string{event}
 	// call fast to get total pages
 	reqCtx, reqCtxCancel := context.WithTimeout(ctx, c.cfg.RequestTimeout)
 	defer reqCtxCancel()
-	res, err := queryTxsByEvents(reqCtx, c.clientCtx, tmEvents, 1, 1, "asc")
+	res, err := c.queryTxsByEvents(reqCtx, c.clientCtx, tmEvents, 1, 1, "desc")
 	if err != nil {
 		return nil, err
 	}
@@ -77,50 +81,48 @@ func (c *ChainClient) queryTransactionsByEvents(ctx context.Context, event strin
 	}
 
 	txs := make([]*sdk.TxResponse, 0)
-	mu := sync.Mutex{}
-	wg := sync.WaitGroup{}
-	var fetchError error
-	wg.Add(pagesTotal)
 	for page := 1; page <= pagesTotal; page++ {
 		pageToFetch := page
-		c.workerPool.Submit(func() {
-			defer wg.Done()
-			c.log.Debug("Fetching page", zap.String("Page", fmt.Sprintf("%d/%d", pageToFetch, pagesTotal)))
-			defer c.log.Debug("Fetchedpage ", zap.String("Page", fmt.Sprintf("%d/%d", pageToFetch, pagesTotal)))
-			reqCtx, reqCtxCancel := context.WithTimeout(ctx, c.cfg.RequestTimeout)
-			defer reqCtxCancel()
-			res, err = queryTxsByEvents(reqCtx, c.clientCtx, tmEvents, pageToFetch, c.cfg.EventsPageSize, "asc")
+		c.log.Info("Fetching page", zap.String("Page", fmt.Sprintf("%d/%d", pageToFetch, pagesTotal)))
+		reqCtx, reqCtxCancel := context.WithTimeout(ctx, c.cfg.RequestTimeout)
+		res, err = c.queryTxsByEvents(reqCtx, c.clientCtx, tmEvents, pageToFetch, c.cfg.EventsPageSize, "desc")
+		if err != nil {
+			reqCtxCancel()
+			c.log.Error(
+				"Failed to fetch page",
+				zap.String("Page", fmt.Sprintf("%d/%d", pageToFetch, pagesTotal)),
+				zap.Error(err),
+			)
+			return nil, err
+		}
+		c.log.Info("Fetched page ", zap.String("Page", fmt.Sprintf("%d/%d", pageToFetch, pagesTotal)))
+		reqCtxCancel()
+		for _, tx := range res.Txs {
+			tx := tx
+			timestamp, err := time.ParseInLocation("2006-01-02 15:04:05.999999999 -0700 MST", tx.Timestamp, time.UTC)
 			if err != nil {
-				fetchError = err
-				c.log.Error(
-					"Failed to fetch page",
-					zap.String("Page", fmt.Sprintf("%d/%d", pageToFetch, pagesTotal)),
-					zap.Error(err),
+				return nil, err
+			}
+			if timestamp.Before(startDate) {
+				c.log.Debug(
+					"Stop fetching, the start data is reached",
+					zap.Time("startDate", startDate),
+					zap.Int("tx-count", len(txs)),
 				)
-				return
+				return txs, nil
 			}
-			mu.Lock()
-			defer mu.Unlock()
-			for _, tx := range txs {
-				// keep success transactions only
-				if tx.Code != 0 {
-					continue
-				}
+			// keep success transactions only
+			if tx.Code != 0 {
+				continue
 			}
-			txs = append(txs, res.Txs...)
-		})
+			txs = append(txs, tx)
+		}
 	}
-	wg.Wait()
-	if fetchError != nil {
-		return nil, fetchError
-	}
-
-	c.log.Debug("Found coreum transactions.", zap.Int("count", len(txs)))
 
 	return txs, nil
 }
 
-func queryTxsByEvents(
+func (c *ChainClient) queryTxsByEvents(
 	ctx context.Context,
 	clientCtx client.Context,
 	events []string,
@@ -142,6 +144,31 @@ func queryTxsByEvents(
 	txs, err := formatTxResults(clientCtx.TxConfig(), resTxs.Txs)
 	if err != nil {
 		return nil, err
+	}
+
+	// fill tx timestamp from the block
+	mu := sync.Mutex{}
+	wg := sync.WaitGroup{}
+	errs := make([]error, 0)
+	wg.Add(len(txs))
+	for _, tx := range txs {
+		tx := tx
+		c.workerPool.Submit(func() {
+			defer wg.Done()
+			block, err := node.Block(ctx, &tx.Height)
+			if err != nil {
+				mu.Lock()
+				errs = append(errs, err)
+				mu.Unlock()
+				return
+			}
+			tx.Timestamp = block.Block.Header.Time.String()
+		})
+	}
+	wg.Wait()
+
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("failed to fill tx timestamp: %s", errs)
 	}
 
 	result := sdk.NewSearchTxsResult(uint64(resTxs.TotalCount), uint64(len(txs)), uint64(page), uint64(limit), txs)

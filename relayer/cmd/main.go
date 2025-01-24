@@ -59,6 +59,8 @@ const (
 	flagPrometheusInstanceName = "prometheus-instance-name"
 	flagPrometheusUsername     = "prometheus-username"
 	flagPrometheusPassword     = "prometheus-password"
+
+	flagAuditStartDate = "audit-start-date"
 )
 
 const defaultHome = ".xrpl-bridge"
@@ -83,6 +85,8 @@ var (
 		XRPLMemoSuffix: "/coreum-testnet-1/v1",
 
 		CoreumChainID: string(constant.ChainIDTest),
+
+		AuditStartDate: time.Date(2024, 12, 1, 0, 0, 0, 0, time.UTC),
 	}
 
 	defaultMainnnetCfg = service.Config{
@@ -105,6 +109,8 @@ var (
 		XRPLMemoSuffix: "/coreum-mainnet-1/v1",
 
 		CoreumChainID: string(constant.ChainIDMain),
+
+		AuditStartDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 )
 
@@ -594,6 +600,7 @@ func AuditCmd(ctx context.Context) *cobra.Command {
 
 	addCoreumFlags(cmd)
 	addXRPLFlags(cmd)
+	cmd.PersistentFlags().String(flagAuditStartDate, "", "Audit stat date, e.g. 2006-01-02")
 
 	return cmd
 }
@@ -874,6 +881,9 @@ func readServicesConfig(cmd *cobra.Command) (service.Config, error) {
 		flagPrometheusPassword: func(flag string) error {
 			return setStringIfNotEmpty(cmd, flag, &cfg.PrometheusPassword)
 		},
+		flagAuditStartDate: func(flag string) error {
+			return setDateIfNotEmpty(flag, cmd, &cfg.AuditStartDate)
+		},
 	}
 
 	for flagName, setter := range setters {
@@ -912,5 +922,22 @@ func setStringInt64IfNotZero(cmd *cobra.Command, flagName string, v *int64) erro
 		return nil
 	}
 	*v = val
+	return nil
+}
+
+func setDateIfNotEmpty(flag string, cmd *cobra.Command, v *time.Time) error {
+	var dateStr string
+	if err := setStringIfNotEmpty(cmd, flag, &dateStr); err != nil {
+		return err
+	}
+	if dateStr == "" {
+		return nil
+	}
+	val, err := time.Parse(time.DateOnly, dateStr)
+	if err != nil {
+		return err
+	}
+	*v = val
+
 	return nil
 }
