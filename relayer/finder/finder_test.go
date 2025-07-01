@@ -44,6 +44,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 		XRPLIssuer:                 convertStringToRippleAccount(t, "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D"),
 		XRPLCurrency:               convertStringToRippleCurrency(t, "434F524500000000000000000000000000000000"),
 		ActivationDate:             time.Date(2000, 5, 1, 0, 0, 0, 0, time.UTC),
+		Multiplier:                 "1.0",
 		XRPLHistoryScanStartLedger: 8000,
 		XRPLMemoSuffix:             "=cored",
 		CoreumDenom:                "ucore",
@@ -201,16 +202,19 @@ func TestFinder_convertXRPLAmountToCoreumCoin(t *testing.T) {
 	tests := []struct {
 		name       string
 		xrplAmount *rippledata.Value
+		multiplier string
 		wantAmount sdk.Coin
 	}{
 		{
 			name:       "no_truncation",
 			xrplAmount: convertStringToRippleValue(t, "10.123456", false),
+			multiplier: "1.0",
 			wantAmount: sdk.NewCoin(denom, sdk.NewInt(10123456)),
 		},
 		{
 			name:       "max_amount",
 			xrplAmount: convertStringToRippleValue(t, "1000000000", false),
+			multiplier: "1.0",
 			wantAmount: sdk.NewCoin(denom, func() sdkmath.Int {
 				v, _ := sdk.NewIntFromString("1000000000000000")
 				return v
@@ -219,17 +223,83 @@ func TestFinder_convertXRPLAmountToCoreumCoin(t *testing.T) {
 		{
 			name:       "many_decimals",
 			xrplAmount: convertStringToRippleValue(t, "0.100001000000001", false),
+			multiplier: "1.0",
 			wantAmount: sdk.NewInt64Coin(denom, 100001),
 		},
 		{
 			name:       "many_decimals_to_zero",
 			xrplAmount: convertStringToRippleValue(t, "0.000000000000001", false),
+			multiplier: "1.0",
 			wantAmount: sdk.NewInt64Coin(denom, 0),
 		},
 		{
 			name:       "default_float_rounding",
 			xrplAmount: convertStringToRippleValue(t, "0.001", false),
+			multiplier: "1.0",
 			wantAmount: sdk.NewInt64Coin(denom, 1000),
+		},
+		{
+			name:       "default_float_rounding_down",
+			xrplAmount: convertStringToRippleValue(t, "1.111111111111111", false),
+			multiplier: "1.0",
+			wantAmount: sdk.NewInt64Coin(denom, 1111111),
+		},
+		{
+			name:       "just_below_min_0.99",
+			xrplAmount: convertStringToRippleValue(t, "1.0", false),
+			multiplier: "0.99",
+			wantAmount: sdk.NewInt64Coin(denom, 990000),
+		},
+		{
+			name:       "just_above_min_1.01",
+			xrplAmount: convertStringToRippleValue(t, "1.0", false),
+			multiplier: "1.01",
+			wantAmount: sdk.NewInt64Coin(denom, 1010000),
+		},
+		{
+			name:       "just_below_max_1.99",
+			xrplAmount: convertStringToRippleValue(t, "1.0", false),
+			multiplier: "1.99",
+			wantAmount: sdk.NewInt64Coin(denom, 1990000),
+		},
+		{
+			name:       "just_above_max_2.01",
+			xrplAmount: convertStringToRippleValue(t, "1.0", false),
+			multiplier: "2.01",
+			wantAmount: sdk.NewInt64Coin(denom, 2010000),
+		},
+		{
+			name:       "multiplier_0.5",
+			xrplAmount: convertStringToRippleValue(t, "2.0", false),
+			multiplier: "0.5",
+			wantAmount: sdk.NewInt64Coin(denom, 1000000),
+		},
+		{
+			name:       "multiplier_1.5",
+			xrplAmount: convertStringToRippleValue(t, "2.0", false),
+			multiplier: "1.5",
+			wantAmount: sdk.NewInt64Coin(denom, 3000000),
+		},
+		{
+			name:       "multiplier_2.5",
+			xrplAmount: convertStringToRippleValue(t, "2.0", false),
+			multiplier: "2.5",
+			wantAmount: sdk.NewInt64Coin(denom, 5000000),
+		},
+		{
+			name:       "very_large_value_with_multiplier",
+			xrplAmount: convertStringToRippleValue(t, "1000000000", false),
+			multiplier: "2.5",
+			wantAmount: sdk.NewCoin(denom, func() sdkmath.Int {
+				v, _ := sdk.NewIntFromString("2500000000000000")
+				return v
+			}()),
+		},
+		{
+			name:       "very_small_fraction_with_multiplier",
+			xrplAmount: convertStringToRippleValue(t, "0.000001", false),
+			multiplier: "0.5",
+			wantAmount: sdk.NewInt64Coin(denom, 0), // 0.0000005 * 1e6 = 0.5
 		},
 	}
 	for _, tt := range tests {
@@ -239,6 +309,7 @@ func TestFinder_convertXRPLAmountToCoreumCoin(t *testing.T) {
 				cfg: Config{
 					CoreumDenom:    denom,
 					CoreumDecimals: 6,
+					Multiplier:     tt.multiplier,
 				},
 			}
 			if got := f.convertXRPLAmountToCoreumCoin(tt.xrplAmount); !reflect.DeepEqual(got.String(), tt.wantAmount.String()) {

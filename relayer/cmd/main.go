@@ -75,11 +75,19 @@ var (
 				XRPLCurrency:   "434F524500000000000000000000000000000000",
 				XRPLIssuer:     "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
 				ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+				Multiplier:     "1.0",
 			},
 			{
 				XRPLCurrency:   "58434F5245000000000000000000000000000000",
 				XRPLIssuer:     "rawnyFwFLkntQttzBgEFiASg5iB5ULdKpX",
 				ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+				Multiplier:     "1.0",
+			},
+			{
+				XRPLCurrency:   "534F4C4F00000000000000000000000000000000",
+				XRPLIssuer:     "rHZwvHEs56GCmHupwjA4RY7oPA3EoAJWuN",
+				ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+				Multiplier:     "1.25",
 			},
 		},
 		XRPLMemoSuffix: "/coreum-testnet-1/v1",
@@ -98,12 +106,21 @@ var (
 				XRPLCurrency:   "434F524500000000000000000000000000000000",
 				XRPLIssuer:     "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
 				ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+				Multiplier:     "1.0",
 			},
 			{
 				XRPLCurrency: "58434F5245000000000000000000000000000000",
 				XRPLIssuer:   "r3dVizzUAS3U29WKaaSALqkieytA2LCoRe",
 				// March 24th, 2025, 04:00 AM UTC.
 				ActivationDate: time.Date(2025, 3, 24, 4, 0, 0, 0, time.UTC),
+				Multiplier:     "1.0",
+			},
+			{
+				XRPLCurrency: "534F4C4F00000000000000000000000000000000",
+				XRPLIssuer:   "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz",
+				// June 25th, 2025, 04:00 AM UTC.
+				ActivationDate: time.Date(2025, 6, 25, 4, 0, 0, 0, time.UTC),
+				Multiplier:     "1.25",
 			},
 		},
 		XRPLMemoSuffix: "/coreum-mainnet-1/v1",

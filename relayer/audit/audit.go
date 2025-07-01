@@ -110,6 +110,7 @@ type XRPLRPCClient interface {
 type XRPLTokenConfig struct {
 	XRPLIssuer   rippledata.Account
 	XRPLCurrency rippledata.Currency
+	Multiplier   string
 }
 
 // AuditorConfig is Auditor config.
@@ -299,11 +300,13 @@ func (a *Auditor) analiseXrplToCoreumDiscrepancies(
 
 		// check if the recipient is issuer and tokes is allowed
 		isBurningTx := false
+		multiplier := "1.0"
 		for _, tokenCfg := range a.cfg.XRPLTokens {
 			if xrplTx.Destination == tokenCfg.XRPLIssuer.String() &&
 				xrplTx.DeliveryAmount.Issuer.String() == tokenCfg.XRPLIssuer.String() &&
 				xrplTx.DeliveryAmount.Currency.String() == tokenCfg.XRPLCurrency.String() {
 				isBurningTx = true
+				multiplier = tokenCfg.Multiplier
 				break
 			}
 		}
@@ -316,7 +319,7 @@ func (a *Auditor) analiseXrplToCoreumDiscrepancies(
 			})
 		}
 
-		xrplAmount := finder.ConvertXRPLAmountToCoreumAmount(xrplTx.DeliveryAmount.Value, a.cfg.CoreumDecimals)
+		xrplAmount := finder.ConvertXRPLAmountToCoreumAmount(xrplTx.DeliveryAmount.Value, a.cfg.CoreumDecimals, multiplier)
 		coreumAmount := thresholdBankSendRequest.Payload.Amount.Amount
 		if xrplAmount.String() != coreumAmount.String() {
 			discrepancies = append(discrepancies, Discrepancy{
@@ -324,7 +327,7 @@ func (a *Auditor) analiseXrplToCoreumDiscrepancies(
 				XRPLTx:   xrplTx,
 				Type:     DiscrepancyTypeAmountMismatch,
 				Description: fmt.Sprintf(
-					"XRPL tx amount if different from coreum, xrplAmount:%s, coreumAmount:%s",
+					"XRPL tx amount is different from coreum, xrplAmount:%s, coreumAmount:%s",
 					xrplAmount.String(), coreumAmount.String(),
 				),
 			})

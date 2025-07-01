@@ -38,6 +38,7 @@ type XRPLTokenConfig struct {
 	XRPLCurrency   string
 	XRPLIssuer     string
 	ActivationDate time.Time
+	Multiplier     string
 }
 
 // Config is services config.
@@ -175,6 +176,7 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 			XRPLIssuer:                 *xrplIssuer,
 			XRPLCurrency:               xrplCurrency,
 			ActivationDate:             tokenCfg.ActivationDate,
+			Multiplier:                 tokenCfg.Multiplier,
 			XRPLHistoryScanStartLedger: cfg.XRPLHistoryScanStartLedger,
 			XRPLRecentScanIndexesBack:  cfg.XRPLRecentScanIndexesBack,
 			XRPLMemoSuffix:             cfg.XRPLMemoSuffix,
@@ -186,6 +188,7 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 		auditTokensCfg = append(auditTokensCfg, audit.XRPLTokenConfig{
 			XRPLIssuer:   *xrplIssuer,
 			XRPLCurrency: xrplCurrency,
+			Multiplier:   tokenCfg.Multiplier,
 		})
 	}
 

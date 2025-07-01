@@ -38,6 +38,7 @@ type Config struct {
 	XRPLIssuer                 rippledata.Account
 	XRPLCurrency               rippledata.Currency
 	ActivationDate             time.Time
+	Multiplier                 string
 	XRPLHistoryScanStartLedger int64
 	XRPLRecentScanIndexesBack  int64
 	XRPLMemoSuffix             string
@@ -137,7 +138,7 @@ func (f *Finder) buildPendingTransaction(tx xrpl.Transaction) (PendingCoreumSend
 }
 
 func (f *Finder) convertXRPLAmountToCoreumCoin(xrplAmount *rippledata.Value) sdk.Coin {
-	amount := ConvertXRPLAmountToCoreumAmount(xrplAmount, f.cfg.CoreumDecimals)
+	amount := ConvertXRPLAmountToCoreumAmount(xrplAmount, f.cfg.CoreumDecimals, f.cfg.Multiplier)
 	return sdk.NewCoin(f.cfg.CoreumDenom, amount)
 }
 
@@ -160,14 +161,28 @@ func ExtractAddressFromMemo(memos []string, suffix string) (sdk.AccAddress, bool
 }
 
 // ConvertXRPLAmountToCoreumAmount converts xrpl amount to coreum using the coreum decimals.
-func ConvertXRPLAmountToCoreumAmount(xrplAmount *rippledata.Value, decimals int) sdkmath.Int {
+func ConvertXRPLAmountToCoreumAmount(xrplAmount *rippledata.Value, decimals int, multiplier string) sdkmath.Int {
 	if xrplAmount == nil {
 		return sdk.NewInt(0)
+	}
+
+	if len(multiplier) == 0 || multiplier == "0" {
+		multiplier = "1.0"
+	}
+
+	multiplierRat, ok := new(big.Rat).SetString(multiplier)
+	if !ok {
+		return sdk.NewInt(0)
+	}
+
+	if multiplierRat.Num().Cmp(big.NewInt(0)) == 0 {
+		multiplierRat = big.NewRat(1, 1)
 	}
 
 	// 10^CoreumDecimals
 	tenPowerDecimals := big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(decimals)), nil)
 	xrplRatAmount := xrplAmount.Rat()
+	xrplRatAmount = new(big.Rat).Mul(xrplRatAmount, multiplierRat)
 	xrplRatAmountNumerator := xrplRatAmount.Num()
 	xrplRatAmountDenominator := xrplRatAmount.Denom()
 	coreumAmount := big.NewInt(0).Quo(

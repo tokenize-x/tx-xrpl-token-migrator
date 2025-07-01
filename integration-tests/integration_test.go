@@ -4,6 +4,7 @@ package integrationtests
 
 import (
 	"context"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -30,6 +31,7 @@ const (
 	xrplTestMemoSuffix = "/integration-test"
 	xrplCORECurrency   = "434F524500000000000000000000000000000000"
 	xrplXCORECurrency  = "58434F5245000000000000000000000000000000"
+	xrplSOLOCurrency   = "534F4C4F00000000000000000000000000000000"
 )
 
 type payment struct {
@@ -57,18 +59,30 @@ func TestXRPLToCoreumBridgingMultiTokenSending(t *testing.T) {
 	xCoreCurrency, err := rippledata.NewCurrency(xrplXCORECurrency)
 	requireT.NoError(err)
 
-	enableDefaultRippling(ctx, t, chains, coreIssuer, xCoreIssuer)
+	soloIssuer := xrplChain.GenAccount(ctx, t, 10)
+	soloCurrency, err := rippledata.NewCurrency(xrplSOLOCurrency)
+	requireT.NoError(err)
+
+	enableDefaultRippling(ctx, t, chains, coreIssuer, soloIssuer)
 
 	tokens := []service.XRPLTokenConfig{
 		{
 			XRPLIssuer:     coreIssuer.String(),
 			XRPLCurrency:   xrplCORECurrency,
 			ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+			Multiplier:     "1.0",
 		},
 		{
 			XRPLIssuer:     xCoreIssuer.String(),
 			XRPLCurrency:   xrplXCORECurrency,
 			ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+			Multiplier:     "1.0",
+		},
+		{
+			XRPLIssuer:     soloIssuer.String(),
+			XRPLCurrency:   xrplSOLOCurrency,
+			ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+			Multiplier:     "1.25",
 		},
 	}
 
@@ -109,6 +123,12 @@ func TestXRPLToCoreumBridgingMultiTokenSending(t *testing.T) {
 			issuer:   coreIssuer,
 			currency: coreCurrency,
 		},
+		{
+			address:  recipient1Address.String(),
+			amounts:  []string{"15.0", "250.0", "7.0"}, // Should receive 17.75 and 8.75 because of the 1.25 multiplier
+			issuer:   soloIssuer,
+			currency: soloCurrency,
+		},
 	})
 
 	instances := buildAndStartDevEnv(ctx, t, chains, tokens)
@@ -116,8 +136,10 @@ func TestXRPLToCoreumBridgingMultiTokenSending(t *testing.T) {
 	awaitForBalance(
 		ctx, t, coreumChain.ClientContext, recipient1Address.String(), coreumChain.NewCoin(
 			sdk.NewInt(
-				// XCORE
-				30000000+12599999+
+				// SOLO
+				18750000+8750000+
+					// XCORE
+					30000000+12599999+
 					// CORE
 					150000000+7654321,
 			)),
@@ -143,12 +165,17 @@ func TestXRPLToCoreumBridgingMultiTokenSending(t *testing.T) {
 		ctx, t, coreumChain.ClientContext, recipient3Address.String(), coreumChain.NewCoin(recipient3ExpectedBalance),
 	)
 
-	// check that one transaction is pending due to amount limit
+	// check that one xCore transaction is pending due to amount limit
 	highAmount := coreumChain.NewCoin(sdk.NewInt(250000000))
 
 	pendingTxs, err := instances[0].CoreumContractClient.GetPendingTxs(ctx, nil, nil)
 	require.NoError(t, err)
-	require.Len(t, pendingTxs, 1)
+	require.Len(t, pendingTxs, 2) // one xCore and one solo
+
+	// sort pending transactions, so xCore with less amount would be the first, and solo would be the second
+	sort.Slice(pendingTxs, func(i, j int) bool {
+		return pendingTxs[i].Amount.IsLTE(pendingTxs[j].Amount)
+	})
 
 	highAmountPendingTx := pendingTxs[0]
 	expectedHighAmountPendingTx := coreum.Transaction{
@@ -177,6 +204,30 @@ func TestXRPLToCoreumBridgingMultiTokenSending(t *testing.T) {
 		recipient3Address.String(),
 		coreumChain.NewCoin(recipient3ExpectedBalance.Add(highAmount.Amount)),
 	)
+
+	// check that one solo transaction is pending due to amount limit
+	highAmount = coreumChain.NewCoin(sdk.NewInt(312500000))
+
+	highAmountPendingTx = pendingTxs[1]
+	expectedHighAmountPendingTx = coreum.Transaction{
+		Amount:    highAmount,
+		Recipient: recipient1Address.String(),
+		EvidenceProviders: lo.Map(instances, func(instance *service.Services, _ int) string {
+			return instance.Config.CoreumSenderAddress
+		}),
+	}
+	slices.Sort(expectedHighAmountPendingTx.EvidenceProviders)
+	slices.Sort(highAmountPendingTx.EvidenceProviders)
+	requireT.Equal(expectedHighAmountPendingTx, highAmountPendingTx.Transaction)
+
+	// execute the pending transaction
+	_, err = instances[0].CoreumContractClient.ExecutePending(
+		ctx,
+		sdk.MustAccAddressFromBech32(instances[0].Config.CoreumSenderAddress),
+		highAmount,
+		highAmountPendingTx.EvidenceID,
+	)
+	requireT.NoError(err)
 }
 
 func TestXRPLToCoreumBridgingTokenActivationDate(t *testing.T) {
@@ -197,19 +248,32 @@ func TestXRPLToCoreumBridgingTokenActivationDate(t *testing.T) {
 	xCoreCurrency, err := rippledata.NewCurrency(xrplXCORECurrency)
 	requireT.NoError(err)
 
-	enableDefaultRippling(ctx, t, chains, coreIssuer, xCoreIssuer)
+	soloIssuer := xrplChain.GenAccount(ctx, t, 10)
+	soloCurrency, err := rippledata.NewCurrency(xrplSOLOCurrency)
+	requireT.NoError(err)
+
+	enableDefaultRippling(ctx, t, chains, coreIssuer, soloIssuer)
 
 	tokens := []service.XRPLTokenConfig{
 		{
 			XRPLIssuer:     coreIssuer.String(),
 			XRPLCurrency:   xrplCORECurrency,
 			ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+			Multiplier:     "1.0",
 		},
 		{
 			XRPLIssuer:   xCoreIssuer.String(),
 			XRPLCurrency: xrplXCORECurrency,
 			// the XCORE will be activated in the future
 			ActivationDate: time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC),
+			Multiplier:     "1.0",
+		},
+		{
+			XRPLIssuer:   soloIssuer.String(),
+			XRPLCurrency: xrplSOLOCurrency,
+			// the SOLO will be activated in the future
+			ActivationDate: time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC),
+			Multiplier:     "1.25",
 		},
 	}
 
@@ -242,6 +306,12 @@ func TestXRPLToCoreumBridgingTokenActivationDate(t *testing.T) {
 			issuer:   coreIssuer,
 			currency: coreCurrency,
 		},
+		{
+			address:  recipientAddress.String(),
+			amounts:  []string{"0.00000001", "30.0", "12.5999999999"},
+			issuer:   soloIssuer,
+			currency: soloCurrency,
+		},
 	})
 
 	buildAndStartDevEnv(ctx, t, chains, tokens)
@@ -249,7 +319,7 @@ func TestXRPLToCoreumBridgingTokenActivationDate(t *testing.T) {
 	awaitForBalance(
 		ctx, t, coreumChain.ClientContext, recipientAddress.String(), coreumChain.NewCoin(
 			sdk.NewInt(
-				// only CORE related balance is expected, the XCORE is not activated
+				// only CORE related balance is expected, the XCORE and SOLO are not activated
 				150000000+35000000,
 			)),
 	)
