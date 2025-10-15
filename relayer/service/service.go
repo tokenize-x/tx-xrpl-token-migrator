@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net/url"
@@ -48,8 +49,6 @@ type Config struct {
 	XRPLRecentScanIndexesBack     int64
 	XRPLRecentScanSkipLastIndexes int64
 
-	XRPLTokens []XRPLTokenConfig
-
 	XRPLMemoSuffix string
 
 	CoreumChainID         string
@@ -83,7 +82,7 @@ type Services struct {
 // NewServices returns new instance on the services.
 //
 //nolint:funlen // step-by step initialization
-func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *zap.Logger) (*Services, error) {
+func NewServices(ctx context.Context, cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *zap.Logger) (*Services, error) {
 	metricRecorder, err := metric.NewRecorder()
 	if err != nil {
 		return nil, err
@@ -132,6 +131,9 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 		if err != nil {
 			return nil, errors.Wrapf(err, "invalid contract address")
 		}
+	} else {
+		// TODO: to be revised in the next PR
+		return nil, errors.New("contract address is required")
 	}
 	coreumClientCtx := client.NewContext(client.DefaultContextConfig(), app.ModuleBasics).
 		WithChainID(string(network.ChainID())).
@@ -161,9 +163,25 @@ func NewServices(cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *
 		coreumClientCtx,
 	)
 
-	txFinders := make([]*finder.Finder, 0, len(cfg.XRPLTokens))
-	auditTokensCfg := make([]audit.XRPLTokenConfig, 0, len(cfg.XRPLTokens))
-	for _, tokenCfg := range cfg.XRPLTokens {
+	// Query XRPLTokens from the contract if contract address is set
+	contractTokens, err := coreumContractClient.GetXRPLTokens(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to query XRPLTokens from contract")
+	}
+	// Convert contract tokens to service config format
+	xrplTokensConfig := make([]XRPLTokenConfig, 0, len(contractTokens))
+	for _, token := range contractTokens {
+		xrplTokensConfig = append(xrplTokensConfig, XRPLTokenConfig{
+			XRPLCurrency:   token.Currency,
+			XRPLIssuer:     token.Issuer,
+			ActivationDate: time.Unix(int64(token.ActivationDate), 0),
+			Multiplier:     token.Multiplier,
+		})
+	}
+
+	txFinders := make([]*finder.Finder, 0, len(xrplTokensConfig))
+	auditTokensCfg := make([]audit.XRPLTokenConfig, 0, len(xrplTokensConfig))
+	for _, tokenCfg := range xrplTokensConfig {
 		xrplIssuer, err := rippledata.NewAccountFromAddress(tokenCfg.XRPLIssuer)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert XRPLIssuer string to type, value:%s", tokenCfg.XRPLIssuer)

@@ -12,8 +12,39 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
 )
+
+// Test constants matching defaultTestnetCfg from main.go
+const (
+	xrplTestMemoSuffix = "/integration-test"
+	xrplCORECurrency   = "434F524500000000000000000000000000000000"
+	xrplXCORECurrency  = "58434F5245000000000000000000000000000000"
+	xrplSOLOCurrency   = "534F4C4F00000000000000000000000000000000"
+)
+
+// testXRPLTokens matches the defaultTestnetCfg XRPL tokens configuration
+var testXRPLTokens = []coreum.XRPLToken{
+	{
+		Currency:       xrplCORECurrency,
+		Issuer:         "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
+		ActivationDate: 946684800, // time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
+		Multiplier:     "1.0",
+	},
+	{
+		Currency:       xrplXCORECurrency,
+		Issuer:         "rawnyFwFLkntQttzBgEFiASg5iB5ULdKpX",
+		ActivationDate: 946684800,
+		Multiplier:     "1.0",
+	},
+	{
+		Currency:       xrplSOLOCurrency,
+		Issuer:         "rHZwvHEs56GCmHupwjA4RY7oPA3EoAJWuN",
+		ActivationDate: 946684800,
+		Multiplier:     "1.25",
+	},
+}
 
 var chains Chains
 

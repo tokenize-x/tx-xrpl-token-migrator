@@ -85,6 +85,7 @@ func TestWASMContractThresholdBankSend(t *testing.T) {
 		Threshold:        threshold,
 		MinAmount:        minAmount,
 		MaxAmount:        maxAmount,
+		XRPLTokens:       testXRPLTokens,
 		Label:            "bank_threshold_send",
 	})
 	requireT.NoError(err)
@@ -266,6 +267,7 @@ func TestWASMContractExecutePending(t *testing.T) {
 		Threshold:        threshold,
 		MinAmount:        minAmount,
 		MaxAmount:        maxAmount,
+		XRPLTokens:       testXRPLTokens,
 		Label:            "bank_threshold_send",
 	})
 	requireT.NoError(err)
@@ -442,6 +444,7 @@ func TestWASMContractExecutePendingWithMultisig(t *testing.T) {
 		Threshold:        threshold,
 		MinAmount:        minAmount,
 		MaxAmount:        maxAmount,
+		XRPLTokens:       testXRPLTokens,
 		Label:            "bank_threshold_send",
 	})
 	requireT.NoError(err)
@@ -569,10 +572,11 @@ func TestWASMUpdateMinMaxAmounts(t *testing.T) {
 		TrustedAddresses: []string{
 			anyAddress.String(),
 		},
-		Threshold: 1,
-		MinAmount: minAmount,
-		MaxAmount: maxAmount,
-		Label:     "bank_threshold_send",
+		Threshold:  1,
+		MinAmount:  minAmount,
+		MaxAmount:  maxAmount,
+		Label:      "bank_threshold_send",
+		XRPLTokens: testXRPLTokens,
 	})
 	requireT.NoError(err)
 
@@ -637,10 +641,11 @@ func TestWASMUpdateTrustedAddresses(t *testing.T) {
 		TrustedAddresses: []string{
 			anyAddress.String(),
 		},
-		Threshold: 1,
-		MinAmount: sdkmath.NewInt(1),
-		MaxAmount: sdk.NewIntFromUint64(10_000),
-		Label:     "bank_threshold_send",
+		Threshold:  1,
+		MinAmount:  sdkmath.NewInt(1),
+		MaxAmount:  sdk.NewIntFromUint64(10_000),
+		Label:      "bank_threshold_send",
+		XRPLTokens: testXRPLTokens,
 	})
 	requireT.NoError(err)
 
@@ -671,6 +676,72 @@ func TestWASMUpdateTrustedAddresses(t *testing.T) {
 	}), cfg.TrustedAddresses)
 }
 
+func TestWASMUpdateXRPLTokens(t *testing.T) {
+	t.Parallel()
+
+	ctx, chain := NewCoreumTestingContext(t)
+
+	owner := chain.GenAccount()
+	anyAddress := chain.GenAccount()
+
+	requireT := require.New(t)
+	chain.Faucet.FundAccounts(ctx, t,
+		integrationtests.NewFundedAccount(owner, chain.NewCoin(sdk.NewInt(5000000000))),
+		integrationtests.NewFundedAccount(anyAddress, chain.NewCoin(sdk.NewInt(5000000000))),
+	)
+
+	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil, ""), chain.ClientContext)
+
+	t.Log("Deploying and instantiating the smart contract.")
+	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
+		Owner: owner.String(),
+		Admin: owner.String(),
+		TrustedAddresses: []string{
+			anyAddress.String(),
+		},
+		Threshold:  1,
+		MinAmount:  sdkmath.NewInt(1),
+		MaxAmount:  sdk.NewIntFromUint64(10_000),
+		Label:      "bank_threshold_send",
+		XRPLTokens: testXRPLTokens,
+	})
+	requireT.NoError(err)
+
+	requireT.NoError(contractClient.SetContractAddress(contractAddr))
+	t.Logf("Contract deployed and instantiated, address:%s.", contractAddr)
+
+	t.Logf("Trying to update XRPL tokens from non-owner.")
+	newXRPLTokens := []coreum.XRPLToken{
+		{
+			Currency:       "555344000000000000000000000000000000000000", // USD
+			Issuer:         "rN7n7otQDd6FczFgLdlqtyMVrn3HMfXt8L",
+			ActivationDate: 1704067200, // 2024-01-01
+			Multiplier:     "1.5",
+		},
+		{
+			Currency:       "455552000000000000000000000000000000000000", // EUR
+			Issuer:         "rLHzPsX6oXkzU9fTFUnKh4wH8KMY4kRqTn",
+			ActivationDate: 1704067200,
+			Multiplier:     "2.0",
+		},
+	}
+
+	_, err = contractClient.UpdateXRPLTokens(
+		ctx, anyAddress, newXRPLTokens,
+	)
+	requireT.True(coreum.IsUnauthorizedError(err))
+
+	t.Logf("Updating XRPL tokens from the owner.")
+	_, err = contractClient.UpdateXRPLTokens(
+		ctx, owner, newXRPLTokens,
+	)
+	requireT.NoError(err)
+
+	cfg, err := contractClient.GetContractConfig(ctx)
+	requireT.NoError(err)
+	requireT.Equal(newXRPLTokens, cfg.XRPLTokens)
+}
+
 func TestWASMContractExecuteWithdraw(t *testing.T) {
 	t.Parallel()
 
@@ -698,10 +769,11 @@ func TestWASMContractExecuteWithdraw(t *testing.T) {
 		TrustedAddresses: []string{
 			trustedAddress1.String(),
 		},
-		Threshold: 1,
-		MinAmount: minAmount,
-		MaxAmount: maxAmount,
-		Label:     "bank_threshold_send",
+		Threshold:  1,
+		MinAmount:  minAmount,
+		MaxAmount:  maxAmount,
+		Label:      "bank_threshold_send",
+		XRPLTokens: testXRPLTokens,
 	})
 	requireT.NoError(err)
 
@@ -786,10 +858,11 @@ func TestWASMContractQueryPagination(t *testing.T) {
 			trustedAddress2.String(),
 			trustedAddress3.String(),
 		},
-		Threshold: 2,
-		MinAmount: minAmount,
-		MaxAmount: maxAmount,
-		Label:     "bank_threshold_send",
+		Threshold:  2,
+		MinAmount:  minAmount,
+		MaxAmount:  maxAmount,
+		Label:      "bank_threshold_send",
+		XRPLTokens: testXRPLTokens,
 	})
 	requireT.NoError(err)
 

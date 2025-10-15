@@ -34,6 +34,7 @@ const (
 	ExecMethodUpdateMinAmount        ExecMethod = "update_min_amount"
 	ExecMethodUpdateMaxAmount        ExecMethod = "update_max_amount"
 	ExecMethodUpdateTrustedAddresses ExecMethod = "update_trusted_addresses"
+	ExecMethodUpdateXRPLTokens       ExecMethod = "update_xrpl_tokens"
 	ExecMethodWithdraw               ExecMethod = "withdraw"
 )
 
@@ -47,6 +48,7 @@ const (
 	QueryMethodGetPendingTransactions QueryMethod = "get_pending_transactions"
 	QueryMethodGetSentTransaction     QueryMethod = "get_sent_transaction"
 	QueryMethodGetSentTransactions    QueryMethod = "get_sent_transactions"
+	QueryMethodGetXRPLTokens          QueryMethod = "get_xrpl_tokens"
 )
 
 const (
@@ -67,7 +69,18 @@ type DeployAndInstantiateConfig struct {
 	Threshold        int
 	MinAmount        sdkmath.Int
 	MaxAmount        sdkmath.Int
+	XRPLTokens       []XRPLToken
 	Label            string
+}
+
+// XRPLToken represents XRPL token configuration.
+//
+//nolint:tagliatelle //contract spec
+type XRPLToken struct {
+	Currency       string `json:"currency"`
+	Issuer         string `json:"issuer"`
+	ActivationDate uint64 `json:"activation_date"`
+	Multiplier     string `json:"multiplier"`
 }
 
 // Config represents contract config.
@@ -79,6 +92,7 @@ type Config struct {
 	Threshold        int         `json:"threshold"`
 	MinAmount        sdkmath.Int `json:"min_amount"`
 	MaxAmount        sdkmath.Int `json:"max_amount"`
+	XRPLTokens       []XRPLToken `json:"xrpl_tokens"`
 }
 
 // ThresholdBankSendRequest holds attributes for the send transaction.
@@ -111,6 +125,16 @@ type UpdateUpdateTrustedAddressesRequest struct {
 // WithdrawRequest is the `withdraw` request payload.
 type WithdrawRequest struct{}
 
+// UpdateXRPLTokensRequest is the `update_xrpl_tokens` request payload.
+type UpdateXRPLTokensRequest struct {
+	XRPLTokens []XRPLToken `json:"xrpl_tokens"` //nolint:tagliatelle //contract spec
+}
+
+// XRPLTokensResponse is the response for `get_xrpl_tokens` query.
+type XRPLTokensResponse struct {
+	XRPLTokens []XRPLToken `json:"xrpl_tokens"` //nolint:tagliatelle //contract spec
+}
+
 // Transaction represents the transaction model.
 type Transaction struct {
 	Amount            sdk.Coin `json:"amount"`
@@ -137,6 +161,7 @@ type instantiateRequest struct {
 	Threshold        int         `json:"threshold"`
 	MinAmount        sdkmath.Int `json:"min_amount"`
 	MaxAmount        sdkmath.Int `json:"max_amount"`
+	XRPLTokens       []XRPLToken `json:"xrpl_tokens"`
 }
 
 type queryTxsResponse[T any] struct {
@@ -216,6 +241,7 @@ func (c *ContractClient) DeployAndInstantiate(
 		Threshold:        config.Threshold,
 		MinAmount:        config.MinAmount,
 		MaxAmount:        config.MaxAmount,
+		XRPLTokens:       config.XRPLTokens,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "can't marshal instantiate payload")
@@ -332,6 +358,42 @@ func (c *ContractClient) BuildUpdateTrustedAddressesTransaction(
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build tx for %s Method", ExecMethodUpdateTrustedAddresses)
+	}
+
+	return msg, nil
+}
+
+// UpdateXRPLTokens executes update_xrpl_tokens Method of the contract.
+func (c *ContractClient) UpdateXRPLTokens(
+	ctx context.Context,
+	sender sdk.AccAddress,
+	xrplTokens []XRPLToken,
+) (*sdk.TxResponse, error) {
+	msg, err := c.BuildUpdateXRPLTokensTransaction(sender, xrplTokens)
+	if err != nil {
+		return nil, err
+	}
+
+	txRes, err := client.BroadcastTx(ctx, c.clientCtx.WithFromAddress(sender), c.txFactory(), msg)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to update XRPL tokens")
+	}
+
+	return txRes, nil
+}
+
+// BuildUpdateXRPLTokensTransaction build update_xrpl_tokens Method transaction.
+func (c *ContractClient) BuildUpdateXRPLTokensTransaction(
+	sender sdk.AccAddress,
+	xrplTokens []XRPLToken,
+) (sdk.Msg, error) {
+	msg, err := c.buildExecuteWithFunds(sender, sdk.NewCoins(), map[ExecMethod]UpdateXRPLTokensRequest{
+		ExecMethodUpdateXRPLTokens: {
+			XRPLTokens: xrplTokens,
+		},
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build tx for %s Method", ExecMethodUpdateXRPLTokens)
 	}
 
 	return msg, nil
@@ -655,6 +717,19 @@ func (c *ContractClient) GetSentTxs(ctx context.Context, offset *uint64, limit *
 	}
 
 	return txs.Transactions, nil
+}
+
+// GetXRPLTokens returns the XRPL tokens configuration.
+func (c *ContractClient) GetXRPLTokens(ctx context.Context) ([]XRPLToken, error) {
+	var response XRPLTokensResponse
+	err := c.query(ctx, map[QueryMethod]struct{}{
+		QueryMethodGetXRPLTokens: {},
+	}, &response)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query %s", QueryMethodGetXRPLTokens)
+	}
+
+	return response.XRPLTokens, nil
 }
 
 // GetAllPendingTransactions queries all unapproved and approved pending transactions.

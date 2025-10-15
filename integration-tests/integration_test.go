@@ -27,13 +27,6 @@ import (
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/service"
 )
 
-const (
-	xrplTestMemoSuffix = "/integration-test"
-	xrplCORECurrency   = "434F524500000000000000000000000000000000"
-	xrplXCORECurrency  = "58434F5245000000000000000000000000000000"
-	xrplSOLOCurrency   = "534F4C4F00000000000000000000000000000000"
-)
-
 type payment struct {
 	address  string
 	amounts  []string
@@ -472,6 +465,7 @@ func buildAndStartDevEnv(
 		Threshold:        2,
 		MinAmount:        sdk.NewInt(100),
 		MaxAmount:        sdk.NewInt(200_000_000),
+		XRPLTokens:       convertServiceTokensToContractTokens(tokens),
 		Label:            "bank_threshold_send",
 	})
 	requireT.NoError(err)
@@ -494,7 +488,6 @@ func buildAndStartDevEnv(
 				coreumChain.Config().RPCAddress,
 				coreumChain.Config().GRPCAddress,
 				xrplChain.Config().RPCAddress,
-				tokens,
 				trustedAddress,
 				contractAddr,
 			)
@@ -538,21 +531,32 @@ func buildAndStartDevEnv(
 	return instances
 }
 
+func convertServiceTokensToContractTokens(tokens []service.XRPLTokenConfig) []coreum.XRPLToken {
+	contractTokens := make([]coreum.XRPLToken, 0, len(tokens))
+	for _, token := range tokens {
+		contractTokens = append(contractTokens, coreum.XRPLToken{
+			Currency:       token.XRPLCurrency,
+			Issuer:         token.XRPLIssuer,
+			ActivationDate: uint64(token.ActivationDate.Unix()),
+			Multiplier:     token.Multiplier,
+		})
+	}
+	return contractTokens
+}
+
 func buildTestingServices(
 	t *testing.T,
 	zapLogger *zap.Logger,
 	chainID string,
 	kr keyring.Keyring,
 	coreumRPCURL, coreumGRPCURL, xrplRPCAddress string,
-	tokens []service.XRPLTokenConfig,
 	senderAddress, contractAddress sdk.AccAddress,
 ) *service.Services {
-	services, err := service.NewServices(service.Config{
+	services, err := service.NewServices(context.Background(), service.Config{
 		XRPLRPCURL:                    xrplRPCAddress,
 		XRPLHistoryScanStartLedger:    0,
 		XRPLRecentScanIndexesBack:     30_000,
 		XRPLRecentScanSkipLastIndexes: 0,
-		XRPLTokens:                    tokens,
 		XRPLMemoSuffix:                xrplTestMemoSuffix,
 		// we don't use the chain ctx here intentionally to fully check the client initialisation
 		CoreumRPCURL:          coreumRPCURL,

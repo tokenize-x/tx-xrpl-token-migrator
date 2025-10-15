@@ -43,10 +43,11 @@ func TestContractMigration(t *testing.T) {
 			trustedAddress2.String(),
 			trustedAddress3.String(),
 		},
-		Threshold: 2,
-		MinAmount: sdk.NewInt(100),
-		MaxAmount: sdk.NewInt(200_000_000),
-		Label:     "bank_threshold_send",
+		Threshold:  2,
+		MinAmount:  sdk.NewInt(100),
+		MaxAmount:  sdk.NewInt(200_000_000),
+		XRPLTokens: testXRPLTokens,
+		Label:      "bank_threshold_send",
 	})
 	requireT.NoError(err)
 	requireT.NoError(contractClient.SetContractAddress(contractAddr))

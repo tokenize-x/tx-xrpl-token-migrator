@@ -1,13 +1,19 @@
-use cosmwasm_std::{entry_point, to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Order, Response, StdResult, Uint128, StdError};
+use cosmwasm_std::{
+    entry_point, to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Empty, Env,
+    MessageInfo, Order, Response, StdError, StdResult, Uint128,
+};
 use cw2::set_contract_version;
 use cw_storage_plus::Map;
 use cw_utils::one_coin;
 
 use crate::error::ContractError;
-use crate::msg::{Config, ExecuteMsg, InstantiateMsg, MigrateMsg, PendingTransaction, PendingTransactions, QueryMsg, SentTransaction, SentTransactions, Transaction};
+use crate::msg::{
+    Config, ExecuteMsg, InstantiateMsg, MigrateMsg, PendingTransaction, PendingTransactions,
+    QueryMsg, SentTransaction, SentTransactions, Transaction, XrplTokensResponse,
+};
 use crate::state::{
     MAX_AMOUNT, MIN_AMOUNT, OWNER, PENDING_TRANSACTIONS, SENT_TRANSACTIONS, THRESHOLD,
-    TRUSTED_ADDRESSES,
+    TRUSTED_ADDRESSES, XRPL_TOKENS,
 };
 
 const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
@@ -42,6 +48,7 @@ pub fn instantiate(
     THRESHOLD.save(deps.storage, &msg.threshold)?;
     MIN_AMOUNT.save(deps.storage, &msg.min_amount)?;
     MAX_AMOUNT.save(deps.storage, &msg.max_amount)?;
+    XRPL_TOKENS.save(deps.storage, &msg.xrpl_tokens)?;
 
     Ok(Response::new())
 }
@@ -63,7 +70,10 @@ pub fn execute(
         ExecuteMsg::ExecutePending { evidence_id } => execute_pending(deps, info, evidence_id),
         ExecuteMsg::UpdateMinAmount { min_amount } => update_min_amount(deps, info, min_amount),
         ExecuteMsg::UpdateMaxAmount { max_amount } => update_max_amount(deps, info, max_amount),
-        ExecuteMsg::UpdateTrustedAddresses { trusted_addresses } => update_trusted_addresses(deps, info, trusted_addresses)
+        ExecuteMsg::UpdateTrustedAddresses { trusted_addresses } => {
+            update_trusted_addresses(deps, info, trusted_addresses)
+        }
+        ExecuteMsg::UpdateXrplTokens { xrpl_tokens } => update_xrpl_tokens(deps, info, xrpl_tokens),
     }
 }
 
@@ -178,7 +188,7 @@ fn send_bank_transaction(
         to_address: tx.recipient.clone().into(),
         amount: vec![tx.amount.clone()],
     }
-        .into();
+    .into();
     SENT_TRANSACTIONS.save(deps.storage, id, tx)?;
     PENDING_TRANSACTIONS.remove(deps.storage, evidence_id.clone());
     Ok(Response::new()
@@ -248,6 +258,20 @@ pub fn update_trusted_addresses(
     Ok(Response::new())
 }
 
+pub fn update_xrpl_tokens(
+    deps: DepsMut,
+    info: MessageInfo,
+    xrpl_tokens: Vec<crate::msg::XRPLToken>,
+) -> Result<Response, ContractError> {
+    let owner = OWNER.load(deps.storage)?;
+    if info.sender != owner {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    XRPL_TOKENS.save(deps.storage, &xrpl_tokens)?;
+    Ok(Response::new().add_attribute("action", "update_xrpl_tokens"))
+}
+
 pub fn withdraw(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     let contract_balances = deps.querier.query_all_balances(env.contract.address)?;
     let owner = OWNER.load(deps.storage)?;
@@ -259,7 +283,7 @@ pub fn withdraw(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
         to_address: owner.clone().into(),
         amount: contract_balances,
     }
-        .into();
+    .into();
 
     Ok(Response::new()
         .add_attribute("recipient", owner)
@@ -295,6 +319,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetSentTransactions { offset, limit } => {
             to_binary(&get_sent_transactions(deps, offset, limit)?)
         }
+        QueryMsg::GetXrplTokens {} => to_binary(&get_xrpl_tokens(deps)?),
     }
 }
 
@@ -308,6 +333,7 @@ fn get_config(deps: Deps) -> StdResult<Config> {
 
     let min_amount = MIN_AMOUNT.load(deps.storage)?;
     let max_amount = MAX_AMOUNT.load(deps.storage)?;
+    let xrpl_tokens = XRPL_TOKENS.load(deps.storage)?;
 
     Ok(Config {
         owner,
@@ -315,6 +341,7 @@ fn get_config(deps: Deps) -> StdResult<Config> {
         threshold,
         min_amount,
         max_amount,
+        xrpl_tokens,
     })
 }
 
@@ -388,6 +415,11 @@ fn paginate_transactions<T>(
         .collect()
 }
 
+fn get_xrpl_tokens(deps: Deps) -> StdResult<XrplTokensResponse> {
+    let xrpl_tokens = XRPL_TOKENS.load(deps.storage)?;
+    Ok(XrplTokensResponse { xrpl_tokens })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -405,6 +437,17 @@ mod tests {
     const TEST_MIN_AMOUNT: Uint128 = Uint128::new(10);
     const TEST_MAX_AMOUNT: Uint128 = Uint128::new(1000);
 
+    // XRPL token test constants
+    const TEST_XRPL_CORE_CURRENCY: &str = "434F524500000000000000000000000000000000";
+    const TEST_XRPL_CORE_ISSUER: &str = "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA";
+    const TEST_XRPL_XCORE_CURRENCY: &str = "58434F5245000000000000000000000000000000";
+    const TEST_XRPL_XCORE_ISSUER: &str = "rawnyFwFLkntQttzBgEFiASg5iB5ULdKpX";
+    const TEST_XRPL_SOLO_CURRENCY: &str = "534F4C4F00000000000000000000000000000000";
+    const TEST_XRPL_SOLO_ISSUER: &str = "rHZwvHEs56GCmHupwjA4RY7oPA3EoAJWuN";
+    const TEST_ACTIVATION_DATE: u64 = 946684800; // time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
+    const TEST_MULTIPLIER_1_0: &str = "1.0";
+    const TEST_MULTIPLIER_1_25: &str = "1.25";
+
     fn init_msg() -> InstantiateMsg {
         InstantiateMsg {
             owner: Addr::unchecked(TEST_OWNER),
@@ -416,6 +459,7 @@ mod tests {
             ],
             min_amount: TEST_MIN_AMOUNT,
             max_amount: TEST_MAX_AMOUNT,
+            xrpl_tokens: vec![],
         }
     }
 
@@ -625,7 +669,7 @@ mod tests {
             to_address: recipient.clone().into(),
             amount: vec![amount.clone()],
         }
-            .into();
+        .into();
         assert_eq!(bank_send_msg, res_msgs[0].msg);
         // check that tx not pending now
         let pending_tx = get_pending_transaction(deps.as_ref(), evidence_id).unwrap();
@@ -793,7 +837,7 @@ mod tests {
             to_address: recipient.clone().into(),
             amount: vec![amount.clone()],
         }
-            .into();
+        .into();
         assert_eq!(bank_send_msg, res_msgs[0].msg);
         // check that tx isn't pending now
         let pending_tx = get_pending_transaction(deps.as_ref(), evidence_id).unwrap();
@@ -854,7 +898,7 @@ mod tests {
             to_address: TEST_OWNER.to_string(),
             amount,
         }
-            .into();
+        .into();
         assert_eq!(bank_send_msg, res_msgs[0].msg);
     }
 
@@ -911,13 +955,134 @@ mod tests {
         ];
         // execute from non-owner
         let info = mock_info(TEST_ANY_ADDRESS, &[]);
-        let res = update_trusted_addresses(deps.as_mut(), info.clone(), new_trusted_addresses.clone());
+        let res =
+            update_trusted_addresses(deps.as_mut(), info.clone(), new_trusted_addresses.clone());
         assert_eq!(ContractError::Unauthorized {}, res.unwrap_err());
         // execute from owner
         let info = mock_info(TEST_OWNER, &[]);
-        let res = update_trusted_addresses(deps.as_mut(), info.clone(), new_trusted_addresses.clone());
+        let res =
+            update_trusted_addresses(deps.as_mut(), info.clone(), new_trusted_addresses.clone());
         assert_eq!(true, res.is_ok());
         let config = get_config(deps.as_ref()).unwrap();
         assert_eq!(new_trusted_addresses, config.trusted_addresses);
+    }
+
+    #[test]
+    fn test_xrpl_tokens_in_config() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
+        assert_eq!(true, res.is_ok());
+
+        // check that config includes xrpl_tokens
+        let config = get_config(deps.as_ref()).unwrap();
+        assert_eq!(vec![] as Vec<crate::msg::XRPLToken>, config.xrpl_tokens);
+    }
+
+    #[test]
+    fn test_update_xrpl_tokens() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
+        assert_eq!(true, res.is_ok());
+
+        let new_xrpl_tokens = vec![
+            crate::msg::XRPLToken {
+                currency: TEST_XRPL_CORE_CURRENCY.to_string(),
+                issuer: TEST_XRPL_CORE_ISSUER.to_string(),
+                activation_date: TEST_ACTIVATION_DATE,
+                multiplier: TEST_MULTIPLIER_1_0.to_string(),
+            },
+            crate::msg::XRPLToken {
+                currency: TEST_XRPL_XCORE_CURRENCY.to_string(),
+                issuer: TEST_XRPL_XCORE_ISSUER.to_string(),
+                activation_date: TEST_ACTIVATION_DATE,
+                multiplier: TEST_MULTIPLIER_1_0.to_string(),
+            },
+        ];
+
+        // execute from non-owner should fail
+        let info = mock_info(TEST_ANY_ADDRESS, &[]);
+        let res = update_xrpl_tokens(deps.as_mut(), info.clone(), new_xrpl_tokens.clone());
+        assert_eq!(ContractError::Unauthorized {}, res.unwrap_err());
+
+        // execute from owner should succeed
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = update_xrpl_tokens(deps.as_mut(), info.clone(), new_xrpl_tokens.clone());
+        assert_eq!(true, res.is_ok());
+
+        // verify tokens were updated
+        let config = get_config(deps.as_ref()).unwrap();
+        assert_eq!(new_xrpl_tokens, config.xrpl_tokens);
+
+        // verify query returns correct tokens
+        let tokens_response = get_xrpl_tokens(deps.as_ref()).unwrap();
+        assert_eq!(new_xrpl_tokens, tokens_response.xrpl_tokens);
+    }
+
+    #[test]
+    fn test_query_xrpl_tokens() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let xrpl_tokens = vec![crate::msg::XRPLToken {
+            currency: TEST_XRPL_CORE_CURRENCY.to_string(),
+            issuer: TEST_XRPL_CORE_ISSUER.to_string(),
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: TEST_MULTIPLIER_1_0.to_string(),
+        }];
+
+        let mut msg = init_msg();
+        msg.xrpl_tokens = xrpl_tokens.clone();
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg);
+        assert_eq!(true, res.is_ok());
+
+        // query tokens
+        let tokens_response = get_xrpl_tokens(deps.as_ref()).unwrap();
+        assert_eq!(xrpl_tokens, tokens_response.xrpl_tokens);
+    }
+
+    #[test]
+    fn test_instantiate_with_xrpl_tokens() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let xrpl_tokens = vec![
+            crate::msg::XRPLToken {
+                currency: TEST_XRPL_CORE_CURRENCY.to_string(),
+                issuer: TEST_XRPL_CORE_ISSUER.to_string(),
+                activation_date: TEST_ACTIVATION_DATE,
+                multiplier: TEST_MULTIPLIER_1_0.to_string(),
+            },
+            crate::msg::XRPLToken {
+                currency: TEST_XRPL_XCORE_CURRENCY.to_string(),
+                issuer: TEST_XRPL_XCORE_ISSUER.to_string(),
+                activation_date: TEST_ACTIVATION_DATE,
+                multiplier: TEST_MULTIPLIER_1_0.to_string(),
+            },
+            crate::msg::XRPLToken {
+                currency: TEST_XRPL_SOLO_CURRENCY.to_string(),
+                issuer: TEST_XRPL_SOLO_ISSUER.to_string(),
+                activation_date: TEST_ACTIVATION_DATE,
+                multiplier: TEST_MULTIPLIER_1_25.to_string(),
+            },
+        ];
+
+        let mut msg = init_msg();
+        msg.xrpl_tokens = xrpl_tokens.clone();
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg);
+        assert_eq!(true, res.is_ok());
+
+        // verify config has correct values
+        let config = get_config(deps.as_ref()).unwrap();
+        assert_eq!(xrpl_tokens, config.xrpl_tokens);
     }
 }

@@ -2,12 +2,21 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, Uint128};
 
 #[cw_serde]
+pub struct XRPLToken {
+    pub currency: String,
+    pub issuer: String,
+    pub activation_date: u64,
+    pub multiplier: String,
+}
+
+#[cw_serde]
 pub struct InstantiateMsg {
     pub owner: Addr,
     pub trusted_addresses: Vec<Addr>,
     pub threshold: u32,
     pub min_amount: Uint128,
     pub max_amount: Uint128,
+    pub xrpl_tokens: Vec<XRPLToken>,
 }
 
 #[cw_serde]
@@ -28,6 +37,9 @@ pub enum ExecuteMsg {
     },
     UpdateTrustedAddresses {
         trusted_addresses: Vec<Addr>,
+    },
+    UpdateXrplTokens {
+        xrpl_tokens: Vec<XRPLToken>,
     },
     Withdraw {},
 }
@@ -54,6 +66,8 @@ pub enum QueryMsg {
         offset: Option<u64>,
         limit: Option<u32>,
     },
+    #[returns(XrplTokensResponse)]
+    GetXrplTokens {},
 }
 
 #[cw_serde]
@@ -63,6 +77,7 @@ pub struct Config {
     pub threshold: u32,
     pub min_amount: Uint128,
     pub max_amount: Uint128,
+    pub xrpl_tokens: Vec<XRPLToken>,
 }
 
 #[cw_serde]
@@ -106,4 +121,9 @@ pub struct PendingTransactions {
 #[cw_serde]
 pub struct SentTransactions {
     pub transactions: Vec<SentTransaction>,
+}
+
+#[cw_serde]
+pub struct XrplTokensResponse {
+    pub xrpl_tokens: Vec<XRPLToken>,
 }

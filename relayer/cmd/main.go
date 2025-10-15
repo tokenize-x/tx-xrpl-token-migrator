@@ -70,26 +70,7 @@ var (
 		XRPLHistoryScanStartLedger:    20_000,
 		XRPLRecentScanIndexesBack:     30_000,
 		XRPLRecentScanSkipLastIndexes: 20,
-		XRPLTokens: []service.XRPLTokenConfig{
-			{
-				XRPLCurrency:   "434F524500000000000000000000000000000000",
-				XRPLIssuer:     "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
-				ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
-				Multiplier:     "1.0",
-			},
-			{
-				XRPLCurrency:   "58434F5245000000000000000000000000000000",
-				XRPLIssuer:     "rawnyFwFLkntQttzBgEFiASg5iB5ULdKpX",
-				ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
-				Multiplier:     "1.0",
-			},
-			{
-				XRPLCurrency:   "534F4C4F00000000000000000000000000000000",
-				XRPLIssuer:     "rHZwvHEs56GCmHupwjA4RY7oPA3EoAJWuN",
-				ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
-				Multiplier:     "1.25",
-			},
-		},
+
 		XRPLMemoSuffix: "/coreum-testnet-1/v1",
 
 		CoreumChainID: string(constant.ChainIDTest),
@@ -101,28 +82,7 @@ var (
 		XRPLHistoryScanStartLedger:    81400000,
 		XRPLRecentScanIndexesBack:     30_000,
 		XRPLRecentScanSkipLastIndexes: 20,
-		XRPLTokens: []service.XRPLTokenConfig{
-			{
-				XRPLCurrency:   "434F524500000000000000000000000000000000",
-				XRPLIssuer:     "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
-				ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
-				Multiplier:     "1.0",
-			},
-			{
-				XRPLCurrency: "58434F5245000000000000000000000000000000",
-				XRPLIssuer:   "r3dVizzUAS3U29WKaaSALqkieytA2LCoRe",
-				// March 24th, 2025, 04:00 AM UTC.
-				ActivationDate: time.Date(2025, 3, 24, 4, 0, 0, 0, time.UTC),
-				Multiplier:     "1.0",
-			},
-			{
-				XRPLCurrency: "534F4C4F00000000000000000000000000000000",
-				XRPLIssuer:   "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz",
-				// June 25th, 2025, 04:00 AM UTC.
-				ActivationDate: time.Date(2025, 6, 25, 4, 0, 0, 0, time.UTC),
-				Multiplier:     "1.25",
-			},
-		},
+
 		XRPLMemoSuffix: "/coreum-mainnet-1/v1",
 
 		CoreumChainID: string(constant.ChainIDMain),
@@ -176,6 +136,7 @@ func RootCmd(ctx context.Context) (*cobra.Command, error) {
 	cmd.AddCommand(BuildExecutePendingApprovedTransactionsCmd(ctx))
 	cmd.AddCommand(BuildMigrateContractTransactionCmd(ctx))
 	cmd.AddCommand(BuildUpdateTrustedAddressesTransactionCmd(ctx))
+	cmd.AddCommand(BuildUpdateXRPLTokensTransactionCmd(ctx))
 	cmd.AddCommand(AuditCmd(ctx))
 
 	cmd.AddCommand(keys.Commands(defaultHome))
@@ -217,7 +178,7 @@ func StartCmd(ctx context.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(cfg, clientCtx.Keyring, true, logger.Get(ctx))
+			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, true, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
@@ -305,7 +266,7 @@ func DeployAndInstantiateCmd(ctx context.Context) *cobra.Command { //nolint:funl
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
@@ -366,7 +327,7 @@ func DeployCmd(ctx context.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
@@ -411,7 +372,7 @@ func GetContractConfigCmd(ctx context.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
@@ -445,7 +406,7 @@ func GetPendingUnapprovedTransactionsCmd(ctx context.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
@@ -481,7 +442,7 @@ func GetPendingApprovedTransactionsCmd(ctx context.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
@@ -520,7 +481,7 @@ func BuildExecutePendingApprovedTransactionsCmd(ctx context.Context) *cobra.Comm
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
@@ -580,7 +541,7 @@ func AuditCmd(ctx context.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
@@ -637,7 +598,7 @@ func BuildMigrateContractTransactionCmd(ctx context.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
@@ -693,7 +654,7 @@ func BuildUpdateTrustedAddressesTransactionCmd(ctx context.Context) *cobra.Comma
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
@@ -748,6 +709,85 @@ func BuildUpdateTrustedAddressesTransactionCmd(ctx context.Context) *cobra.Comma
 	return cmd
 }
 
+// BuildUpdateXRPLTokensTransactionCmd builds transaction for the update_xrpl_tokens contract method.
+func BuildUpdateXRPLTokensTransactionCmd(ctx context.Context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "build-update-xrpl-tokens",
+		Short: "Builds transaction for the update_xrpl_tokens method",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := readServicesConfig(cmd)
+			if err != nil {
+				return err
+			}
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			if err != nil {
+				return err
+			}
+			senderAddress, err := sdk.AccAddressFromBech32(cfg.CoreumSenderAddress)
+			if err != nil {
+				return errors.Wrapf(err, "invalid signer address")
+			}
+
+			xrplTokensStr, err := cmd.Flags().GetStringSlice(flagXRPLToken)
+			if err != nil {
+				return err
+			}
+
+			xrplTokens := make([]coreum.XRPLToken, 0, len(xrplTokensStr))
+			for _, tokenStr := range xrplTokensStr {
+				parts := strings.Split(tokenStr, "/")
+				if len(parts) != 4 {
+					// TODO: to be revised in the next PR
+					return errors.Errorf("invalid %s value: %s, expected format: issuer/currency/activation_date/multiplier", flagXRPLToken, tokenStr)
+				}
+				activationDate, err := strconv.ParseUint(parts[2], 10, 64)
+				if err != nil {
+					return errors.Wrapf(err, "failed to parse activation date: %s", parts[2])
+				}
+				xrplTokens = append(xrplTokens, coreum.XRPLToken{
+					Issuer:         parts[0],
+					Currency:       parts[1],
+					ActivationDate: activationDate,
+					Multiplier:     parts[3],
+				})
+			}
+
+			msg, err := services.CoreumContractClient.BuildUpdateXRPLTokensTransaction(senderAddress, xrplTokens)
+			if err != nil {
+				return err
+			}
+
+			fees, gas, err := services.CoreumContractClient.EstimateExecuteMessages(ctx, senderAddress, msg)
+			if err != nil {
+				return err
+			}
+
+			clientCtx = clientCtx.
+				WithChainID(cfg.CoreumChainID).
+				WithGenerateOnly(true)
+
+			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return errors.Wrapf(err, "failed to create tx factory")
+			}
+
+			txf = txf.WithFees(fees.String()).
+				WithGas(gas)
+
+			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
+		},
+	}
+
+	cmd.PersistentFlags().StringSlice(flagXRPLToken, nil, "XRPL tokens in format: issuer/currency/activation_date/multiplier")
+	addCoreumFlags(cmd)
+
+	return cmd
+}
+
 func preProcessFlags() error {
 	flagSet := pflag.NewFlagSet("pre-process", pflag.ExitOnError)
 	flagSet.ParseErrorsWhitelist.UnknownFlags = true
@@ -796,7 +836,6 @@ func addXRPLFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().String(flagXRPLRPCURL, "", "")
 	cmd.PersistentFlags().Int64(flagXRPLHistoryScanStartLedger, 0, "")
 	cmd.PersistentFlags().Int64(flagXRPLRecentScanIndexesBack, 0, "")
-	cmd.PersistentFlags().StringSlice(flagXRPLToken, []string{}, "isser/currency")
 	cmd.PersistentFlags().String(flagXRPLMemoSuffix, "", "")
 }
 
@@ -844,31 +883,6 @@ func readServicesConfig(cmd *cobra.Command) (service.Config, error) {
 		},
 		flagXRPLRecentScanSkipLastIndexes: func(flag string) error {
 			return setStringInt64IfNotZero(cmd, flag, &cfg.XRPLRecentScanSkipLastIndexes)
-		},
-		flagXRPLToken: func(flagName string) error {
-			if cmd.Flags().Lookup(flagName) == nil {
-				return nil
-			}
-			val, err := cmd.Flags().GetStringSlice(flagName)
-			if err != nil {
-				return err
-			}
-			if len(val) == 0 {
-				return nil
-			}
-			xrplTokensCfg := make([]service.XRPLTokenConfig, 0, len(val))
-			for _, v := range val {
-				parts := strings.Split(v, "/")
-				if len(parts) != 2 {
-					return errors.Errorf("invalid %s value: %s, expected isser/currency", flagName, v)
-				}
-				xrplTokensCfg = append(xrplTokensCfg, service.XRPLTokenConfig{
-					XRPLIssuer:   parts[0],
-					XRPLCurrency: parts[1],
-				})
-			}
-			cfg.XRPLTokens = xrplTokensCfg
-			return nil
 		},
 		flagXRPLMemoSuffix: func(flag string) error {
 			return setStringIfNotEmpty(cmd, flag, &cfg.XRPLMemoSuffix)
