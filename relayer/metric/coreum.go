@@ -72,58 +72,62 @@ func NewCoreumCollector(
 	}
 }
 
-// Start starts the metric collector.
-func (c *CoreumCollector) Start(ctx context.Context) {
-	c.startCollectingBalance(ctx, c.cfg.ContractAddress.String(), c.metricRecorder.SetCoreumContractBalance)
-	c.startCollectingBalance(ctx, c.cfg.SenderAddress.String(), c.metricRecorder.SetCoreumSenderBalance)
-	c.startCollectingPendingTransactions(ctx)
+// CollectContractBalance collects contract balance metrics.
+func (c *CoreumCollector) CollectContractBalance(ctx context.Context) error {
+	return c.collectBalance(ctx, c.cfg.ContractAddress.String(), c.metricRecorder.SetCoreumContractBalance)
 }
 
-func (c *CoreumCollector) startCollectingBalance(ctx context.Context, accAddress string, setter func(int64)) {
-	go func() {
-		err := retry.Do(ctx, c.cfg.RepeatDelay, func() error {
-			balanceRes, err := c.bankClient.Balance(ctx, &banktypes.QueryBalanceRequest{
-				Address: accAddress,
-				Denom:   c.cfg.Denom,
-			})
-			if err != nil {
-				c.log.Error(
-					"Error on getting account balance",
-					zap.String("account", accAddress),
-					zap.Error(err),
-				)
-				return retry.Retryable(errors.New("repeat metric collector"))
-			}
-			setter(balanceRes.Balance.Amount.Int64())
-
-			return retry.Retryable(errors.New("repeat metric collector"))
-		})
-		if err == nil || errors.Is(err, context.Canceled) {
-			return
-		}
-		// this panic is unexpected
-		panic(errors.Wrap(err, "unexpected error in collect balance"))
-	}()
+// CollectSenderBalance collects sender balance metrics.
+func (c *CoreumCollector) CollectSenderBalance(ctx context.Context) error {
+	return c.collectBalance(ctx, c.cfg.SenderAddress.String(), c.metricRecorder.SetCoreumSenderBalance)
 }
 
-func (c *CoreumCollector) startCollectingPendingTransactions(ctx context.Context) {
-	go func() {
-		err := retry.Do(ctx, c.cfg.RepeatDelay, func() error {
-			unapprovedTransactions, approvedTransactions, err := c.contractClient.GetAllPendingTransactions(ctx)
-			if err != nil {
-				c.log.Error("Error on getting contract pending transactions", zap.Error(err))
-				return retry.Retryable(errors.New("repeat metric collector"))
-			}
+// CollectPendingTransactions collects pending transactions metrics.
+func (c *CoreumCollector) CollectPendingTransactions(ctx context.Context) error {
+	return c.collectPendingTransactions(ctx)
+}
 
-			c.metricRecorder.SetCoreumPendingUnapprovedTransactionsCount(len(unapprovedTransactions))
-			c.metricRecorder.SetCoreumPendingApprovedTransactionsCount(len(approvedTransactions))
-
-			return retry.Retryable(errors.New("repeat metric collector"))
+func (c *CoreumCollector) collectBalance(ctx context.Context, accAddress string, setter func(int64)) error {
+	err := retry.Do(ctx, c.cfg.RepeatDelay, func() error {
+		balanceRes, err := c.bankClient.Balance(ctx, &banktypes.QueryBalanceRequest{
+			Address: accAddress,
+			Denom:   c.cfg.Denom,
 		})
-		if err == nil || errors.Is(err, context.Canceled) {
-			return
+		if err != nil {
+			c.log.Error(
+				"Error on getting account balance",
+				zap.String("account", accAddress),
+				zap.Error(err),
+			)
+			return retry.Retryable(errors.New("repeat metric collector"))
 		}
-		// this panic is unexpected
-		panic(errors.Wrap(err, "unexpected error in collect balance"))
-	}()
+		setter(balanceRes.Balance.Amount.Int64())
+
+		return retry.Retryable(errors.New("repeat metric collector"))
+	})
+	if err == nil || errors.Is(err, context.Canceled) {
+		return err
+	}
+	// this panic is unexpected
+	panic(errors.Wrap(err, "unexpected error in collect balance"))
+}
+
+func (c *CoreumCollector) collectPendingTransactions(ctx context.Context) error {
+	err := retry.Do(ctx, c.cfg.RepeatDelay, func() error {
+		unapprovedTransactions, approvedTransactions, err := c.contractClient.GetAllPendingTransactions(ctx)
+		if err != nil {
+			c.log.Error("Error on getting contract pending transactions", zap.Error(err))
+			return retry.Retryable(errors.New("repeat metric collector"))
+		}
+
+		c.metricRecorder.SetCoreumPendingUnapprovedTransactionsCount(len(unapprovedTransactions))
+		c.metricRecorder.SetCoreumPendingApprovedTransactionsCount(len(approvedTransactions))
+
+		return retry.Retryable(errors.New("repeat metric collector"))
+	})
+	if err == nil || errors.Is(err, context.Canceled) {
+		return err
+	}
+	// this panic is unexpected
+	panic(errors.Wrap(err, "unexpected error in collect pending transactions"))
 }

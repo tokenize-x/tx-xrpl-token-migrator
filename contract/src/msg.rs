@@ -41,7 +41,6 @@ pub enum ExecuteMsg {
     UpdateXrplTokens {
         xrpl_tokens: Vec<XRPLToken>,
     },
-    Withdraw {},
 }
 
 #[cw_serde]
@@ -50,7 +49,7 @@ pub struct MigrateMsg {}
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-    #[returns(Config)]
+    #[returns(ConfigResponse)]
     GetConfig {},
     #[returns(Transaction)]
     GetPendingTransaction { evidence_id: String },
@@ -66,18 +65,17 @@ pub enum QueryMsg {
         offset: Option<u64>,
         limit: Option<u32>,
     },
-    #[returns(XrplTokensResponse)]
-    GetXrplTokens {},
 }
 
 #[cw_serde]
-pub struct Config {
+pub struct ConfigResponse {
     pub owner: Addr,
     pub trusted_addresses: Vec<Addr>,
     pub threshold: u32,
     pub min_amount: Uint128,
     pub max_amount: Uint128,
     pub xrpl_tokens: Vec<XRPLToken>,
+    pub version: u64,
 }
 
 #[cw_serde]
@@ -121,9 +119,4 @@ pub struct PendingTransactions {
 #[cw_serde]
 pub struct SentTransactions {
     pub transactions: Vec<SentTransaction>,
-}
-
-#[cw_serde]
-pub struct XrplTokensResponse {
-    pub xrpl_tokens: Vec<XRPLToken>,
 }

@@ -66,6 +66,7 @@ func (e *Executor) Start(ctx context.Context) error {
 	e.log.Info("Starting executor.")
 
 	txsCh := make(chan finder.PendingCoreumSendTransaction)
+
 	for _, f := range e.finders {
 		if err := f.SubscribeCoreumSendTransactions(ctx, txsCh); err != nil {
 			return err

@@ -35,7 +35,6 @@ const (
 	ExecMethodUpdateMaxAmount        ExecMethod = "update_max_amount"
 	ExecMethodUpdateTrustedAddresses ExecMethod = "update_trusted_addresses"
 	ExecMethodUpdateXRPLTokens       ExecMethod = "update_xrpl_tokens"
-	ExecMethodWithdraw               ExecMethod = "withdraw"
 )
 
 // QueryMethod is contract query method.
@@ -48,7 +47,6 @@ const (
 	QueryMethodGetPendingTransactions QueryMethod = "get_pending_transactions"
 	QueryMethodGetSentTransaction     QueryMethod = "get_sent_transaction"
 	QueryMethodGetSentTransactions    QueryMethod = "get_sent_transactions"
-	QueryMethodGetXRPLTokens          QueryMethod = "get_xrpl_tokens"
 )
 
 const (
@@ -66,7 +64,7 @@ type DeployAndInstantiateConfig struct {
 	Owner            string
 	Admin            string
 	TrustedAddresses []string
-	Threshold        int
+	Threshold        uint32
 	MinAmount        sdkmath.Int
 	MaxAmount        sdkmath.Int
 	XRPLTokens       []XRPLToken
@@ -89,10 +87,11 @@ type XRPLToken struct {
 type Config struct {
 	Owner            string      `json:"owner"`
 	TrustedAddresses []string    `json:"trusted_addresses"`
-	Threshold        int         `json:"threshold"`
+	Threshold        uint32      `json:"threshold"`
 	MinAmount        sdkmath.Int `json:"min_amount"`
 	MaxAmount        sdkmath.Int `json:"max_amount"`
 	XRPLTokens       []XRPLToken `json:"xrpl_tokens"`
+	Version          uint64      `json:"version"`
 }
 
 // ThresholdBankSendRequest holds attributes for the send transaction.
@@ -122,16 +121,8 @@ type UpdateUpdateTrustedAddressesRequest struct {
 	TrustedAddresses []sdk.AccAddress `json:"trusted_addresses"` //nolint:tagliatelle //contract spec
 }
 
-// WithdrawRequest is the `withdraw` request payload.
-type WithdrawRequest struct{}
-
 // UpdateXRPLTokensRequest is the `update_xrpl_tokens` request payload.
 type UpdateXRPLTokensRequest struct {
-	XRPLTokens []XRPLToken `json:"xrpl_tokens"` //nolint:tagliatelle //contract spec
-}
-
-// XRPLTokensResponse is the response for `get_xrpl_tokens` query.
-type XRPLTokensResponse struct {
 	XRPLTokens []XRPLToken `json:"xrpl_tokens"` //nolint:tagliatelle //contract spec
 }
 
@@ -158,7 +149,7 @@ type SentTransaction struct {
 type instantiateRequest struct {
 	Owner            string      `json:"owner"`
 	TrustedAddresses []string    `json:"trusted_addresses"`
-	Threshold        int         `json:"threshold"`
+	Threshold        uint32      `json:"threshold"`
 	MinAmount        sdkmath.Int `json:"min_amount"`
 	MaxAmount        sdkmath.Int `json:"max_amount"`
 	XRPLTokens       []XRPLToken `json:"xrpl_tokens"`
@@ -531,18 +522,6 @@ func (c *ContractClient) BuildExecutePendingMessages(
 	return msgs, nil
 }
 
-// Withdraw executes withdraw Method of the contract.
-func (c *ContractClient) Withdraw(ctx context.Context, sender sdk.AccAddress) (*sdk.TxResponse, error) {
-	txRes, err := c.execute(ctx, sender, map[ExecMethod]WithdrawRequest{
-		ExecMethodWithdraw: {},
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute %s Method", ExecMethodWithdraw)
-	}
-
-	return txRes, nil
-}
-
 // EstimateExecuteMessages estimates the cost for execute contract messages.
 func (c *ContractClient) EstimateExecuteMessages(
 	ctx context.Context,
@@ -719,19 +698,6 @@ func (c *ContractClient) GetSentTxs(ctx context.Context, offset *uint64, limit *
 	return txs.Transactions, nil
 }
 
-// GetXRPLTokens returns the XRPL tokens configuration.
-func (c *ContractClient) GetXRPLTokens(ctx context.Context) ([]XRPLToken, error) {
-	var response XRPLTokensResponse
-	err := c.query(ctx, map[QueryMethod]struct{}{
-		QueryMethodGetXRPLTokens: {},
-	}, &response)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to query %s", QueryMethodGetXRPLTokens)
-	}
-
-	return response.XRPLTokens, nil
-}
-
 // GetAllPendingTransactions queries all unapproved and approved pending transactions.
 func (c *ContractClient) GetAllPendingTransactions(ctx context.Context) (
 	[]PendingTransaction, []PendingTransaction, error,
@@ -757,7 +723,7 @@ func (c *ContractClient) GetAllPendingTransactions(ctx context.Context) (
 		}
 
 		for _, pendingTx := range pendingTxs {
-			if len(pendingTx.EvidenceProviders) < contractCfg.Threshold {
+			if uint32(len(pendingTx.EvidenceProviders)) < contractCfg.Threshold {
 				unapprovedTransactions = append(unapprovedTransactions, pendingTx)
 				continue
 			}

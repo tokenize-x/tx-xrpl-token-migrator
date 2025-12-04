@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/http"
+	"github.com/CoreumFoundation/coreum-tools/pkg/parallel"
 	"github.com/CoreumFoundation/coreum/v4/app"
 	"github.com/CoreumFoundation/coreum/v4/pkg/client"
 	"github.com/CoreumFoundation/coreum/v4/pkg/config"
@@ -32,6 +33,7 @@ import (
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/finder"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/metric"
+	"github.com/CoreumFoundation/xrpl-bridge/relayer/watcher"
 )
 
 // XRPLTokenConfig is XRPL token config.
@@ -62,7 +64,8 @@ type Config struct {
 	PrometheusUsername     string
 	PrometheusPassword     string
 
-	AuditStartDate time.Time
+	AuditStartDate            time.Time
+	ConfigWatcherPollInterval time.Duration
 }
 
 // Services is the struct which aggregates application service.
@@ -71,6 +74,7 @@ type Services struct {
 	Logger                logger.Logger
 	XRPLTxScanner         *xrpl.TxScanner
 	CoreumContractClient  *coreum.ContractClient
+	ConfigWatcher         *watcher.ConfigWatcher
 	Finders               []*finder.Finder
 	Executor              *executor.Executor
 	MetricRecorder        *metric.Recorder
@@ -82,7 +86,9 @@ type Services struct {
 // NewServices returns new instance on the services.
 //
 //nolint:funlen // step-by step initialization
-func NewServices(ctx context.Context, cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *zap.Logger) (*Services, error) {
+func NewServices(
+	ctx context.Context, cfg Config, kr keyring.Keyring, useInMemoryKr bool, zapLogger *zap.Logger,
+) (*Services, error) {
 	metricRecorder, err := metric.NewRecorder()
 	if err != nil {
 		return nil, err
@@ -163,61 +169,55 @@ func NewServices(ctx context.Context, cfg Config, kr keyring.Keyring, useInMemor
 		coreumClientCtx,
 	)
 
-	// Query XRPLTokens from the contract if contract address is set
-	contractTokens, err := coreumContractClient.GetXRPLTokens(ctx)
+	// Query contract for initial configuration
+	config, err := coreumContractClient.GetContractConfig(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to query XRPLTokens from contract")
-	}
-	// Convert contract tokens to service config format
-	xrplTokensConfig := make([]XRPLTokenConfig, 0, len(contractTokens))
-	for _, token := range contractTokens {
-		xrplTokensConfig = append(xrplTokensConfig, XRPLTokenConfig{
-			XRPLCurrency:   token.Currency,
-			XRPLIssuer:     token.Issuer,
-			ActivationDate: time.Unix(int64(token.ActivationDate), 0),
-			Multiplier:     token.Multiplier,
-		})
+		return nil, errors.Wrap(err, "failed to query initial contract config")
 	}
 
-	txFinders := make([]*finder.Finder, 0, len(xrplTokensConfig))
-	auditTokensCfg := make([]audit.XRPLTokenConfig, 0, len(xrplTokensConfig))
-	for _, tokenCfg := range xrplTokensConfig {
-		xrplIssuer, err := rippledata.NewAccountFromAddress(tokenCfg.XRPLIssuer)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert XRPLIssuer string to type, value:%s", tokenCfg.XRPLIssuer)
-		}
-		xrplCurrency, err := rippledata.NewCurrency(tokenCfg.XRPLCurrency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert XRPLCurrency string to type, value:%s", tokenCfg.XRPLCurrency)
-		}
-		txFinder := finder.NewFinder(finder.Config{
-			XRPLIssuer:                 *xrplIssuer,
-			XRPLCurrency:               xrplCurrency,
-			ActivationDate:             tokenCfg.ActivationDate,
-			Multiplier:                 tokenCfg.Multiplier,
-			XRPLHistoryScanStartLedger: cfg.XRPLHistoryScanStartLedger,
-			XRPLRecentScanIndexesBack:  cfg.XRPLRecentScanIndexesBack,
-			XRPLMemoSuffix:             cfg.XRPLMemoSuffix,
-			CoreumDenom:                network.Denom(),
-			CoreumDecimals:             6,
-		}, log, xrplTxScanner)
-		txFinders = append(txFinders, txFinder)
-
-		auditTokensCfg = append(auditTokensCfg, audit.XRPLTokenConfig{
-			XRPLIssuer:   *xrplIssuer,
-			XRPLCurrency: xrplCurrency,
-			Multiplier:   tokenCfg.Multiplier,
-		})
+	// Create finders and audit config from token configuration
+	txFinders, auditTokensCfg, err := createFindersAndAuditConfig(
+		config.XRPLTokens,
+		cfg.XRPLHistoryScanStartLedger,
+		cfg.XRPLRecentScanIndexesBack,
+		cfg.XRPLMemoSuffix,
+		network.Denom(),
+		6,
+		log,
+		xrplTxScanner,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create finders and audit config")
 	}
 
+	// Create executor with the initial finders
 	txExecutor := executor.NewExecutor(
 		executor.DefaultConfig(senderAddress),
 		log,
 		coreumContractClient,
-		lo.Map(txFinders, func(finder *finder.Finder, _ int) executor.Finder {
-			return finder
+		lo.Map(txFinders, func(f *finder.Finder, _ int) executor.Finder {
+			return f
 		}),
 	)
+
+	// Create ConfigWatcher for dynamic token configuration management
+	pollInterval := cfg.ConfigWatcherPollInterval
+	if pollInterval == 0 {
+		pollInterval = 5 * time.Minute // Default poll interval
+	}
+	configWatcher := watcher.NewConfigWatcher(
+		watcher.Config{
+			ContractAddress: contractAddress,
+			PollInterval:    pollInterval,
+		},
+		log,
+		coreumContractClient,
+	)
+
+	// Initialize ConfigWatcher with current version
+	if err := configWatcher.Initialize(ctx); err != nil {
+		return nil, errors.Wrap(err, "failed to initialize config watcher")
+	}
 
 	var metricPusher *metric.Pusher
 	if cfg.PrometheusURL != "" {
@@ -260,6 +260,7 @@ func NewServices(ctx context.Context, cfg Config, kr keyring.Keyring, useInMemor
 		Logger:                log,
 		XRPLTxScanner:         xrplTxScanner,
 		CoreumContractClient:  coreumContractClient,
+		ConfigWatcher:         configWatcher,
 		Finders:               txFinders,
 		Executor:              txExecutor,
 		MetricRecorder:        metricRecorder,
@@ -267,6 +268,115 @@ func NewServices(ctx context.Context, cfg Config, kr keyring.Keyring, useInMemor
 		CoreumMetricCollector: coreumMetricCollector,
 		Auditor:               auditor,
 	}, nil
+}
+
+// RunExecutorWithAutoRestart runs the executor and restarts it when config changes are detected.
+// It continuously runs the executor and watcher in parallel, and automatically restarts
+// services when a configuration change is detected.
+func RunExecutorWithAutoRestart(ctx context.Context, cfg Config, kr keyring.Keyring, zapLogger *zap.Logger) error {
+	for {
+		// Check if context is already cancelled before creating services
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+
+		// Create new services for this iteration
+		services, err := NewServices(ctx, cfg, kr, true, zapLogger)
+		if err != nil {
+			return errors.Wrap(err, "failed to create services")
+		}
+
+		services.Logger.Info("Starting relayer", zap.String("contract-address", cfg.CoreumContractAddress))
+
+		// Start metric collectors and pushers in parallel with executor and watcher
+		// parallel.Run manages its own context lifecycle - when it returns, all tasks are already stopped
+		err = parallel.Run(ctx, func(ctx context.Context, spawn parallel.SpawnFn) error {
+			spawn("executor", parallel.Fail, services.Executor.Start)
+			// Watcher uses Exit mode to initiate graceful shutdown when config changes
+			spawn("watcher", parallel.Exit, services.ConfigWatcher.Watch)
+			// Spawn metric collector tasks - use Fail mode as they should never return unless context is closed
+			spawn("collect-contract-balance", parallel.Fail, services.CoreumMetricCollector.CollectContractBalance)
+			spawn("collect-sender-balance", parallel.Fail, services.CoreumMetricCollector.CollectSenderBalance)
+			spawn("collect-pending-transactions", parallel.Fail, services.CoreumMetricCollector.CollectPendingTransactions)
+			// Spawn metric pusher - use Fail mode as it should never return unless context is closed
+			if services.MetricPusher != nil {
+				spawn("metric-pusher", parallel.Fail, services.MetricPusher.PushMetrics)
+			}
+			return nil
+		}, parallel.WithGroupLogger(parallel.NewZapLogger(zapLogger)))
+
+		// Handle the result
+		// Config change detected - restart services
+		// parallel.Run has already cancelled all tasks when it returns
+		if err != nil && errors.Is(err, watcher.ErrConfigChanged) {
+			services.Logger.Info("Config changed, restarting services")
+			// Services will be recreated on next iteration
+			continue
+		}
+
+		// Context cancelled - graceful shutdown
+		if err != nil && errors.Is(err, context.Canceled) {
+			services.Logger.Info("Context cancelled, shutting down")
+			return nil
+		}
+
+		// Other error - return it
+		if err != nil {
+			services.Logger.Info("Service stopped", zap.Error(err))
+			return err
+		}
+
+		// Normal exit (shouldn't happen in practice, but handle it)
+		return nil
+	}
+}
+
+// createFindersAndAuditConfig creates finders and audit config from token configuration.
+func createFindersAndAuditConfig(
+	tokens []coreum.XRPLToken,
+	xrplHistoryScanStartLedger int64,
+	xrplRecentScanIndexesBack int64,
+	xrplMemoSuffix string,
+	coreumDenom string,
+	coreumDecimals int,
+	log logger.Logger,
+	txScanner *xrpl.TxScanner,
+) ([]*finder.Finder, []audit.XRPLTokenConfig, error) {
+	finders := make([]*finder.Finder, 0, len(tokens))
+	auditCfg := make([]audit.XRPLTokenConfig, 0, len(tokens))
+
+	for _, token := range tokens {
+		xrplIssuer, err := rippledata.NewAccountFromAddress(token.Issuer)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to convert XRPLIssuer string to type, value:%s", token.Issuer)
+		}
+
+		xrplCurrency, err := rippledata.NewCurrency(token.Currency)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to convert XRPLCurrency string to type, value:%s", token.Currency)
+		}
+
+		txFinder := finder.NewFinder(finder.Config{
+			XRPLIssuer:                 *xrplIssuer,
+			XRPLCurrency:               xrplCurrency,
+			ActivationDate:             time.Unix(int64(token.ActivationDate), 0),
+			Multiplier:                 token.Multiplier,
+			XRPLHistoryScanStartLedger: xrplHistoryScanStartLedger,
+			XRPLRecentScanIndexesBack:  xrplRecentScanIndexesBack,
+			XRPLMemoSuffix:             xrplMemoSuffix,
+			CoreumDenom:                coreumDenom,
+			CoreumDecimals:             coreumDecimals,
+		}, log, txScanner)
+		finders = append(finders, txFinder)
+
+		auditCfg = append(auditCfg, audit.XRPLTokenConfig{
+			XRPLIssuer:   *xrplIssuer,
+			XRPLCurrency: xrplCurrency,
+			Multiplier:   token.Multiplier,
+		})
+	}
+
+	return finders, auditCfg, nil
 }
 
 func getGRPCClientConn(grpcURL string) (*grpc.ClientConn, error) {

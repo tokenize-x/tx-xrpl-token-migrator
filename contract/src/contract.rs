@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Empty, Env,
+    entry_point, to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env,
     MessageInfo, Order, Response, StdError, StdResult, Uint128,
 };
 use cw2::set_contract_version;
@@ -8,12 +8,20 @@ use cw_utils::one_coin;
 
 use crate::error::ContractError;
 use crate::msg::{
-    Config, ExecuteMsg, InstantiateMsg, MigrateMsg, PendingTransaction, PendingTransactions,
-    QueryMsg, SentTransaction, SentTransactions, Transaction, XrplTokensResponse,
+    ConfigResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, PendingTransaction,
+    PendingTransactions, QueryMsg, SentTransaction, SentTransactions, Transaction,
 };
 use crate::state::{
-    MAX_AMOUNT, MIN_AMOUNT, OWNER, PENDING_TRANSACTIONS, SENT_TRANSACTIONS, THRESHOLD,
-    TRUSTED_ADDRESSES, XRPL_TOKENS,
+    ContractConfig,
+    CONFIG,
+    MAX_AMOUNT,
+    MIN_AMOUNT,
+    // Existing state items for migration
+    OWNER,
+    PENDING_TRANSACTIONS,
+    SENT_TRANSACTIONS,
+    THRESHOLD,
+    TRUSTED_ADDRESSES,
 };
 
 const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
@@ -31,24 +39,32 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     deps.api.addr_validate(msg.owner.as_str())?;
-    OWNER.save(deps.storage, &msg.owner)?;
 
     if msg.threshold == 0 || msg.threshold > msg.trusted_addresses.len() as u32 {
         return Err(ContractError::InvalidThreshold {});
     }
 
+    // Validate trusted addresses for duplicates
+    let mut seen = std::collections::HashSet::new();
     for addr in &msg.trusted_addresses {
         deps.api.addr_validate(addr.as_str())?;
-        if TRUSTED_ADDRESSES.has(deps.storage, addr.clone()) {
+        if !seen.insert(addr.clone()) {
             return Err(ContractError::DuplicatedTrustedAddress {});
         }
-        TRUSTED_ADDRESSES.save(deps.storage, addr.clone(), &Empty {})?;
     }
 
-    THRESHOLD.save(deps.storage, &msg.threshold)?;
-    MIN_AMOUNT.save(deps.storage, &msg.min_amount)?;
-    MAX_AMOUNT.save(deps.storage, &msg.max_amount)?;
-    XRPL_TOKENS.save(deps.storage, &msg.xrpl_tokens)?;
+    // Create initial config
+    let config = ContractConfig {
+        owner: msg.owner,
+        trusted_addresses: msg.trusted_addresses,
+        threshold: msg.threshold,
+        min_amount: msg.min_amount,
+        max_amount: msg.max_amount,
+        xrpl_tokens: msg.xrpl_tokens,
+        version: 1,
+    };
+
+    CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new())
 }
@@ -56,7 +72,7 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
@@ -66,7 +82,6 @@ pub fn execute(
             amount,
             recipient,
         } => threshold_bank_send(deps, info, id, amount, recipient),
-        ExecuteMsg::Withdraw {} => withdraw(deps, env, info),
         ExecuteMsg::ExecutePending { evidence_id } => execute_pending(deps, info, evidence_id),
         ExecuteMsg::UpdateMinAmount { min_amount } => update_min_amount(deps, info, min_amount),
         ExecuteMsg::UpdateMaxAmount { max_amount } => update_max_amount(deps, info, max_amount),
@@ -85,6 +100,46 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     }
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
+    // Check if migration is needed (config doesn't exist yet)
+    if CONFIG.may_load(deps.storage)?.is_none() {
+        // Migration from old state structure
+
+        // Read existing state items
+        let owner = OWNER.may_load(deps.storage)?;
+        let threshold = THRESHOLD.may_load(deps.storage)?;
+        let min_amount = MIN_AMOUNT.may_load(deps.storage)?;
+        let max_amount = MAX_AMOUNT.may_load(deps.storage)?;
+
+        // Only migrate if existing state exists
+        if let (Some(owner), Some(threshold), Some(min_amount), Some(max_amount)) =
+            (owner, threshold, min_amount, max_amount)
+        {
+            // Collect trusted addresses from existing map
+            let trusted_addresses: Vec<Addr> = TRUSTED_ADDRESSES
+                .keys(deps.storage, None, None, Order::Ascending)
+                .filter_map(|r| r.ok())
+                .collect();
+
+            // Create config from existing state
+            // xrpl_tokens starts empty - will be set via update_xrpl_tokens
+            let config = ContractConfig {
+                owner,
+                trusted_addresses,
+                threshold,
+                min_amount,
+                max_amount,
+                xrpl_tokens: vec![],
+                version: 1,
+            };
+
+            // Save config
+            CONFIG.save(deps.storage, &config)?;
+
+            // Note: Existing state items are NOT removed here for safety
+            // They will be removed in a future contract version after migration is verified
+        }
+    }
+
     Ok(Response::default())
 }
 
@@ -98,11 +153,13 @@ pub fn threshold_bank_send(
     let id = normalize_id(id);
     deps.api.addr_validate(recipient.as_str())?;
 
-    if !TRUSTED_ADDRESSES.has(deps.storage, info.sender.clone()) {
+    let config = CONFIG.load(deps.storage)?;
+
+    if !config.trusted_addresses.contains(&info.sender) {
         return Err(ContractError::Unauthorized {});
     }
 
-    if MIN_AMOUNT.load(deps.storage)?.gt(&amount.amount) {
+    if config.min_amount.gt(&amount.amount) {
         return Err(ContractError::LowAmount {});
     }
 
@@ -140,8 +197,8 @@ pub fn threshold_bank_send(
     }
 
     // execute transaction if it doesn't exceed max amount
-    if tx.evidence_providers.len() as u32 == THRESHOLD.load(deps.storage)?
-        && MAX_AMOUNT.load(deps.storage)?.ge(&amount.amount.clone())
+    if tx.evidence_providers.len() as u32 == config.threshold
+        && config.max_amount.ge(&amount.amount.clone())
     {
         return Ok(send_bank_transaction(deps, &tx, id, evidence_id)?);
     }
@@ -157,10 +214,12 @@ pub fn execute_pending(
     info: MessageInfo,
     evidence_id: String,
 ) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+
     match PENDING_TRANSACTIONS.may_load(deps.storage, evidence_id.clone())? {
         None => Err(ContractError::TransactionNotFound {}),
         Some(tx) => {
-            if (tx.evidence_providers.len() as u32) < THRESHOLD.load(deps.storage)? {
+            if (tx.evidence_providers.len() as u32) < config.threshold {
                 return Err(ContractError::TransactionNotConfirmed {});
             }
             let funds_sent = one_coin(&info)?;
@@ -204,13 +263,20 @@ pub fn update_min_amount(
     info: MessageInfo,
     min_amount: Uint128,
 ) -> Result<Response, ContractError> {
-    let owner = OWNER.load(deps.storage)?;
-    if info.sender != owner {
+    let mut config = CONFIG.load(deps.storage)?;
+
+    if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
-    MIN_AMOUNT.save(deps.storage, &min_amount)?;
-    Ok(Response::new().add_attribute("min_amount", min_amount))
+    config.min_amount = min_amount;
+    config.version += 1;
+    CONFIG.save(deps.storage, &config)?;
+
+    Ok(Response::new()
+        .add_attribute("action", "update_min_amount")
+        .add_attribute("min_amount", min_amount)
+        .add_attribute("version", config.version.to_string()))
 }
 
 pub fn update_max_amount(
@@ -218,13 +284,20 @@ pub fn update_max_amount(
     info: MessageInfo,
     max_amount: Uint128,
 ) -> Result<Response, ContractError> {
-    let owner = OWNER.load(deps.storage)?;
-    if info.sender != owner {
+    let mut config = CONFIG.load(deps.storage)?;
+
+    if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
-    MAX_AMOUNT.save(deps.storage, &max_amount)?;
-    Ok(Response::new().add_attribute("max_amount", max_amount))
+    config.max_amount = max_amount;
+    config.version += 1;
+    CONFIG.save(deps.storage, &config)?;
+
+    Ok(Response::new()
+        .add_attribute("action", "update_max_amount")
+        .add_attribute("max_amount", max_amount)
+        .add_attribute("version", config.version.to_string()))
 }
 
 pub fn update_trusted_addresses(
@@ -232,30 +305,28 @@ pub fn update_trusted_addresses(
     info: MessageInfo,
     trusted_addresses: Vec<Addr>,
 ) -> Result<Response, ContractError> {
-    let owner = OWNER.load(deps.storage)?;
-    if info.sender != owner {
+    let mut config = CONFIG.load(deps.storage)?;
+
+    if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
-    // remove addresses from the list
-    let current_trusted_addresses: Vec<Addr> = TRUSTED_ADDRESSES
-        .keys(deps.storage, None, None, Order::Ascending)
-        .map(|v| v.unwrap())
-        .collect();
-    for addr in current_trusted_addresses {
-        TRUSTED_ADDRESSES.remove(deps.storage, addr);
-    }
-
-    // insert new
+    // Validate and check for duplicates
+    let mut seen = std::collections::HashSet::new();
     for addr in &trusted_addresses {
         deps.api.addr_validate(addr.as_str())?;
-        if TRUSTED_ADDRESSES.has(deps.storage, addr.clone()) {
+        if !seen.insert(addr.clone()) {
             return Err(ContractError::DuplicatedTrustedAddress {});
         }
-        TRUSTED_ADDRESSES.save(deps.storage, addr.clone(), &Empty {})?;
     }
 
-    Ok(Response::new())
+    config.trusted_addresses = trusted_addresses;
+    config.version += 1;
+    CONFIG.save(deps.storage, &config)?;
+
+    Ok(Response::new()
+        .add_attribute("action", "update_trusted_addresses")
+        .add_attribute("version", config.version.to_string()))
 }
 
 pub fn update_xrpl_tokens(
@@ -263,31 +334,20 @@ pub fn update_xrpl_tokens(
     info: MessageInfo,
     xrpl_tokens: Vec<crate::msg::XRPLToken>,
 ) -> Result<Response, ContractError> {
-    let owner = OWNER.load(deps.storage)?;
-    if info.sender != owner {
+    let mut config = CONFIG.load(deps.storage)?;
+
+    if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
-    XRPL_TOKENS.save(deps.storage, &xrpl_tokens)?;
-    Ok(Response::new().add_attribute("action", "update_xrpl_tokens"))
-}
-
-pub fn withdraw(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    let contract_balances = deps.querier.query_all_balances(env.contract.address)?;
-    let owner = OWNER.load(deps.storage)?;
-    if info.sender != owner {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    let bank_send_msg: CosmosMsg = BankMsg::Send {
-        to_address: owner.clone().into(),
-        amount: contract_balances,
-    }
-    .into();
+    // TODO: add validation for the xrpl tokens
+    config.xrpl_tokens = xrpl_tokens;
+    config.version += 1;
+    CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new()
-        .add_attribute("recipient", owner)
-        .add_message(bank_send_msg))
+        .add_attribute("action", "update_xrpl_tokens")
+        .add_attribute("version", config.version.to_string()))
 }
 
 fn normalize_id(id: String) -> String {
@@ -315,33 +375,23 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&get_pending_transactions(deps, offset, limit)?)
         }
         QueryMsg::GetSentTransaction { id } => to_binary(&get_sent_transaction(deps, id)?),
-
         QueryMsg::GetSentTransactions { offset, limit } => {
             to_binary(&get_sent_transactions(deps, offset, limit)?)
         }
-        QueryMsg::GetXrplTokens {} => to_binary(&get_xrpl_tokens(deps)?),
     }
 }
 
-fn get_config(deps: Deps) -> StdResult<Config> {
-    let owner = OWNER.load(deps.storage)?;
-    let trusted_addresses: Vec<Addr> = TRUSTED_ADDRESSES
-        .keys(deps.storage, None, None, Order::Ascending)
-        .map(|v| v.unwrap())
-        .collect();
-    let threshold = THRESHOLD.load(deps.storage)?;
+fn get_config(deps: Deps) -> StdResult<ConfigResponse> {
+    let config = CONFIG.load(deps.storage)?;
 
-    let min_amount = MIN_AMOUNT.load(deps.storage)?;
-    let max_amount = MAX_AMOUNT.load(deps.storage)?;
-    let xrpl_tokens = XRPL_TOKENS.load(deps.storage)?;
-
-    Ok(Config {
-        owner,
-        trusted_addresses,
-        threshold,
-        min_amount,
-        max_amount,
-        xrpl_tokens,
+    Ok(ConfigResponse {
+        owner: config.owner,
+        trusted_addresses: config.trusted_addresses,
+        threshold: config.threshold,
+        min_amount: config.min_amount,
+        max_amount: config.max_amount,
+        xrpl_tokens: config.xrpl_tokens,
+        version: config.version,
     })
 }
 
@@ -415,16 +465,11 @@ fn paginate_transactions<T>(
         .collect()
 }
 
-fn get_xrpl_tokens(deps: Deps) -> StdResult<XrplTokensResponse> {
-    let xrpl_tokens = XRPL_TOKENS.load(deps.storage)?;
-    Ok(XrplTokensResponse { xrpl_tokens })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coin, coins, StdError, Uint128};
+    use cosmwasm_std::{coin, StdError, Uint128};
     use cw_utils::PaymentError;
     use std::ops::{Add, Sub};
 
@@ -866,43 +911,6 @@ mod tests {
     }
 
     #[test]
-    fn test_withdraw() {
-        let mut deps = mock_dependencies();
-        let env = mock_env();
-
-        let amount = coins(1000, "core");
-        let info = mock_info(TEST_OWNER, &amount);
-        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
-        assert_eq!(true, res.is_ok());
-        deps.querier
-            .update_balance(env.clone().contract.address, amount.clone());
-
-        let contract_balances = deps
-            .as_mut()
-            .querier
-            .query_all_balances(env.clone().contract.address)
-            .unwrap();
-        assert_eq!(amount, contract_balances);
-
-        // execute from non-owner
-        let info = mock_info(TEST_TRUSTED_ADDRESS1, &[]);
-        let res = withdraw(deps.as_mut(), env.clone(), info);
-        assert_eq!(ContractError::Unauthorized {}, res.unwrap_err());
-
-        // execute form the owner
-        let info = mock_info(TEST_OWNER, &[]);
-        let res = withdraw(deps.as_mut(), env.clone(), info);
-        let res_msgs = res.unwrap().messages;
-        assert_eq!(1, res_msgs.len());
-        let bank_send_msg: CosmosMsg = BankMsg::Send {
-            to_address: TEST_OWNER.to_string(),
-            amount,
-        }
-        .into();
-        assert_eq!(bank_send_msg, res_msgs[0].msg);
-    }
-
-    #[test]
     fn test_update_min_max_amount() {
         let mut deps = mock_dependencies();
         let env = mock_env();
@@ -1019,9 +1027,9 @@ mod tests {
         let config = get_config(deps.as_ref()).unwrap();
         assert_eq!(new_xrpl_tokens, config.xrpl_tokens);
 
-        // verify query returns correct tokens
-        let tokens_response = get_xrpl_tokens(deps.as_ref()).unwrap();
-        assert_eq!(new_xrpl_tokens, tokens_response.xrpl_tokens);
+        // verify query returns correct tokens via config
+        let config_response = get_config(deps.as_ref()).unwrap();
+        assert_eq!(new_xrpl_tokens, config_response.xrpl_tokens);
     }
 
     #[test]
@@ -1043,9 +1051,9 @@ mod tests {
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg);
         assert_eq!(true, res.is_ok());
 
-        // query tokens
-        let tokens_response = get_xrpl_tokens(deps.as_ref()).unwrap();
-        assert_eq!(xrpl_tokens, tokens_response.xrpl_tokens);
+        // query tokens via config
+        let config_response = get_config(deps.as_ref()).unwrap();
+        assert_eq!(xrpl_tokens, config_response.xrpl_tokens);
     }
 
     #[test]

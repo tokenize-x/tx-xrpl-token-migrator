@@ -178,16 +178,9 @@ func StartCmd(ctx context.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, true, logger.Get(ctx))
-			if err != nil {
-				return err
-			}
 
-			services.Logger.Info("Starting relayer.", zap.String("contract-address", cfg.CoreumContractAddress))
-			services.CoreumMetricCollector.Start(ctx)
-			services.MetricPusher.Start(ctx)
-
-			return services.Executor.Start(ctx)
+			// Run the executor with auto-restart on config changes
+			return service.RunExecutorWithAutoRestart(ctx, cfg, clientCtx.Keyring, logger.Get(ctx))
 		},
 	}
 
@@ -274,7 +267,7 @@ func DeployAndInstantiateCmd(ctx context.Context) *cobra.Command { //nolint:funl
 				Owner:            ownerAddress,
 				Admin:            ownerAddress,
 				TrustedAddresses: trustedAddresses,
-				Threshold:        threshold,
+				Threshold:        uint32(threshold),
 				MinAmount:        minAmount,
 				MaxAmount:        maxAmount,
 				Label:            "bank_threshold_send",
@@ -742,7 +735,11 @@ func BuildUpdateXRPLTokensTransactionCmd(ctx context.Context) *cobra.Command {
 				parts := strings.Split(tokenStr, "/")
 				if len(parts) != 4 {
 					// TODO: to be revised in the next PR
-					return errors.Errorf("invalid %s value: %s, expected format: issuer/currency/activation_date/multiplier", flagXRPLToken, tokenStr)
+					return errors.Errorf(
+						"invalid %s value: %s, expected format: issuer/currency/activation_date/multiplier",
+						flagXRPLToken,
+						tokenStr,
+					)
 				}
 				activationDate, err := strconv.ParseUint(parts[2], 10, 64)
 				if err != nil {
@@ -782,7 +779,11 @@ func BuildUpdateXRPLTokensTransactionCmd(ctx context.Context) *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().StringSlice(flagXRPLToken, nil, "XRPL tokens in format: issuer/currency/activation_date/multiplier")
+	cmd.PersistentFlags().StringSlice(
+		flagXRPLToken,
+		nil,
+		"XRPL tokens in format: issuer/currency/activation_date/multiplier",
+	)
 	addCoreumFlags(cmd)
 
 	return cmd

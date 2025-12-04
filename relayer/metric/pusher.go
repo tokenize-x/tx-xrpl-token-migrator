@@ -65,20 +65,18 @@ func NewPusher(cfg PusherConfig, log logger.Logger, registry *prometheus.Registr
 	}, nil
 }
 
-// Start starts metric pusher.
-func (p *Pusher) Start(ctx context.Context) {
-	go func() {
-		err := retry.Do(ctx, p.cfg.PushDelay, func() error {
-			if err := p.pusher.Add(); err != nil {
-				p.log.Error("Failed to push metrics", zap.Error(err))
-				return retry.Retryable(err)
-			}
-
-			return retry.Retryable(errors.New("repeat push"))
-		})
-		if err == nil || errors.Is(err, context.Canceled) {
-			return
+// PushMetrics pushes metrics to Prometheus.
+func (p *Pusher) PushMetrics(ctx context.Context) error {
+	err := retry.Do(ctx, p.cfg.PushDelay, func() error {
+		if err := p.pusher.Add(); err != nil {
+			p.log.Error("Failed to push metrics", zap.Error(err))
+			return retry.Retryable(err)
 		}
-		panic(errors.Wrap(err, "unexpected error in push with retry"))
-	}()
+
+		return retry.Retryable(errors.New("repeat push"))
+	})
+	if err == nil || errors.Is(err, context.Canceled) {
+		return err
+	}
+	panic(errors.Wrap(err, "unexpected error in push with retry"))
 }

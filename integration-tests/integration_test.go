@@ -609,3 +609,404 @@ func awaitForBalance(
 
 	t.Logf("Received expected balance: %s.", expectedBalance)
 }
+
+// TestDuplicateTransactionPrevention tests that the same XRPL transaction is never processed twice,
+// even when multipliers change or the transaction is submitted multiple times.
+func TestDuplicateTransactionPrevention(t *testing.T) {
+	t.Parallel()
+
+	ctx, chains := NewTestingContext(t)
+
+	requireT := require.New(t)
+
+	xrplChain := chains.XRPL
+	coreumChain := chains.Coreum
+
+	// Setup token issuer
+	tokenIssuer := xrplChain.GenAccount(ctx, t, 10)
+	tokenCurrency, err := rippledata.NewCurrency(xrplCORECurrency)
+	requireT.NoError(err)
+
+	enableDefaultRippling(ctx, t, chains, tokenIssuer)
+
+	initialMultiplier := "1.0"
+	tokens := []service.XRPLTokenConfig{
+		{
+			XRPLIssuer:     tokenIssuer.String(),
+			XRPLCurrency:   xrplCORECurrency,
+			ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+			Multiplier:     initialMultiplier,
+		},
+	}
+
+	// Build and start the relayer instances
+	instances := buildAndStartDevEnv(ctx, t, chains, tokens)
+
+	xrplSender := prepareXRPLSender(ctx, t, xrplChain, tokens)
+	recipientAddress := coreumChain.GenAccount()
+
+	// Send initial payment from XRPL
+	sendAmount := "100.0"
+	sendPayments(ctx, t, xrplChain, xrplSender, []payment{
+		{
+			address:  recipientAddress.String(),
+			amounts:  []string{sendAmount},
+			issuer:   tokenIssuer,
+			currency: tokenCurrency,
+		},
+	})
+
+	t.Log("waiting for initial transaction to be processed")
+
+	// Calculate expected balance with initial multiplier (1.0)
+	expectedInitialBalance := coreumChain.NewCoin(sdk.NewInt(100_000000)) // 100.0 * 1.0 * 10^6
+	awaitForBalance(
+		ctx,
+		t,
+		coreumChain.ClientContext,
+		recipientAddress.String(),
+		expectedInitialBalance,
+	)
+
+	t.Log("initial transaction processed successfully")
+
+	// Record the initial balance
+	bankClient := banktypes.NewQueryClient(coreumChain.ClientContext)
+	balanceRes, err := bankClient.Balance(ctx, &banktypes.QueryBalanceRequest{
+		Address: recipientAddress.String(),
+		Denom:   expectedInitialBalance.Denom,
+	})
+	requireT.NoError(err)
+	balanceAfterFirst := balanceRes.Balance.Amount
+
+	t.Logf("balance after first transaction: %s", balanceAfterFirst.String())
+
+	// Get contract client from one of the instances
+	contractClient := instances[0].CoreumContractClient
+	trustedAddress := sdk.MustAccAddressFromBech32(instances[0].Config.CoreumSenderAddress)
+
+	// Get all sent transactions to find our transaction hash
+	offset := uint64(0)
+	limit := uint32(100)
+	sentTxs, err := contractClient.GetSentTxs(ctx, &offset, &limit)
+	requireT.NoError(err)
+	requireT.NotEmpty(sentTxs, "should have at least one sent transaction")
+
+	// Find the transaction we just sent
+	var ourTxHash string
+	for _, tx := range sentTxs {
+		if tx.Recipient == recipientAddress.String() && tx.Amount.Amount.Equal(expectedInitialBalance.Amount) {
+			ourTxHash = tx.ID
+			break
+		}
+	}
+	requireT.NotEmpty(ourTxHash, "should find our transaction in sent transactions")
+	t.Logf("found transaction hash: %s", ourTxHash)
+
+	// Attempt to submit evidence for the same transaction again
+	// This should be rejected by the contract with "Transfer already sent" error
+	_, err = contractClient.ThresholdBankSend(
+		ctx,
+		trustedAddress,
+		coreum.ThresholdBankSendRequest{
+			ID:        ourTxHash,
+			Amount:    expectedInitialBalance,
+			Recipient: recipientAddress.String(),
+		},
+	)
+	requireT.Error(err, "submitting duplicate transaction should fail")
+	requireT.True(coreum.IsTransferSentError(err), "error should be TransferSent error, got: %v", err)
+	t.Log("contract correctly rejected duplicate transaction")
+
+	// Wait a bit to ensure no duplicate processing happened
+	time.Sleep(5 * time.Second)
+
+	// Verify balance hasn't changed (no duplicate processing)
+	balanceRes2, err := bankClient.Balance(ctx, &banktypes.QueryBalanceRequest{
+		Address: recipientAddress.String(),
+		Denom:   expectedInitialBalance.Denom,
+	})
+	requireT.NoError(err)
+	balanceAfterDuplicateAttempt := balanceRes2.Balance.Amount
+
+	requireT.Equal(
+		balanceAfterFirst.String(),
+		balanceAfterDuplicateAttempt.String(),
+		"balance should not change after duplicate submission attempt",
+	)
+	t.Logf("confirmed balance unchanged: %s", balanceAfterDuplicateAttempt.String())
+
+	// Now test with multiplier change
+	t.Log("testing scenario with multiplier change...")
+
+	// Update multiplier
+	newMultiplier := "2.0"
+	newTokens := []coreum.XRPLToken{
+		{
+			Currency:       xrplCORECurrency,
+			Issuer:         tokenIssuer.String(),
+			ActivationDate: uint64(time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC).Unix()),
+			Multiplier:     newMultiplier,
+		},
+	}
+
+	// Note: Only the owner can update XRPL tokens. Get the contract owner from config
+	config, err := contractClient.GetContractConfig(ctx)
+	requireT.NoError(err)
+	contractOwner := sdk.MustAccAddressFromBech32(config.Owner)
+
+	// Create a contract client with the chain's keyring which has the owner account
+	contractAddr := sdk.MustAccAddressFromBech32(instances[0].Config.CoreumContractAddress)
+	ownerContractClient := coreum.NewContractClient(
+		coreum.DefaultContractClientConfig(contractAddr, coreumChain.ChainSettings.Denom),
+		coreumChain.ClientContext,
+	)
+
+	_, err = ownerContractClient.UpdateXRPLTokens(ctx, contractOwner, newTokens)
+	requireT.NoError(err)
+	t.Log("multiplier updated to 2.0")
+
+	// Try to submit the SAME transaction again with the new multiplier
+	// Even though the multiplier changed, the transaction hash is the same
+	// and should still be rejected
+	// 100.0 * 2.0 * 10^6 (what it WOULD be with new multiplier)
+	newExpectedAmount := coreumChain.NewCoin(sdk.NewInt(200_000000))
+
+	_, err = contractClient.ThresholdBankSend(
+		ctx,
+		trustedAddress,
+		coreum.ThresholdBankSendRequest{
+			ID:        ourTxHash, // Same transaction hash!
+			Amount:    newExpectedAmount,
+			Recipient: recipientAddress.String(),
+		},
+	)
+	requireT.Error(err, "submitting same transaction with different multiplier should fail")
+	requireT.True(
+		coreum.IsTransferSentError(err),
+		"error should be TransferSent error even with multiplier change, got: %v",
+		err,
+	)
+	t.Log("contract correctly rejected transaction even after multiplier change")
+
+	// Wait to ensure no processing happened
+	time.Sleep(5 * time.Second)
+
+	// Verify balance is still the same (processed with ORIGINAL multiplier only once)
+	balanceRes3, err := bankClient.Balance(ctx, &banktypes.QueryBalanceRequest{
+		Address: recipientAddress.String(),
+		Denom:   expectedInitialBalance.Denom,
+	})
+	requireT.NoError(err)
+	finalBalance := balanceRes3.Balance.Amount
+
+	requireT.Equal(
+		balanceAfterFirst.String(),
+		finalBalance.String(),
+		"Balance should still be the same after multiplier change - transaction processed only once",
+	)
+	t.Logf("final balance: %s (correctly unchanged)", finalBalance.String())
+
+	// Verify it's NOT the new multiplier amount
+	requireT.NotEqual(
+		newExpectedAmount.Amount.String(),
+		finalBalance.String(),
+		"balance should NOT be calculated with new multiplier",
+	)
+
+	t.Log("transaction was processed exactly once despite multiple attempts and multiplier change")
+}
+
+// TestConfigChangeDetectionAndRestart tests that the relayer detects config changes and restarts with new config.
+func TestConfigChangeDetectionAndRestart(t *testing.T) {
+	t.Parallel()
+
+	ctx, chains := NewTestingContext(t)
+
+	requireT := require.New(t)
+
+	xrplChain := chains.XRPL
+	coreumChain := chains.Coreum
+
+	// Setup token issuer
+	tokenIssuer := xrplChain.GenAccount(ctx, t, 10)
+	tokenCurrency, err := rippledata.NewCurrency(xrplCORECurrency)
+	requireT.NoError(err)
+
+	enableDefaultRippling(ctx, t, chains, tokenIssuer)
+
+	// Initial config with multiplier 1.0
+	initialTokens := []service.XRPLTokenConfig{
+		{
+			XRPLIssuer:     tokenIssuer.String(),
+			XRPLCurrency:   xrplCORECurrency,
+			ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+			Multiplier:     "1.0",
+		},
+	}
+
+	// Deploy contract and start relayer
+	owner := coreumChain.GenAccount()
+	trustedAddress1 := coreumChain.GenAccount()
+	trustedAddress2 := coreumChain.GenAccount()
+	trustedAddress3 := coreumChain.GenAccount()
+
+	t.Log("Funding accounts.")
+	coreumChain.Faucet.FundAccounts(ctx, t,
+		integration.NewFundedAccount(owner, coreumChain.NewCoin(sdk.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress1, coreumChain.NewCoin(sdk.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress2, coreumChain.NewCoin(sdk.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress3, coreumChain.NewCoin(sdk.NewInt(5000000000))),
+	)
+
+	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil, ""), coreumChain.ClientContext)
+
+	t.Log("Deploying and instantiating the smart contract with initial config.")
+	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
+		Owner: owner.String(),
+		Admin: owner.String(),
+		TrustedAddresses: []string{
+			trustedAddress1.String(),
+			trustedAddress2.String(),
+			trustedAddress3.String(),
+		},
+		Threshold:  2,
+		MinAmount:  sdk.NewInt(100),
+		MaxAmount:  sdk.NewInt(200_000_000),
+		XRPLTokens: convertServiceTokensToContractTokens(initialTokens),
+		Label:      "bank_threshold_send",
+	})
+	requireT.NoError(err)
+
+	coinToFundContract := coreumChain.NewCoin(sdk.NewInt(10_000_000_000))
+	coreumChain.Faucet.FundAccounts(ctx, t, integration.NewFundedAccount(contractAddr, coinToFundContract))
+
+	requireT.NoError(contractClient.SetContractAddress(contractAddr))
+	t.Logf("Contract deployed and instantiated, address:%s.", contractAddr)
+
+	// Build service configs for multiple relayers (need at least 2 for threshold)
+	zapLogger := zaptest.NewLogger(t)
+	baseServiceCfg := service.Config{
+		XRPLRPCURL:                    xrplChain.Config().RPCAddress,
+		XRPLHistoryScanStartLedger:    0,
+		XRPLRecentScanIndexesBack:     30_000,
+		XRPLRecentScanSkipLastIndexes: 0,
+		XRPLMemoSuffix:                xrplTestMemoSuffix,
+		CoreumRPCURL:                  coreumChain.Config().RPCAddress,
+		CoreumGRPCURL:                 coreumChain.Config().GRPCAddress,
+		CoreumChainID:                 coreumChain.ChainSettings.ChainID,
+		CoreumContractAddress:         contractAddr.String(),
+		ConfigWatcherPollInterval:     2 * time.Second, // Short interval for testing
+	}
+
+	// Start multiple relayers with auto-restart (need at least 2 for threshold)
+	relayerCtx, relayerCancel := context.WithCancel(ctx)
+	defer relayerCancel()
+
+	relayerErrCh := make(chan error, 3)
+	trustedAddresses := []sdk.AccAddress{trustedAddress1, trustedAddress2, trustedAddress3}
+
+	// Start 3 relayers (one for each trusted address) to meet threshold of 2
+	for _, trustedAddr := range trustedAddresses {
+		serviceCfg := baseServiceCfg
+		serviceCfg.CoreumSenderAddress = trustedAddr.String()
+
+		go func(cfg service.Config) {
+			// Use the actual RunExecutorWithAutoRestart function
+			relayerErrCh <- service.RunExecutorWithAutoRestart(relayerCtx, cfg, coreumChain.ClientContext.Keyring(), zapLogger)
+		}(serviceCfg)
+	}
+
+	// Monitor for relayer errors in background
+	go func() {
+		for {
+			select {
+			case <-relayerCtx.Done():
+				return
+			case err := <-relayerErrCh:
+				if err != nil && !errors.Is(err, context.Canceled) {
+					t.Logf("Relayer error: %v", err)
+				}
+			}
+		}
+	}()
+
+	// Wait a bit for relayer to start
+	time.Sleep(2 * time.Second)
+
+	// Prepare XRPL sender
+	xrplSender := prepareXRPLSender(ctx, t, xrplChain, initialTokens)
+	recipientAddress := coreumChain.GenAccount()
+
+	// Send first transaction with initial multiplier (1.0)
+	t.Log("Sending first transaction with initial config (multiplier 1.0)")
+	sendAmount := "100.0"
+	sendPayments(ctx, t, xrplChain, xrplSender, []payment{
+		{
+			address:  recipientAddress.String(),
+			amounts:  []string{sendAmount},
+			issuer:   tokenIssuer,
+			currency: tokenCurrency,
+		},
+	})
+
+	// Wait for first transaction to be processed
+	expectedInitialBalance := coreumChain.NewCoin(sdk.NewInt(100_000000)) // 100.0 * 1.0 * 10^6
+	awaitForBalance(ctx, t, coreumChain.ClientContext, recipientAddress.String(), expectedInitialBalance)
+	t.Log("First transaction processed with initial multiplier")
+
+	// Update contract config with new multiplier (2.0)
+	t.Log("Updating contract config with new multiplier (2.0)")
+	newTokens := []coreum.XRPLToken{
+		{
+			Currency:       xrplCORECurrency,
+			Issuer:         tokenIssuer.String(),
+			ActivationDate: uint64(time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC).Unix()),
+			Multiplier:     "2.0", // Changed from 1.0 to 2.0
+		},
+	}
+
+	_, err = contractClient.UpdateXRPLTokens(ctx, owner, newTokens)
+	requireT.NoError(err)
+
+	// Verify config was updated
+	cfg, err := contractClient.GetContractConfig(ctx)
+	requireT.NoError(err)
+	requireT.Equal("2.0", cfg.XRPLTokens[0].Multiplier)
+	t.Log("Contract config updated successfully")
+
+	// Wait for relayer to detect config change and restart
+	// The watcher polls every 2 seconds in this test
+	// Wait a bit longer to ensure config change is detected and services are restarted
+	time.Sleep(5 * time.Second)
+
+	// Send second transaction - should use new multiplier (2.0)
+	t.Log("Sending second transaction - should use new multiplier (2.0)")
+	sendAmount2 := "50.0"
+	sendPayments(ctx, t, xrplChain, xrplSender, []payment{
+		{
+			address:  recipientAddress.String(),
+			amounts:  []string{sendAmount2},
+			issuer:   tokenIssuer,
+			currency: tokenCurrency,
+		},
+	})
+
+	// Wait for second transaction to be processed with new multiplier
+	// Expected: 100 * 1.0 + 50 * 2.0 = 100 + 100 = 200
+	expectedFinalBalance := coreumChain.NewCoin(sdk.NewInt(200_000000))
+	awaitForBalance(ctx, t, coreumChain.ClientContext, recipientAddress.String(), expectedFinalBalance)
+	t.Log("Second transaction processed with new multiplier (2.0)")
+
+	// Verify the balance is correct
+	bankClient := banktypes.NewQueryClient(coreumChain.ClientContext)
+	balanceRes, err := bankClient.Balance(ctx, &banktypes.QueryBalanceRequest{
+		Address: recipientAddress.String(),
+		Denom:   expectedFinalBalance.Denom,
+	})
+	requireT.NoError(err)
+	requireT.Equal(expectedFinalBalance.Amount.String(), balanceRes.Balance.Amount.String(),
+		"Balance should reflect both transactions: first with multiplier 1.0, second with multiplier 2.0")
+
+	t.Log("Config change detection and restart verified successfully")
+}

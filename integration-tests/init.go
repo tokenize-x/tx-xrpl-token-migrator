@@ -16,7 +16,7 @@ import (
 	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
 )
 
-// Test constants matching defaultTestnetCfg from main.go
+// Test constants matching defaultTestnetCfg from main.go.
 const (
 	xrplTestMemoSuffix = "/integration-test"
 	xrplCORECurrency   = "434F524500000000000000000000000000000000"
@@ -24,7 +24,7 @@ const (
 	xrplSOLOCurrency   = "534F4C4F00000000000000000000000000000000"
 )
 
-// testXRPLTokens matches the defaultTestnetCfg XRPL tokens configuration
+// testXRPLTokens matches the defaultTestnetCfg XRPL tokens configuration.
 var testXRPLTokens = []coreum.XRPLToken{
 	{
 		Currency:       xrplCORECurrency,

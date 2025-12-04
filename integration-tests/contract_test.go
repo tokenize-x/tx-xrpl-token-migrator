@@ -55,7 +55,7 @@ func TestWASMContractThresholdBankSend(t *testing.T) {
 
 	txSendRecipient := chain.GenAccount()
 
-	const threshold = 2
+	const threshold uint32 = 2
 	trustedAddresses := []string{
 		trustedAddress1.String(),
 		trustedAddress2.String(),
@@ -236,7 +236,7 @@ func TestWASMContractExecutePending(t *testing.T) {
 	txSendRecipient := chain.GenAccount()
 	anyAddress := chain.GenAccount()
 
-	const threshold = 2
+	const threshold uint32 = 2
 	trustedAddresses := []string{
 		trustedAddress1.String(),
 		trustedAddress2.String(),
@@ -403,7 +403,7 @@ func TestWASMContractExecutePendingWithMultisig(t *testing.T) {
 
 	txSendRecipient := chain.GenAccount()
 
-	const threshold = 2
+	const threshold uint32 = 2
 	trustedAddresses := []string{
 		trustedAddress1.String(),
 		trustedAddress2.String(),
@@ -740,87 +740,6 @@ func TestWASMUpdateXRPLTokens(t *testing.T) {
 	cfg, err := contractClient.GetContractConfig(ctx)
 	requireT.NoError(err)
 	requireT.Equal(newXRPLTokens, cfg.XRPLTokens)
-}
-
-func TestWASMContractExecuteWithdraw(t *testing.T) {
-	t.Parallel()
-
-	ctx, chain := NewCoreumTestingContext(t)
-
-	owner := chain.GenAccount()
-	trustedAddress1 := chain.GenAccount()
-
-	requireT := require.New(t)
-	chain.Faucet.FundAccounts(ctx, t,
-		integrationtests.NewFundedAccount(owner, chain.NewCoin(sdk.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(trustedAddress1, chain.NewCoin(sdk.NewInt(5000000000))),
-	)
-
-	bankClient := banktypes.NewQueryClient(chain.ClientContext)
-	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil, ""), chain.ClientContext)
-
-	minAmount := sdk.ZeroInt()
-	maxAmount := sdk.NewIntFromUint64(math.MaxUint64)
-
-	t.Log("Deploying and instantiating the smart contract.")
-	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
-		Owner: owner.String(),
-		Admin: owner.String(),
-		TrustedAddresses: []string{
-			trustedAddress1.String(),
-		},
-		Threshold:  1,
-		MinAmount:  minAmount,
-		MaxAmount:  maxAmount,
-		Label:      "bank_threshold_send",
-		XRPLTokens: testXRPLTokens,
-	})
-	requireT.NoError(err)
-
-	coinToFundContract := chain.NewCoin(sdk.NewInt(100_000))
-	chain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(contractAddr, coinToFundContract))
-
-	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
-
-	requireT.NoError(contractClient.SetContractAddress(contractAddr))
-	t.Logf("Contract deployed and instantiated, address:%s.", contractAddr)
-	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
-
-	contractBalanceRes, err := bankClient.Balance(ctx,
-		&banktypes.QueryBalanceRequest{
-			Address: contractAddr.String(),
-			Denom:   coinToFundContract.Denom,
-		})
-	requireT.NoError(err)
-	requireT.NotEqual(sdk.ZeroInt().String(), contractBalanceRes.Balance.String())
-
-	t.Logf("Trying to withdraw from the trusted address which is not owner.")
-	_, err = contractClient.Withdraw(
-		ctx, trustedAddress1,
-	)
-	requireT.True(coreum.IsUnauthorizedError(err))
-
-	ownerBalanceBeforeTxRes, err := bankClient.Balance(ctx,
-		&banktypes.QueryBalanceRequest{
-			Address: owner.String(),
-			Denom:   coinToFundContract.Denom,
-		})
-	requireT.NoError(err)
-
-	t.Logf("Withdrawing with the owner.")
-	_, err = contractClient.Withdraw(ctx, owner)
-	requireT.NoError(err)
-
-	// contract balance is zero now
-	assertBankBalance(ctx, t, bankClient, contractAddr, chain.NewCoin(sdk.ZeroInt()))
-	ownerBalanceAfterTxRes, err := bankClient.Balance(ctx,
-		&banktypes.QueryBalanceRequest{
-			Address: owner.String(),
-			Denom:   coinToFundContract.Denom,
-		})
-	requireT.NoError(err)
-
-	requireT.True(ownerBalanceAfterTxRes.Balance.Amount.GT(ownerBalanceBeforeTxRes.Balance.Amount))
 }
 
 func TestWASMContractQueryPagination(t *testing.T) {

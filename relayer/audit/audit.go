@@ -81,7 +81,6 @@ type ContractCallReport struct {
 	ExecutePendingRequests    []ContractCallTx[coreum.ExecutePendingRequest]
 	UpdateMinAmountRequests   []ContractCallTx[coreum.UpdateMinAmountRequest]
 	UpdateMaxAmountRequests   []ContractCallTx[coreum.UpdateMaxAmountRequest]
-	WithdrawRequests          []ContractCallTx[coreum.WithdrawRequest]
 }
 
 // NewContractCallReport creates initialised ContractCallReport.
@@ -92,7 +91,6 @@ func NewContractCallReport() *ContractCallReport {
 		ExecutePendingRequests:    make([]ContractCallTx[coreum.ExecutePendingRequest], 0),
 		UpdateMinAmountRequests:   make([]ContractCallTx[coreum.UpdateMinAmountRequest], 0),
 		UpdateMaxAmountRequests:   make([]ContractCallTx[coreum.UpdateMaxAmountRequest], 0),
-		WithdrawRequests:          make([]ContractCallTx[coreum.WithdrawRequest], 0),
 	}
 }
 
@@ -393,16 +391,6 @@ func decodeMessagePayloadToReport(tx *sdk.TxResponse, msg sdk.Msg, report *Contr
 					Msg:     msg,
 					Payload: req,
 				})
-		case coreum.ExecMethodWithdraw:
-			var req coreum.WithdrawRequest
-			if err := json.Unmarshal(methodPayload, &req); err != nil {
-				return err
-			}
-			report.WithdrawRequests = append(report.WithdrawRequests, ContractCallTx[coreum.WithdrawRequest]{
-				Tx:      tx,
-				Msg:     msg,
-				Payload: req,
-			})
 		default:
 			return errors.Errorf("exec method not found, method:%s", methodName)
 		}
