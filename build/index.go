@@ -1,10 +1,10 @@
 package build
 
 import (
+	"github.com/tokenize-x/tx-xrpl-token-migrator/build/bridge"
+
 	"github.com/CoreumFoundation/crust/build/crust"
 	"github.com/CoreumFoundation/crust/build/types"
-
-	"github.com/tokenize-x/tx-xrpl-token-migrator/build/bridge"
 )
 
 // Commands is a definition of commands available in build system.

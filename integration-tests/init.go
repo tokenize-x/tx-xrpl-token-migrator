@@ -10,10 +10,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
+	"go.uber.org/zap"
 )
 
 // Test constants matching defaultTestnetCfg from main.go.

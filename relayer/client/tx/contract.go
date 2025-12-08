@@ -20,7 +20,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
-
 	contractembed "github.com/tokenize-x/tx-xrpl-token-migrator/contract"
 )
 

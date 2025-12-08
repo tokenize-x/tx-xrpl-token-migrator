@@ -16,12 +16,11 @@ import (
 	"github.com/pkg/errors"
 	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/samber/lo"
-	"go.uber.org/zap"
-
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/xrpl"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/finder"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
+	"go.uber.org/zap"
 )
 
 // DiscrepancyType is the bridge audit discrepancy type.

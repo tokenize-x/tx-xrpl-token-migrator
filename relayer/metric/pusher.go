@@ -9,9 +9,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/push"
-	"go.uber.org/zap"
-
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
+	"go.uber.org/zap"
 )
 
 const instanceNameLabel = "instance"

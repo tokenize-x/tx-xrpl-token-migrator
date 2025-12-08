@@ -6,10 +6,9 @@ import (
 	"time"
 
 	"cosmossdk.io/errors"
-	"go.uber.org/zap"
-
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
+	"go.uber.org/zap"
 )
 
 // ErrConfigChanged is returned when a configuration change is detected.

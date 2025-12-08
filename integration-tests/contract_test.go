@@ -22,9 +22,8 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
-
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
+	"golang.org/x/exp/slices"
 )
 
 const (

@@ -20,12 +20,11 @@ import (
 	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/service"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/exp/slices"
-
-	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
-	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/service"
 )
 
 type payment struct {
