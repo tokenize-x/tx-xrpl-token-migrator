@@ -41,7 +41,7 @@ jobs:
         with:
           repository: CoreumFoundation/coreum
           path: coreum
-          ref: v4.1.2
+          ref: v5.0.1
       - name: Install go
         uses: actions/setup-go@v5
         with:
