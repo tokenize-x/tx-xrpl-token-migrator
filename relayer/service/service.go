@@ -7,10 +7,12 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/CosmWasm/wasmd/x/wasm"
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	rippledata "github.com/rubblelabs/ripple/data"
@@ -22,10 +24,9 @@ import (
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/http"
 	"github.com/CoreumFoundation/coreum-tools/pkg/parallel"
-	"github.com/CoreumFoundation/coreum/v4/app"
-	"github.com/CoreumFoundation/coreum/v4/pkg/client"
-	"github.com/CoreumFoundation/coreum/v4/pkg/config"
-	"github.com/CoreumFoundation/coreum/v4/pkg/config/constant"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config/constant"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/audit"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/xrpl"
@@ -125,7 +126,7 @@ func NewServices(
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to export key")
 		}
-		kr = keyring.NewInMemory(config.NewEncodingConfig(app.ModuleBasics).Codec)
+		kr = keyring.NewInMemory(config.NewEncodingConfig(auth.AppModuleBasic{}, wasm.AppModuleBasic{}).Codec)
 		if err := kr.ImportPrivKey(keyInfo.Name, armor, pass); err != nil {
 			return nil, errors.Wrapf(err, "failed to import key")
 		}
@@ -141,7 +142,7 @@ func NewServices(
 		// TODO: to be revised in the next PR
 		return nil, errors.New("contract address is required")
 	}
-	txClientCtx := client.NewContext(client.DefaultContextConfig(), app.ModuleBasics).
+	txClientCtx := client.NewContext(client.DefaultContextConfig(), auth.AppModuleBasic{}, wasm.AppModuleBasic{}).
 		WithChainID(string(network.ChainID())).
 		WithKeyring(kr)
 
@@ -385,7 +386,7 @@ func getGRPCClientConn(grpcURL string) (*grpc.ClientConn, error) {
 		return nil, errors.Wrap(err, "failed to parse grpc URL")
 	}
 
-	encodingConfig := config.NewEncodingConfig(app.ModuleBasics)
+	encodingConfig := config.NewEncodingConfig(auth.AppModuleBasic{}, wasm.AppModuleBasic{})
 	pc, ok := encodingConfig.Codec.(codec.GRPCCodecProvider)
 	if !ok {
 		return nil, errors.New("failed to cast codec to codec.GRPCCodecProvider)")

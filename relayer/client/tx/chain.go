@@ -15,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
-	"github.com/CoreumFoundation/coreum/v4/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 )
 

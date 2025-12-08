@@ -9,17 +9,18 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/CosmWasm/wasmd/x/wasm"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/pkg/errors"
 	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/http"
-	txapp "github.com/CoreumFoundation/coreum/v4/app"
-	txconfig "github.com/CoreumFoundation/coreum/v4/pkg/config"
-	txkeyring "github.com/CoreumFoundation/coreum/v4/pkg/keyring"
+	txconfig "github.com/CoreumFoundation/coreum/v5/pkg/config"
+	txkeyring "github.com/CoreumFoundation/coreum/v5/pkg/keyring"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/xrpl"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 )
@@ -200,6 +201,6 @@ func extractPrivateKeyFromSeed(seedPhrase string) (string, error) {
 }
 
 func createInMemoryKeyring() keyring.Keyring {
-	encodingConfig := txconfig.NewEncodingConfig(txapp.ModuleBasics)
+	encodingConfig := txconfig.NewEncodingConfig(auth.AppModuleBasic{}, wasm.AppModuleBasic{})
 	return txkeyring.NewConcurrentSafeKeyring(keyring.NewInMemory(encodingConfig.Codec))
 }

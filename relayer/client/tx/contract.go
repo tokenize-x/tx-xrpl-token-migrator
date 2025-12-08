@@ -18,9 +18,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 
-	"github.com/CoreumFoundation/coreum/v4/pkg/client"
-	"github.com/CoreumFoundation/coreum/v4/testutil/event"
-	feemodeltypes "github.com/CoreumFoundation/coreum/v4/x/feemodel/types"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/testutil/event"
+	feemodeltypes "github.com/CoreumFoundation/coreum/v5/x/feemodel/types"
 	contractembed "github.com/tokenize-x/tx-xrpl-token-migrator/contract"
 )
 
@@ -189,7 +189,7 @@ func DefaultContractClientConfig(contractAddress sdk.AccAddress, txDenom string)
 		ContractAddress:    contractAddress,
 		TXDenom:            txDenom,
 		GasMultiplier:      1.5,
-		GasPriceMultiplier: sdk.MustNewDecFromStr("1.2"),
+		GasPriceMultiplier: sdkmath.LegacyMustNewDecFromStr("1.2"),
 		ContractPageSize:   500,
 	}
 }
@@ -536,7 +536,7 @@ func (c *ContractClient) EstimateExecuteMessages(
 	if err != nil {
 		return sdk.Coin{}, 0, err
 	}
-	amount := feemodelParamsRes.Params.Model.InitialGasPrice.Mul(sdk.NewDecFromInt(sdk.NewIntFromUint64(gas))).
+	amount := feemodelParamsRes.Params.Model.InitialGasPrice.Mul(sdkmath.LegacyNewDecFromInt(sdkmath.NewIntFromUint64(gas))).
 		TruncateInt()
 
 	return sdk.NewCoin(c.cfg.TXDenom, amount), gas, nil

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	tmtypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -201,7 +202,7 @@ func (a *Auditor) buildContractCallReport(ctx context.Context) (ContractCallRepo
 func (a *Auditor) analyzeContractCallDiscrepancies(contractCallReport ContractCallReport) ([]Discrepancy, error) {
 	discrepancies := make([]Discrepancy, 0)
 
-	totalBridged := sdk.ZeroInt()
+	totalBridged := sdkmath.ZeroInt()
 	foundTxHashes := make(map[string]struct{})
 	for _, thresholdBankSendRequest := range contractCallReport.ThresholdBankSendRequests {
 		xrplTxHash := thresholdBankSendRequest.Payload.ID

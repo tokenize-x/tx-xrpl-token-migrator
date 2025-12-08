@@ -163,7 +163,7 @@ func ExtractAddressFromMemo(memos []string, suffix string) (sdk.AccAddress, bool
 // ConvertXRPLAmountToTXAmount converts xrpl amount to TX using the TX decimals.
 func ConvertXRPLAmountToTXAmount(xrplAmount *rippledata.Value, decimals int, multiplier string) sdkmath.Int {
 	if xrplAmount == nil {
-		return sdk.NewInt(0)
+		return sdkmath.NewInt(0)
 	}
 
 	if len(multiplier) == 0 || multiplier == "0" {
@@ -172,7 +172,7 @@ func ConvertXRPLAmountToTXAmount(xrplAmount *rippledata.Value, decimals int, mul
 
 	multiplierRat, ok := new(big.Rat).SetString(multiplier)
 	if !ok {
-		return sdk.NewInt(0)
+		return sdkmath.NewInt(0)
 	}
 
 	if multiplierRat.Num().Cmp(big.NewInt(0)) == 0 {
@@ -191,5 +191,5 @@ func ConvertXRPLAmountToTXAmount(xrplAmount *rippledata.Value, decimals int, mul
 		),
 		xrplRatAmountDenominator)
 
-	return sdk.NewIntFromBigInt(txAmount)
+	return sdkmath.NewIntFromBigInt(txAmount)
 }

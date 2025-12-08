@@ -15,8 +15,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/CoreumFoundation/coreum/v4/pkg/config"
-	"github.com/CoreumFoundation/coreum/v4/pkg/config/constant"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config/constant"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/xrpl"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/metric"
@@ -209,14 +209,14 @@ func TestFinder_convertXRPLAmountToTXCoin(t *testing.T) {
 			name:       "no_truncation",
 			xrplAmount: convertStringToRippleValue(t, "10.123456", false),
 			multiplier: "1.0",
-			wantAmount: sdk.NewCoin(denom, sdk.NewInt(10123456)),
+			wantAmount: sdk.NewCoin(denom, sdkmath.NewInt(10123456)),
 		},
 		{
 			name:       "max_amount",
 			xrplAmount: convertStringToRippleValue(t, "1000000000", false),
 			multiplier: "1.0",
 			wantAmount: sdk.NewCoin(denom, func() sdkmath.Int {
-				v, _ := sdk.NewIntFromString("1000000000000000")
+				v, _ := sdkmath.NewIntFromString("1000000000000000")
 				return v
 			}()),
 		},
@@ -291,7 +291,7 @@ func TestFinder_convertXRPLAmountToTXCoin(t *testing.T) {
 			xrplAmount: convertStringToRippleValue(t, "1000000000", false),
 			multiplier: "2.5",
 			wantAmount: sdk.NewCoin(denom, func() sdkmath.Int {
-				v, _ := sdk.NewIntFromString("2500000000000000")
+				v, _ := sdkmath.NewIntFromString("2500000000000000")
 				return v
 			}()),
 		},

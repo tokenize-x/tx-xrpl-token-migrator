@@ -8,11 +8,14 @@ import (
 	"strings"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
+	"github.com/CosmWasm/wasmd/x/wasm"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/keys"
 	txclient "github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
@@ -21,9 +24,8 @@ import (
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/logger"
 	"github.com/CoreumFoundation/coreum-tools/pkg/run"
-	coruemapp "github.com/CoreumFoundation/coreum/v4/app"
-	"github.com/CoreumFoundation/coreum/v4/pkg/config"
-	"github.com/CoreumFoundation/coreum/v4/pkg/config/constant"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config/constant"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/service"
 )
@@ -63,7 +65,7 @@ const (
 	flagAuditStartDate = "audit-start-date"
 )
 
-const defaultHome = ".xrpl-bridge"
+const defaultHome = ".tx-xrpl-token-migrator"
 
 var (
 	defaultTestnetCfg = service.Config{
@@ -113,7 +115,7 @@ func RootCmd(ctx context.Context) (*cobra.Command, error) {
 		return nil, err
 	}
 
-	encodingConfig := config.NewEncodingConfig(coruemapp.ModuleBasics)
+	encodingConfig := config.NewEncodingConfig(auth.AppModuleBasic{}, wasm.AppModuleBasic{})
 	clientCtx := client.Context{}.
 		WithCodec(encodingConfig.Codec).
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
@@ -139,7 +141,7 @@ func RootCmd(ctx context.Context) (*cobra.Command, error) {
 	cmd.AddCommand(BuildUpdateXRPLTokensTransactionCmd(ctx))
 	cmd.AddCommand(AuditCmd(ctx))
 
-	cmd.AddCommand(keys.Commands(defaultHome))
+	cmd.AddCommand(keys.Commands())
 
 	cmd.PersistentFlags().String(flagTXChainID, string(constant.ChainIDMain), "")
 
@@ -238,7 +240,7 @@ func DeployAndInstantiateCmd(ctx context.Context) *cobra.Command { //nolint:funl
 			if err != nil {
 				return err
 			}
-			minAmount, ok := sdk.NewIntFromString(minAmountString)
+			minAmount, ok := sdkmath.NewIntFromString(minAmountString)
 			if !ok || !minAmount.IsPositive() {
 				return errors.Errorf("%s must be greater than zero", flagTXContractMinAmount)
 			}
@@ -247,7 +249,7 @@ func DeployAndInstantiateCmd(ctx context.Context) *cobra.Command { //nolint:funl
 			if err != nil {
 				return err
 			}
-			maxAmount, ok := sdk.NewIntFromString(maxAmountString)
+			maxAmount, ok := sdkmath.NewIntFromString(maxAmountString)
 			if !ok || maxAmount.LT(minAmount) {
 				return errors.Errorf(
 					"%s must be greater or equal than %s",

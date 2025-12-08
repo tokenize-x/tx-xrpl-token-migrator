@@ -6,14 +6,17 @@ import (
 	"context"
 	"time"
 
+	"github.com/CosmWasm/wasmd/x/wasm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/pkg/errors"
 
-	"github.com/CoreumFoundation/coreum/v4/app"
-	"github.com/CoreumFoundation/coreum/v4/pkg/client"
-	"github.com/CoreumFoundation/coreum/v4/pkg/config/constant"
-	"github.com/CoreumFoundation/coreum/v4/testutil/integration"
-	feemodeltypes "github.com/CoreumFoundation/coreum/v4/x/feemodel/types"
+	txapp "github.com/CoreumFoundation/coreum/v5/app"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config/constant"
+	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
+	feemodeltypes "github.com/CoreumFoundation/coreum/v5/x/feemodel/types"
 )
 
 // TXChainConfig represents TX chain config.
@@ -45,7 +48,7 @@ func NewTXChain(cfg TXChainConfig) (TXChain, error) {
 	}
 	txSettings := integration.QueryChainSettings(queryCtx, txGRPCClient)
 
-	txClientCtx := client.NewContext(getTestContextConfig(), app.ModuleBasics).
+	txClientCtx := client.NewContext(getTestContextConfig(), auth.AppModuleBasic{}, wasm.AppModuleBasic{}).
 		WithGRPCClient(txGRPCClient)
 
 	txFeemodelParamsRes, err := feemodeltypes.
@@ -56,6 +59,13 @@ func NewTXChain(cfg TXChainConfig) (TXChain, error) {
 	}
 	txSettings.GasPrice = txFeemodelParamsRes.Params.Model.InitialGasPrice
 	txSettings.CoinType = constant.CoinType
+
+	// Set the chosen network for the app (required by integration.NewChain)
+	networkCfg, err := config.NetworkConfigByChainID(constant.ChainID(txSettings.ChainID))
+	if err != nil {
+		return TXChain{}, errors.WithStack(err)
+	}
+	txapp.ChosenNetwork = networkCfg
 
 	setSDKConfig(txSettings.AddressPrefix)
 

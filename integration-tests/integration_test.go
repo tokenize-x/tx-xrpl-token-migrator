@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -21,8 +22,8 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
-	"github.com/CoreumFoundation/coreum/v4/pkg/client"
-	"github.com/CoreumFoundation/coreum/v4/testutil/integration"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/service"
 )
@@ -128,7 +129,7 @@ func TestXRPLToTXBridgingMultiTokenSending(t *testing.T) {
 
 	awaitForBalance(
 		ctx, t, txChain.TXChain.ClientContext, recipient1Address.String(), txChain.TXChain.NewCoin(
-			sdk.NewInt(
+			sdkmath.NewInt(
 				// SOLO
 				18750000+8750000+
 					// XCORE
@@ -140,7 +141,7 @@ func TestXRPLToTXBridgingMultiTokenSending(t *testing.T) {
 
 	awaitForBalance(
 		ctx, t, txChain.TXChain.ClientContext, recipient2Address.String(), txChain.TXChain.NewCoin(
-			sdk.NewInt(
+			sdkmath.NewInt(
 				// CORE
 				42345000+
 					// XCORE
@@ -150,7 +151,7 @@ func TestXRPLToTXBridgingMultiTokenSending(t *testing.T) {
 	// the third sender includes the low and high amount checks, the low amount will be skipped the high will be locked
 	// in the pending transactions. We use multiple amounts here since the low and high amounts are between
 	// the transactions with the valid amounts.
-	recipient3ExpectedBalance := sdk.NewInt(
+	recipient3ExpectedBalance := sdkmath.NewInt(
 		// CORE
 		15000000 + 7000000,
 	)
@@ -159,7 +160,7 @@ func TestXRPLToTXBridgingMultiTokenSending(t *testing.T) {
 	)
 
 	// check that one xCore transaction is pending due to amount limit
-	highAmount := txChain.TXChain.NewCoin(sdk.NewInt(250000000))
+	highAmount := txChain.TXChain.NewCoin(sdkmath.NewInt(250000000))
 
 	pendingTxs, err := instances[0].TXContractClient.GetPendingTxs(ctx, nil, nil)
 	require.NoError(t, err)
@@ -199,7 +200,7 @@ func TestXRPLToTXBridgingMultiTokenSending(t *testing.T) {
 	)
 
 	// check that one solo transaction is pending due to amount limit
-	highAmount = txChain.TXChain.NewCoin(sdk.NewInt(312500000))
+	highAmount = txChain.TXChain.NewCoin(sdkmath.NewInt(312500000))
 
 	highAmountPendingTx = pendingTxs[1]
 	expectedHighAmountPendingTx = tx.Transaction{
@@ -311,7 +312,7 @@ func TestXRPLToTXBridgingTokenActivationDate(t *testing.T) {
 
 	awaitForBalance(
 		ctx, t, txChain.TXChain.ClientContext, recipientAddress.String(), txChain.TXChain.NewCoin(
-			sdk.NewInt(
+			sdkmath.NewInt(
 				// only CORE related balance is expected, the XCORE and SOLO are not activated
 				150000000+35000000,
 			)),
@@ -444,10 +445,10 @@ func buildAndStartDevEnv(
 
 	t.Log("Funding trusted addresses.")
 	txChain.TXChain.Faucet.FundAccounts(ctx, t,
-		integration.NewFundedAccount(owner, txChain.TXChain.NewCoin(sdk.NewInt(5000000000))),
-		integration.NewFundedAccount(trustedAddress1, txChain.TXChain.NewCoin(sdk.NewInt(5000000000))),
-		integration.NewFundedAccount(trustedAddress2, txChain.TXChain.NewCoin(sdk.NewInt(5000000000))),
-		integration.NewFundedAccount(trustedAddress3, txChain.TXChain.NewCoin(sdk.NewInt(5000000000))),
+		integration.NewFundedAccount(owner, txChain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress1, txChain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress2, txChain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress3, txChain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
 	)
 
 	contractClient := tx.NewContractClient(tx.DefaultContractClientConfig(nil, ""), txChain.TXChain.ClientContext)
@@ -463,14 +464,14 @@ func buildAndStartDevEnv(
 		Admin:            owner.String(),
 		TrustedAddresses: trustedAddresses,
 		Threshold:        2,
-		MinAmount:        sdk.NewInt(100),
-		MaxAmount:        sdk.NewInt(200_000_000),
+		MinAmount:        sdkmath.NewIntFromUint64(100),
+		MaxAmount:        sdkmath.NewIntFromUint64(200_000_000),
 		XRPLTokens:       convertServiceTokensToContractTokens(tokens),
 		Label:            "bank_threshold_send",
 	})
 	requireT.NoError(err)
 
-	coinToFundContract := txChain.TXChain.NewCoin(sdk.NewInt(10_000_000_000))
+	coinToFundContract := txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(10_000_000_000))
 	txChain.TXChain.Faucet.FundAccounts(ctx, t, integration.NewFundedAccount(contractAddr, coinToFundContract))
 
 	requireT.NoError(contractClient.SetContractAddress(contractAddr))
@@ -659,7 +660,7 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 	t.Log("waiting for initial transaction to be processed")
 
 	// Calculate expected balance with initial multiplier (1.0)
-	expectedInitialBalance := txChain.TXChain.NewCoin(sdk.NewInt(100_000000)) // 100.0 * 1.0 * 10^6
+	expectedInitialBalance := txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(100_000000)) // 100.0 * 1.0 * 10^6
 	awaitForBalance(
 		ctx,
 		t,
@@ -770,7 +771,7 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 	// Even though the multiplier changed, the transaction hash is the same
 	// and should still be rejected
 	// 100.0 * 2.0 * 10^6 (what it WOULD be with new multiplier)
-	newExpectedAmount := txChain.TXChain.NewCoin(sdk.NewInt(200_000000))
+	newExpectedAmount := txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(200_000000))
 
 	_, err = contractClient.ThresholdBankSend(
 		ctx,
@@ -853,10 +854,10 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 
 	t.Log("Funding accounts.")
 	txChain.TXChain.Faucet.FundAccounts(ctx, t,
-		integration.NewFundedAccount(owner, txChain.TXChain.NewCoin(sdk.NewInt(5000000000))),
-		integration.NewFundedAccount(trustedAddress1, txChain.TXChain.NewCoin(sdk.NewInt(5000000000))),
-		integration.NewFundedAccount(trustedAddress2, txChain.TXChain.NewCoin(sdk.NewInt(5000000000))),
-		integration.NewFundedAccount(trustedAddress3, txChain.TXChain.NewCoin(sdk.NewInt(5000000000))),
+		integration.NewFundedAccount(owner, txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(5000000000))),
+		integration.NewFundedAccount(trustedAddress1, txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(5000000000))),
+		integration.NewFundedAccount(trustedAddress2, txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(5000000000))),
+		integration.NewFundedAccount(trustedAddress3, txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(5000000000))),
 	)
 
 	contractClient := tx.NewContractClient(tx.DefaultContractClientConfig(nil, ""), txChain.TXChain.ClientContext)
@@ -871,14 +872,14 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 			trustedAddress3.String(),
 		},
 		Threshold:  2,
-		MinAmount:  sdk.NewInt(100),
-		MaxAmount:  sdk.NewInt(200_000_000),
+		MinAmount:  sdkmath.NewIntFromUint64(100),
+		MaxAmount:  sdkmath.NewIntFromUint64(200_000_000),
 		XRPLTokens: convertServiceTokensToContractTokens(initialTokens),
 		Label:      "bank_threshold_send",
 	})
 	requireT.NoError(err)
 
-	coinToFundContract := txChain.TXChain.NewCoin(sdk.NewInt(10_000_000_000))
+	coinToFundContract := txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(10_000_000_000))
 	txChain.TXChain.Faucet.FundAccounts(ctx, t, integration.NewFundedAccount(contractAddr, coinToFundContract))
 
 	requireT.NoError(contractClient.SetContractAddress(contractAddr))
@@ -951,7 +952,7 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 	})
 
 	// Wait for first transaction to be processed
-	expectedInitialBalance := txChain.TXChain.NewCoin(sdk.NewInt(100_000000)) // 100.0 * 1.0 * 10^6
+	expectedInitialBalance := txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(100_000000)) // 100.0 * 1.0 * 10^6
 	awaitForBalance(ctx, t, txChain.TXChain.ClientContext, recipientAddress.String(), expectedInitialBalance)
 	t.Log("First transaction processed with initial multiplier")
 
@@ -994,7 +995,7 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 
 	// Wait for second transaction to be processed with new multiplier
 	// Expected: 100 * 1.0 + 50 * 2.0 = 100 + 100 = 200
-	expectedFinalBalance := txChain.TXChain.NewCoin(sdk.NewInt(200_000000))
+	expectedFinalBalance := txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(200_000000))
 	awaitForBalance(ctx, t, txChain.TXChain.ClientContext, recipientAddress.String(), expectedFinalBalance)
 	t.Log("Second transaction processed with new multiplier (2.0)")
 
