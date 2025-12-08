@@ -1,4 +1,4 @@
-module github.com/CoreumFoundation/xrpl-bridge/build
+module github.com/tokenize-x/tx-xrpl-token-migrator/build
 
 go 1.22.0
 

@@ -16,8 +16,8 @@ import (
 	feemodeltypes "github.com/CoreumFoundation/coreum/v4/x/feemodel/types"
 )
 
-// CoreumChainConfig represents coreum chain config.
-type CoreumChainConfig struct {
+// TXChainConfig represents TX chain config.
+type TXChainConfig struct {
 	RPCAddress           string
 	GRPCAddress          string
 	FundingMnemonic      string
@@ -25,46 +25,46 @@ type CoreumChainConfig struct {
 	PreviousContractPath string
 }
 
-// CoreumChain is configured coreum chain.
-type CoreumChain struct {
-	cfg CoreumChainConfig
-	integration.CoreumChain
+// TXChain is configured TX chain.
+type TXChain struct {
+	cfg     TXChainConfig
+	TXChain integration.CoreumChain
 }
 
-// NewCoreumChain returns new instance of the coreum chain.
-func NewCoreumChain(cfg CoreumChainConfig) (CoreumChain, error) {
+// NewTXChain returns new instance of the TX blockchain.
+func NewTXChain(cfg TXChainConfig) (TXChain, error) {
 	queryCtx, queryCtxCancel := context.WithTimeout(
 		context.Background(),
 		getTestContextConfig().TimeoutConfig.RequestTimeout,
 	)
 	defer queryCtxCancel()
 
-	coreumGRPCClient, err := integration.DialGRPCClient(cfg.GRPCAddress)
+	txGRPCClient, err := integration.DialGRPCClient(cfg.GRPCAddress)
 	if err != nil {
-		return CoreumChain{}, errors.WithStack(err)
+		return TXChain{}, errors.WithStack(err)
 	}
-	coreumSettings := integration.QueryChainSettings(queryCtx, coreumGRPCClient)
+	txSettings := integration.QueryChainSettings(queryCtx, txGRPCClient)
 
-	coreumClientCtx := client.NewContext(getTestContextConfig(), app.ModuleBasics).
-		WithGRPCClient(coreumGRPCClient)
+	txClientCtx := client.NewContext(getTestContextConfig(), app.ModuleBasics).
+		WithGRPCClient(txGRPCClient)
 
-	coreumFeemodelParamsRes, err := feemodeltypes.
-		NewQueryClient(coreumClientCtx).
+	txFeemodelParamsRes, err := feemodeltypes.
+		NewQueryClient(txClientCtx).
 		Params(queryCtx, &feemodeltypes.QueryParamsRequest{})
 	if err != nil {
-		return CoreumChain{}, errors.WithStack(err)
+		return TXChain{}, errors.WithStack(err)
 	}
-	coreumSettings.GasPrice = coreumFeemodelParamsRes.Params.Model.InitialGasPrice
-	coreumSettings.CoinType = constant.CoinType
+	txSettings.GasPrice = txFeemodelParamsRes.Params.Model.InitialGasPrice
+	txSettings.CoinType = constant.CoinType
 
-	setSDKConfig(coreumSettings.AddressPrefix)
+	setSDKConfig(txSettings.AddressPrefix)
 
-	return CoreumChain{
-		cfg: coreumCfg,
-		CoreumChain: integration.NewCoreumChain(integration.NewChain(
-			coreumGRPCClient,
+	return TXChain{
+		cfg: txCfg,
+		TXChain: integration.NewCoreumChain(integration.NewChain(
+			txGRPCClient,
 			nil,
-			coreumSettings,
+			txSettings,
 			cfg.FundingMnemonic),
 			[]string{},
 		),
@@ -72,7 +72,7 @@ func NewCoreumChain(cfg CoreumChainConfig) (CoreumChain, error) {
 }
 
 // Config returns the chain config.
-func (c CoreumChain) Config() CoreumChainConfig {
+func (c TXChain) Config() TXChainConfig {
 	return c.cfg
 }
 

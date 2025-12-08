@@ -12,7 +12,7 @@ groups:
         severity: critical
 
     - alert: ContractLowBalance
-      expr: coreum_contract_balance{job="bridge"} < 50000000000
+      expr: tx_contract_balance{job="bridge"} < 50000000000
       for: 30s
       labels:
         severity: major
@@ -20,7 +20,7 @@ groups:
         description: 'Contract balance is less than 50 000, reported by `{{ $labels.instance }}`, actual value `{{ $value }}`'
 
     - alert: SenderLowBalance
-      expr: coreum_sender_balance{job="bridge"} < 10000000
+      expr: tx_sender_balance{job="bridge"} < 10000000
       for: 30s
       labels:
         severity: major
@@ -36,7 +36,7 @@ groups:
         description: 'Bridge errors count for the last 5min > 10'
 
     - alert: BridgePendingUnapprovedMaxReached
-      expr: coreum_pending_unapproved_transactions_count{job="bridge"} > 3
+      expr: tx_pending_unapproved_transactions_count{job="bridge"} > 3
       for: 5m
       labels:
         severity: major
@@ -44,7 +44,7 @@ groups:
         description: 'Bridge pending unapproved transactions count for the last 5min > 3'
 
     - alert: BridgePendingApprovedTransactionFound
-      expr: coreum_pending_approved_transactions_count{job="bridge"} > 0
+      expr: tx_pending_approved_transactions_count{job="bridge"} > 0
       for: 1m
       labels:
         severity: major

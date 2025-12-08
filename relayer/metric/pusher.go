@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 )
 
 const instanceNameLabel = "instance"

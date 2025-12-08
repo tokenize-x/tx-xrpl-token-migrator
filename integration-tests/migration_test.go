@@ -8,9 +8,9 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 
 	"github.com/CoreumFoundation/coreum/v4/testutil/integration"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
 )
 
 func TestContractMigration(t *testing.T) {
@@ -18,24 +18,24 @@ func TestContractMigration(t *testing.T) {
 	// contract
 	t.Parallel()
 
-	ctx, coreumChain := NewCoreumTestingContext(t)
+	ctx, txChain := NewTXTestingContext(t)
 	requireT := require.New(t)
 
-	wasmClient := wasmtypes.NewQueryClient(coreumChain.ClientContext)
+	wasmClient := wasmtypes.NewQueryClient(txChain.TXChain.ClientContext)
 
-	owner := coreumChain.GenAccount()
-	trustedAddress1 := coreumChain.GenAccount()
-	trustedAddress2 := coreumChain.GenAccount()
-	trustedAddress3 := coreumChain.GenAccount()
+	owner := txChain.TXChain.GenAccount()
+	trustedAddress1 := txChain.TXChain.GenAccount()
+	trustedAddress2 := txChain.TXChain.GenAccount()
+	trustedAddress3 := txChain.TXChain.GenAccount()
 
-	coreumChain.Faucet.FundAccounts(ctx, t,
-		integration.NewFundedAccount(owner, coreumChain.NewCoin(sdk.NewInt(5000000000))),
+	txChain.TXChain.Faucet.FundAccounts(ctx, t,
+		integration.NewFundedAccount(owner, txChain.TXChain.NewCoin(sdk.NewInt(5000000000))),
 	)
 
-	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil, ""), coreumChain.ClientContext)
+	contractClient := tx.NewContractClient(tx.DefaultContractClientConfig(nil, ""), txChain.TXChain.ClientContext)
 
 	t.Log("Deploying and instantiating the smart contract.")
-	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
+	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, tx.DeployAndInstantiateConfig{
 		Owner: owner.String(),
 		Admin: owner.String(),
 		TrustedAddresses: []string{

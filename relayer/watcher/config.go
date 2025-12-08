@@ -8,8 +8,8 @@ import (
 	"cosmossdk.io/errors"
 	"go.uber.org/zap"
 
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 )
 
 // ErrConfigChanged is returned when a configuration change is detected.
@@ -19,7 +19,7 @@ var ErrConfigChanged = errors.New("watcher", 1, "contract configuration has chan
 type ConfigWatcher struct {
 	cfg            Config
 	log            logger.Logger
-	contractClient *coreum.ContractClient
+	contractClient *tx.ContractClient
 
 	mu             sync.RWMutex
 	currentVersion uint64
@@ -29,7 +29,7 @@ type ConfigWatcher struct {
 func NewConfigWatcher(
 	cfg Config,
 	log logger.Logger,
-	contractClient *coreum.ContractClient,
+	contractClient *tx.ContractClient,
 ) *ConfigWatcher {
 	return &ConfigWatcher{
 		cfg:            cfg,

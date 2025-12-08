@@ -10,7 +10,7 @@ type Logger interface {
 	Error(msg string, fields ...zap.Field)
 }
 
-// MetricRecorder is coreum metric recorder interface.
+// MetricRecorder is TX metric recorder interface.
 type MetricRecorder interface {
 	IncrementError()
 }

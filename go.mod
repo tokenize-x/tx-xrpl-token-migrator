@@ -1,8 +1,8 @@
-module github.com/CoreumFoundation/xrpl-bridge
+module github.com/tokenize-x/tx-xrpl-token-migrator
 
 go 1.21
 
-// same replacements as in coreum
+// same replacements as in TX
 replace (
 	// cosmos keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0

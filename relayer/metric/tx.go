@@ -11,34 +11,34 @@ import (
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
 	"github.com/CoreumFoundation/coreum/v4/pkg/client"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 )
 
-// CoreumRecorder is metrics recorder required for the collector.
-type CoreumRecorder interface {
-	SetCoreumSenderBalance(v int64)
-	SetCoreumContractBalance(v int64)
-	SetCoreumPendingUnapprovedTransactionsCount(v int)
-	SetCoreumPendingApprovedTransactionsCount(v int)
+// TXRecorder is metrics recorder required for the collector.
+type TXRecorder interface {
+	SetTXSenderBalance(v int64)
+	SetTXContractBalance(v int64)
+	SetTXPendingUnapprovedTransactionsCount(v int)
+	SetTXPendingApprovedTransactionsCount(v int)
 }
 
 // ContractClient defines contract client interface.
 type ContractClient interface {
-	GetAllPendingTransactions(ctx context.Context) ([]coreum.PendingTransaction, []coreum.PendingTransaction, error)
+	GetAllPendingTransactions(ctx context.Context) ([]tx.PendingTransaction, []tx.PendingTransaction, error)
 }
 
-// CoreumRecorderConfig represents CoreumRecorder config.
-type CoreumRecorderConfig struct {
+// TXRecorderConfig represents TXRecorder config.
+type TXRecorderConfig struct {
 	ContractAddress sdk.AccAddress
 	SenderAddress   sdk.AccAddress
 	Denom           string
 	RepeatDelay     time.Duration
 }
 
-// DefaultCoreumRecorderConfig returns CoreumRecorder default config.
-func DefaultCoreumRecorderConfig(contractAddress, senderAddress sdk.AccAddress, denom string) CoreumRecorderConfig {
-	return CoreumRecorderConfig{
+// DefaultTXRecorderConfig returns TXRecorder default config.
+func DefaultTXRecorderConfig(contractAddress, senderAddress sdk.AccAddress, denom string) TXRecorderConfig {
+	return TXRecorderConfig{
 		ContractAddress: contractAddress,
 		SenderAddress:   senderAddress,
 		Denom:           denom,
@@ -46,24 +46,24 @@ func DefaultCoreumRecorderConfig(contractAddress, senderAddress sdk.AccAddress, 
 	}
 }
 
-// CoreumCollector is coreum metrics collector.
-type CoreumCollector struct {
-	cfg            CoreumRecorderConfig
+// TXCollector is TX metrics collector.
+type TXCollector struct {
+	cfg            TXRecorderConfig
 	log            logger.Logger
 	bankClient     banktypes.QueryClient
-	metricRecorder CoreumRecorder
+	metricRecorder TXRecorder
 	contractClient ContractClient
 }
 
-// NewCoreumCollector returns a new instance of the CoreumCollector.
-func NewCoreumCollector(
-	cfg CoreumRecorderConfig,
+// NewTXCollector returns a new instance of the TXCollector.
+func NewTXCollector(
+	cfg TXRecorderConfig,
 	log logger.Logger,
 	clientCtx client.Context,
-	metricRecorder CoreumRecorder,
+	metricRecorder TXRecorder,
 	contractClient ContractClient,
-) *CoreumCollector {
-	return &CoreumCollector{
+) *TXCollector {
+	return &TXCollector{
 		cfg:            cfg,
 		log:            log,
 		bankClient:     banktypes.NewQueryClient(clientCtx),
@@ -73,21 +73,21 @@ func NewCoreumCollector(
 }
 
 // CollectContractBalance collects contract balance metrics.
-func (c *CoreumCollector) CollectContractBalance(ctx context.Context) error {
-	return c.collectBalance(ctx, c.cfg.ContractAddress.String(), c.metricRecorder.SetCoreumContractBalance)
+func (c *TXCollector) CollectContractBalance(ctx context.Context) error {
+	return c.collectBalance(ctx, c.cfg.ContractAddress.String(), c.metricRecorder.SetTXContractBalance)
 }
 
 // CollectSenderBalance collects sender balance metrics.
-func (c *CoreumCollector) CollectSenderBalance(ctx context.Context) error {
-	return c.collectBalance(ctx, c.cfg.SenderAddress.String(), c.metricRecorder.SetCoreumSenderBalance)
+func (c *TXCollector) CollectSenderBalance(ctx context.Context) error {
+	return c.collectBalance(ctx, c.cfg.SenderAddress.String(), c.metricRecorder.SetTXSenderBalance)
 }
 
 // CollectPendingTransactions collects pending transactions metrics.
-func (c *CoreumCollector) CollectPendingTransactions(ctx context.Context) error {
+func (c *TXCollector) CollectPendingTransactions(ctx context.Context) error {
 	return c.collectPendingTransactions(ctx)
 }
 
-func (c *CoreumCollector) collectBalance(ctx context.Context, accAddress string, setter func(int64)) error {
+func (c *TXCollector) collectBalance(ctx context.Context, accAddress string, setter func(int64)) error {
 	err := retry.Do(ctx, c.cfg.RepeatDelay, func() error {
 		balanceRes, err := c.bankClient.Balance(ctx, &banktypes.QueryBalanceRequest{
 			Address: accAddress,
@@ -112,7 +112,7 @@ func (c *CoreumCollector) collectBalance(ctx context.Context, accAddress string,
 	panic(errors.Wrap(err, "unexpected error in collect balance"))
 }
 
-func (c *CoreumCollector) collectPendingTransactions(ctx context.Context) error {
+func (c *TXCollector) collectPendingTransactions(ctx context.Context) error {
 	err := retry.Do(ctx, c.cfg.RepeatDelay, func() error {
 		unapprovedTransactions, approvedTransactions, err := c.contractClient.GetAllPendingTransactions(ctx)
 		if err != nil {
@@ -120,8 +120,8 @@ func (c *CoreumCollector) collectPendingTransactions(ctx context.Context) error 
 			return retry.Retryable(errors.New("repeat metric collector"))
 		}
 
-		c.metricRecorder.SetCoreumPendingUnapprovedTransactionsCount(len(unapprovedTransactions))
-		c.metricRecorder.SetCoreumPendingApprovedTransactionsCount(len(approvedTransactions))
+		c.metricRecorder.SetTXPendingUnapprovedTransactionsCount(len(unapprovedTransactions))
+		c.metricRecorder.SetTXPendingApprovedTransactionsCount(len(approvedTransactions))
 
 		return retry.Retryable(errors.New("repeat metric collector"))
 	})

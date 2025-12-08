@@ -17,7 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 )
 
 // ******************** RPC transport objects ********************
@@ -181,23 +181,23 @@ func convertMarkerToZapFields(marker *PageMarker) []zap.Field {
 	return fields
 }
 
-func convertTxInfoToTransaction(tx baseTx, meta metaRes, ledgerIndex int64, validated bool) (Transaction, bool, error) {
-	memos, err := convertHexMemosToStrings(tx.Memos)
+func convertTxInfoToTransaction(txn baseTx, meta metaRes, ledgerIndex int64, validated bool) (Transaction, bool, error) {
+	memos, err := convertHexMemosToStrings(txn.Memos)
 	if err != nil {
 		return Transaction{}, false, err
 	}
 
 	return Transaction{
-		Account:           tx.Account,
-		Destination:       tx.Destination,
+		Account:           txn.Account,
+		Destination:       txn.Destination,
 		DeliveryAmount:    meta.DeliveredAmount,
 		Memos:             memos,
-		Hash:              tx.Hash,
-		TransactionType:   tx.TransactionType,
+		Hash:              txn.Hash,
+		TransactionType:   txn.TransactionType,
 		TransactionResult: meta.TransactionResult,
 		LedgerIndex:       ledgerIndex,
-		Sequence:          tx.Sequence,
-		Date:              convertXRPLDateToTime(tx.Date),
+		Sequence:          txn.Sequence,
+		Date:              convertXRPLDateToTime(txn.Date),
 		Validated:         validated,
 	}, true, nil
 }
@@ -335,7 +335,7 @@ func (c *RPCClient) GetAccountTransactions(
 	totalValidCount := 0
 	for _, txItem := range accountTxRPCRes.Result.Transactions {
 		latestIndex = txItem.Tx.LedgerIndex
-		tx, ok, err := convertTxInfoToTransaction(txItem.Tx.baseTx, txItem.Meta, txItem.Tx.LedgerIndex, txItem.Validated)
+		txn, ok, err := convertTxInfoToTransaction(txItem.Tx.baseTx, txItem.Meta, txItem.Tx.LedgerIndex, txItem.Validated)
 		if err != nil {
 			return nil, latestIndex - 1, err
 		}
@@ -348,7 +348,7 @@ func (c *RPCClient) GetAccountTransactions(
 		select {
 		case <-ctx.Done():
 			return nil, 0, errors.WithStack(ctx.Err())
-		case ch <- tx:
+		case ch <- txn:
 		}
 	}
 
@@ -395,7 +395,7 @@ func (c *RPCClient) GetTransactions(ctx context.Context, hashes []string) (map[s
 			if fetchErr != nil {
 				return
 			}
-			tx, ok, err := c.GetTransaction(ctx, hashToFetch)
+			txn, ok, err := c.GetTransaction(ctx, hashToFetch)
 			if err != nil {
 				fetchErr = err
 				return
@@ -405,7 +405,7 @@ func (c *RPCClient) GetTransactions(ctx context.Context, hashes []string) (map[s
 			}
 			mu.Lock()
 			defer mu.Unlock()
-			txs[hashToFetch] = tx
+			txs[hashToFetch] = txn
 		})
 	}
 	wg.Wait()
@@ -464,7 +464,7 @@ func (c *RPCClient) AccountInfo(ctx context.Context, acc rippledata.Account) (Ac
 // AutoFillTx add seq number and fee for the transaction.
 func (c *RPCClient) AutoFillTx(
 	ctx context.Context,
-	tx rippledata.Transaction,
+	txn rippledata.Transaction,
 	sender rippledata.Account,
 	txSignatureCount uint32,
 ) error {
@@ -473,7 +473,7 @@ func (c *RPCClient) AutoFillTx(
 		return err
 	}
 	// update base settings
-	base := tx.GetBase()
+	base := txn.GetBase()
 	if err != nil {
 		return err
 	}
@@ -489,10 +489,10 @@ func (c *RPCClient) AutoFillTx(
 }
 
 // SubmitAndAwaitSuccess submits tx a waits for its result, if result is not success returns an error.
-func (c *RPCClient) SubmitAndAwaitSuccess(ctx context.Context, tx rippledata.Transaction) error {
-	c.log.Info("Submitting XRPL transaction", zap.String("txHash", strings.ToUpper(tx.GetHash().String())))
+func (c *RPCClient) SubmitAndAwaitSuccess(ctx context.Context, txn rippledata.Transaction) error {
+	c.log.Info("Submitting XRPL transaction", zap.String("txHash", strings.ToUpper(txn.GetHash().String())))
 	// submit the transaction
-	res, err := c.Submit(ctx, tx)
+	res, err := c.Submit(ctx, txn)
 	if err != nil {
 		return err
 	}
@@ -504,12 +504,12 @@ func (c *RPCClient) SubmitAndAwaitSuccess(ctx context.Context, tx rippledata.Tra
 	defer retryCtxCancel()
 	c.log.Info(
 		"Transaction is submitted, waiting for tx to be accepted",
-		zap.String("txHash", strings.ToUpper(tx.GetHash().String())),
+		zap.String("txHash", strings.ToUpper(txn.GetHash().String())),
 	)
 	return retry.Do(retryCtx, 250*time.Millisecond, func() error {
 		reqCtx, reqCtxCancel := context.WithTimeout(ctx, 3*time.Second)
 		defer reqCtxCancel()
-		txRes, ok, err := c.GetTransaction(reqCtx, tx.GetHash().String())
+		txRes, ok, err := c.GetTransaction(reqCtx, txn.GetHash().String())
 		if err != nil {
 			return retry.Retryable(err)
 		}
@@ -524,8 +524,8 @@ func (c *RPCClient) SubmitAndAwaitSuccess(ctx context.Context, tx rippledata.Tra
 }
 
 // Submit submits a transaction to the RPC server.
-func (c *RPCClient) Submit(ctx context.Context, tx rippledata.Transaction) (SubmitResult, error) {
-	_, raw, err := rippledata.Raw(tx)
+func (c *RPCClient) Submit(ctx context.Context, txn rippledata.Transaction) (SubmitResult, error) {
+	_, raw, err := rippledata.Raw(txn)
 	if err != nil {
 		return SubmitResult{}, errors.Wrapf(err, "failed to convert transaction to raw data")
 	}

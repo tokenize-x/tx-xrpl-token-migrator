@@ -12,8 +12,8 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/http"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/metric"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/metric"
 )
 
 const (
@@ -48,11 +48,11 @@ func TestRPCClient_SubscribeAccountTransactions(t *testing.T) {
 			select {
 			case <-ctx.Done():
 				return
-			case tx, open := <-txsCh:
+			case txn, open := <-txsCh:
 				if !open {
 					return
 				}
-				txs = append(txs, tx)
+				txs = append(txs, txn)
 			}
 		}
 	}()
@@ -75,9 +75,9 @@ func TestRPCClient_SubscribeAccountTransactions(t *testing.T) {
 	case <-doneRead:
 	}
 	require.Len(t, txs, 1028)
-	for _, tx := range txs {
-		require.GreaterOrEqual(t, tx.LedgerIndex, startLedger, fmt.Sprintf("tx:%+v", tx))
-		require.LessOrEqual(t, tx.LedgerIndex, endLedger, fmt.Sprintf("tx:%+v", tx))
+	for _, txn := range txs {
+		require.GreaterOrEqual(t, txn.LedgerIndex, startLedger, fmt.Sprintf("tx:%+v", txn))
+		require.LessOrEqual(t, txn.LedgerIndex, endLedger, fmt.Sprintf("tx:%+v", txn))
 	}
 }
 
@@ -109,11 +109,11 @@ func TestRPCClient_GetAccountTransactions(t *testing.T) {
 			select {
 			case <-ctx.Done():
 				return
-			case tx, open := <-txsCh:
+			case txn, open := <-txsCh:
 				if !open {
 					return
 				}
-				txs = append(txs, tx)
+				txs = append(txs, txn)
 			}
 		}
 	}()
@@ -136,11 +136,11 @@ func TestRPCClient_GetAccountTransactions(t *testing.T) {
 	}
 
 	require.Len(t, txs, 100)
-	tx := txs[0]
+	txn := txs[0]
 
 	expectedTime, err := time.Parse(time.DateTime, "2023-06-01 16:00:02")
 	require.NoError(t, err)
-	expectedTx := Transaction{
+	expectedTxn := Transaction{
 		Account:     "rL54wzknUXxqiC8Tzs6mzLi3QJTtX5uVK6",
 		Destination: "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
 		DeliveryAmount: rippledata.Amount{
@@ -161,21 +161,21 @@ func TestRPCClient_GetAccountTransactions(t *testing.T) {
 		Validated:         true,
 	}
 
-	expectedTxBytes, err := json.Marshal(expectedTx)
+	expectedTxnBytes, err := json.Marshal(expectedTxn)
 	require.NoError(t, err)
 
-	txBytes, err := json.Marshal(tx)
+	txnBytes, err := json.Marshal(txn)
 	require.NoError(t, err)
-	require.Equal(t, string(expectedTxBytes), string(txBytes))
+	require.Equal(t, string(expectedTxnBytes), string(txnBytes))
 
 	// fetch same transaction by its hash
-	txsMap, err := rpcClient.GetTransactions(ctx, []string{expectedTx.Hash})
+	txsMap, err := rpcClient.GetTransactions(ctx, []string{expectedTxn.Hash})
 	require.NoError(t, err)
 	require.Len(t, txsMap, 1)
-	tx = txsMap[expectedTx.Hash]
-	txBytes, err = json.Marshal(tx)
+	txn = txsMap[expectedTxn.Hash]
+	txnBytes, err = json.Marshal(txn)
 	require.NoError(t, err)
-	require.Equal(t, string(expectedTxBytes), string(txBytes))
+	require.Equal(t, string(expectedTxnBytes), string(txnBytes))
 }
 
 func TestRPCClient_RPCErrorHandling(t *testing.T) {
@@ -206,11 +206,11 @@ func TestRPCClient_RPCErrorHandling(t *testing.T) {
 			select {
 			case <-ctx.Done():
 				return
-			case tx, open := <-txsCh:
+			case txn, open := <-txsCh:
 				if !open {
 					return
 				}
-				txs = append(txs, tx)
+				txs = append(txs, txn)
 			}
 		}
 	}()

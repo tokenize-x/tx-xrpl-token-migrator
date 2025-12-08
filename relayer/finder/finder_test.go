@@ -17,9 +17,9 @@ import (
 
 	"github.com/CoreumFoundation/coreum/v4/pkg/config"
 	"github.com/CoreumFoundation/coreum/v4/pkg/config/constant"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/xrpl"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/metric"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/xrpl"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/metric"
 )
 
 var (
@@ -47,11 +47,11 @@ func TestBuildPendingTransaction(t *testing.T) {
 		Multiplier:                 "1.0",
 		XRPLHistoryScanStartLedger: 8000,
 		XRPLMemoSuffix:             "=cored",
-		CoreumDenom:                "ucore",
-		CoreumDecimals:             6,
+		TXDenom:                    "ucore",
+		TXDecimals:                 6,
 	}
 
-	coreumAddress := sdk.AccAddress(ed25519.GenPrivKey().PubKey().Address())
+	txAddress := sdk.AccAddress(ed25519.GenPrivKey().PubKey().Address())
 
 	validXRPLTransaction := xrpl.Transaction{
 		DeliveryAmount: rippledata.Amount{
@@ -61,7 +61,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 		},
 		Memos: []string{
 			fmt.Sprintf("none-address%s", cfg.XRPLMemoSuffix),
-			fmt.Sprintf("%s%s", coreumAddress, cfg.XRPLMemoSuffix),
+			fmt.Sprintf("%s%s", txAddress, cfg.XRPLMemoSuffix),
 			"any-string",
 		},
 		Hash:              "xrpl-tx-hash",
@@ -75,7 +75,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 		name        string
 		xrplTxFunc  func(xrpl.Transaction) xrpl.Transaction
 		wantMatches bool
-		want        PendingCoreumSendTransaction
+		want        PendingTXSendTransaction
 	}{
 		{
 			name: "positive",
@@ -83,10 +83,10 @@ func TestBuildPendingTransaction(t *testing.T) {
 				return tx
 			},
 			wantMatches: true,
-			want: PendingCoreumSendTransaction{
-				CoreumDestination: coreumAddress,
-				CoreumAmount:      sdk.NewInt64Coin(cfg.CoreumDenom, 1234567),
-				XRPLTxHash:        "xrpl-tx-hash",
+			want: PendingTXSendTransaction{
+				TXDestination: txAddress,
+				TXAmount:      sdk.NewInt64Coin(cfg.TXDenom, 1234567),
+				XRPLTxHash:    "xrpl-tx-hash",
 			},
 		},
 		{
@@ -96,7 +96,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 				return tx
 			},
 			wantMatches: false,
-			want:        PendingCoreumSendTransaction{},
+			want:        PendingTXSendTransaction{},
 		},
 		{
 			name: "negative_invalid_tx_validated",
@@ -105,7 +105,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 				return tx
 			},
 			wantMatches: false,
-			want:        PendingCoreumSendTransaction{},
+			want:        PendingTXSendTransaction{},
 		},
 		{
 			name: "negative_invalid_tx_result",
@@ -114,7 +114,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 				return tx
 			},
 			wantMatches: false,
-			want:        PendingCoreumSendTransaction{},
+			want:        PendingTXSendTransaction{},
 		},
 		{
 			name: "negative_invalid_tx_type",
@@ -123,7 +123,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 				return tx
 			},
 			wantMatches: false,
-			want:        PendingCoreumSendTransaction{},
+			want:        PendingTXSendTransaction{},
 		},
 		{
 			name: "invalid_memo",
@@ -132,7 +132,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 				return tx
 			},
 			wantMatches: false,
-			want:        PendingCoreumSendTransaction{},
+			want:        PendingTXSendTransaction{},
 		},
 		{
 			name: "invalid_address_prefx_memo",
@@ -141,7 +141,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 				return tx
 			},
 			wantMatches: false,
-			want:        PendingCoreumSendTransaction{},
+			want:        PendingTXSendTransaction{},
 		},
 		{
 			name: "invalid_currency",
@@ -150,7 +150,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 				return tx
 			},
 			wantMatches: false,
-			want:        PendingCoreumSendTransaction{},
+			want:        PendingTXSendTransaction{},
 		},
 		{
 			name: "invalid_issuer",
@@ -159,7 +159,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 				return tx
 			},
 			wantMatches: false,
-			want:        PendingCoreumSendTransaction{},
+			want:        PendingTXSendTransaction{},
 		},
 		{
 			name: "zero_amount",
@@ -168,7 +168,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 				return tx
 			},
 			wantMatches: false,
-			want:        PendingCoreumSendTransaction{},
+			want:        PendingTXSendTransaction{},
 		},
 		{
 			name: "negative_empty",
@@ -176,7 +176,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 				return xrpl.Transaction{}
 			},
 			wantMatches: false,
-			want:        PendingCoreumSendTransaction{},
+			want:        PendingTXSendTransaction{},
 		},
 	}
 	for _, tt := range tests {
@@ -197,7 +197,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 	}
 }
 
-func TestFinder_convertXRPLAmountToCoreumCoin(t *testing.T) {
+func TestFinder_convertXRPLAmountToTXCoin(t *testing.T) {
 	const denom = "ucore"
 	tests := []struct {
 		name       string
@@ -307,13 +307,13 @@ func TestFinder_convertXRPLAmountToCoreumCoin(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			f := &Finder{
 				cfg: Config{
-					CoreumDenom:    denom,
-					CoreumDecimals: 6,
-					Multiplier:     tt.multiplier,
+					TXDenom:    denom,
+					TXDecimals: 6,
+					Multiplier: tt.multiplier,
 				},
 			}
-			if got := f.convertXRPLAmountToCoreumCoin(tt.xrplAmount); !reflect.DeepEqual(got.String(), tt.wantAmount.String()) {
-				t.Errorf("convertXRPLAmountToCoreumCoin() = %v, want %v", got.String(), tt.wantAmount.String())
+			if got := f.convertXRPLAmountToTXCoin(tt.xrplAmount); !reflect.DeepEqual(got.String(), tt.wantAmount.String()) {
+				t.Errorf("convertXRPLAmountToTXCoin() = %v, want %v", got.String(), tt.wantAmount.String())
 			}
 		})
 	}
