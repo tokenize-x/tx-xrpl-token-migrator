@@ -6,6 +6,9 @@ import (
 	"strings"
 
 	sdkmath "cosmossdk.io/math"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/testutil/event"
+	feemodeltypes "github.com/CoreumFoundation/coreum/v5/x/feemodel/types"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -18,9 +21,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 
-	"github.com/CoreumFoundation/coreum/v5/pkg/client"
-	"github.com/CoreumFoundation/coreum/v5/testutil/event"
-	feemodeltypes "github.com/CoreumFoundation/coreum/v5/x/feemodel/types"
 	contractembed "github.com/tokenize-x/tx-xrpl-token-migrator/contract"
 )
 

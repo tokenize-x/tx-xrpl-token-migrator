@@ -10,6 +10,9 @@ import (
 	"time"
 
 	sdkmath "cosmossdk.io/math"
+	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -21,9 +24,6 @@ import (
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/exp/slices"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
-	"github.com/CoreumFoundation/coreum/v5/pkg/client"
-	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/service"
 )

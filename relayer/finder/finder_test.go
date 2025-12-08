@@ -8,6 +8,8 @@ import (
 	"time"
 
 	sdkmath "cosmossdk.io/math"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config/constant"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/golang/mock/gomock"
@@ -15,8 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/CoreumFoundation/coreum/v5/pkg/config"
-	"github.com/CoreumFoundation/coreum/v5/pkg/config/constant"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/xrpl"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/metric"

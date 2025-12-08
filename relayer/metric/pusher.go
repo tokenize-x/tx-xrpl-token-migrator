@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/push"
 	"go.uber.org/zap"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 )
 

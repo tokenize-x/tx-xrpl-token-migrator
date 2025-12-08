@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/CoreumFoundation/coreum-tools/pkg/http"
 	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/http"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/metric"
 )
