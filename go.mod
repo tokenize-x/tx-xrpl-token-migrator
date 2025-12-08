@@ -2,8 +2,6 @@ module github.com/tokenize-x/tx-xrpl-token-migrator
 
 go 1.23.3
 
-toolchain go1.24.2
-
 // same replacements as in TX
 replace (
 	// cosmos keyring
