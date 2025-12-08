@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -153,7 +152,7 @@ func VersionCmd(ctx context.Context) *cobra.Command {
 		Use:   "version",
 		Short: "Print the relayer version.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger.Get(ctx).Info(fmt.Sprintf("version:%s", BuildVersion))
+			logger.Get(ctx).Info("version:" + BuildVersion)
 			return nil
 		},
 	}

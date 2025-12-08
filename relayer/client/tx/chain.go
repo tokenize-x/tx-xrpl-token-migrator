@@ -97,7 +97,6 @@ func (c *ChainClient) queryTransactionsByEvents(
 		c.log.Info("Fetched page ", zap.String("Page", fmt.Sprintf("%d/%d", pageToFetch, pagesTotal)))
 		reqCtxCancel()
 		for _, txn := range res.Txs {
-			txn := txn
 			timestamp, err := time.ParseInLocation("2006-01-02 15:04:05.999999999 -0700 MST", txn.Timestamp, time.UTC)
 			if err != nil {
 				return nil, err
@@ -151,7 +150,6 @@ func (c *ChainClient) queryTxsByEvents(
 	errs := make([]error, 0)
 	wg.Add(len(txs))
 	for _, txn := range txs {
-		txn := txn
 		c.workerPool.Submit(func() {
 			defer wg.Done()
 			block, err := node.Block(ctx, &txn.Height)

@@ -801,7 +801,7 @@ func TestWASMContractQueryPagination(t *testing.T) {
 	coinsToSendForPagination := chain.TXChain.NewCoin(sdkmath.NewInt(1))
 	sendExecuteReqBatch := make([]tx.ThresholdBankSendRequest, 0, transactionsCount)
 	t.Logf("Creating %d pending tansactions from first trusted address.", transactionsCount)
-	for i := 0; i < transactionsCount; i++ {
+	for i := range transactionsCount {
 		sendExecuteReqBatch = append(sendExecuteReqBatch, tx.ThresholdBankSendRequest{
 			ID:        fmt.Sprintf("hash1-tx%d", i),
 			Amount:    coinsToSendForPagination,

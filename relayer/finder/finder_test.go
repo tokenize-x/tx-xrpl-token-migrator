@@ -59,7 +59,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 			Value:    convertStringToRippleValue(t, "1.23456789", false),
 		},
 		Memos: []string{
-			fmt.Sprintf("none-address%s", cfg.XRPLMemoSuffix),
+			"none-address" + cfg.XRPLMemoSuffix,
 			fmt.Sprintf("%s%s", txAddress, cfg.XRPLMemoSuffix),
 			"any-string",
 		},
@@ -136,7 +136,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 		{
 			name: "invalid_address_prefx_memo",
 			xrplTxFunc: func(tx xrpl.Transaction) xrpl.Transaction {
-				tx.Memos = []string{fmt.Sprintf("devcore17l2fxde2662s2p8pgmzu04jcvflnnlq4l30hff%s", cfg.XRPLMemoSuffix)}
+				tx.Memos = []string{"devcore17l2fxde2662s2p8pgmzu04jcvflnnlq4l30hff" + cfg.XRPLMemoSuffix}
 				return tx
 			},
 			wantMatches: false,
@@ -179,7 +179,6 @@ func TestBuildPendingTransaction(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -302,7 +301,6 @@ func TestFinder_convertXRPLAmountToTXCoin(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			f := &Finder{
 				cfg: Config{

@@ -479,7 +479,7 @@ func buildAndStartDevEnv(
 	t.Log("Building and starting services.")
 	instances := lo.Map(
 		[]sdk.AccAddress{trustedAddress1, trustedAddress2, trustedAddress3},
-		func(trustedAddress sdk.AccAddress, index int) *service.Services {
+		func(trustedAddress sdk.AccAddress, index int) *service.Services { //nolint:contextcheck // buildTestingServices intentionally uses context.Background()
 			return buildTestingServices(
 				t,
 				zaptest.NewLogger(t),
@@ -510,7 +510,7 @@ func buildAndStartDevEnv(
 		}(instance)
 	}
 
-	t.Cleanup(func() {
+	t.Cleanup(func() { //nolint:contextcheck // cleanup creates its own context for audit
 		cancel()
 		wg.Wait()
 		requireT.Empty(executionErrors)

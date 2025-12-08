@@ -3,7 +3,6 @@ package xrpl
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"testing"
 	"time"
 
@@ -75,8 +74,8 @@ func TestRPCClient_SubscribeAccountTransactions(t *testing.T) {
 	}
 	require.Len(t, txs, 1028)
 	for _, txn := range txs {
-		require.GreaterOrEqual(t, txn.LedgerIndex, startLedger, fmt.Sprintf("tx:%+v", txn))
-		require.LessOrEqual(t, txn.LedgerIndex, endLedger, fmt.Sprintf("tx:%+v", txn))
+		require.GreaterOrEqual(t, txn.LedgerIndex, startLedger, "tx:%+v", txn)
+		require.LessOrEqual(t, txn.LedgerIndex, endLedger, "tx:%+v", txn)
 	}
 }
 
@@ -239,7 +238,7 @@ func TestRPCClient_GetCurrentLedger(t *testing.T) {
 
 	currentLedger, err := rpcClient.GetCurrentLedger(ctx)
 	require.NoError(t, err)
-	require.Greater(t, currentLedger, int64(0))
+	require.Positive(t, currentLedger)
 }
 
 func convertStringToRippleCurrency(t *testing.T, s string) rippledata.Currency {

@@ -209,7 +209,7 @@ func (a *Auditor) analyzeContractCallDiscrepancies(contractCallReport ContractCa
 			discrepancies = append(discrepancies, Discrepancy{
 				TXTx:        thresholdBankSendRequest.Tx,
 				Type:        DiscrepancyTypeContractDoubleSpend,
-				Description: fmt.Sprintf("Found duplicated XRPL tx hash in processed transactions, hash:%s", xrplTxHash),
+				Description: "Found duplicated XRPL tx hash in processed transactions, hash:" + xrplTxHash,
 			})
 		}
 		foundTxHashes[xrplTxHash] = struct{}{}
@@ -278,7 +278,7 @@ func (a *Auditor) analiseXrplToTXDiscrepancies(
 			discrepancies = append(discrepancies, Discrepancy{
 				TXTx:        thresholdBankSendRequest.Tx,
 				Type:        DiscrepancyTypeOrphanTXTx,
-				Description: fmt.Sprintf("XRPL tx not found, hash:%s", xrplTxHash),
+				Description: "XRPL tx not found, hash:" + xrplTxHash,
 			})
 			continue
 		}
