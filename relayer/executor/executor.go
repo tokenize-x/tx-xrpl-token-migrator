@@ -4,13 +4,14 @@ import (
 	"context"
 	"time"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/finder"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 	"go.uber.org/zap"
+
+	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
 )
 
 // ContractClient is TX contract client interface.

@@ -11,12 +11,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
 	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
 	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 	"go.uber.org/zap"
+
+	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
 )
 
 // ******************** RPC transport objects ********************
@@ -180,7 +181,9 @@ func convertMarkerToZapFields(marker *PageMarker) []zap.Field {
 	return fields
 }
 
-func convertTxInfoToTransaction(txn baseTx, meta metaRes, ledgerIndex int64, validated bool) (Transaction, bool, error) {
+func convertTxInfoToTransaction(
+	txn baseTx, meta metaRes, ledgerIndex int64, validated bool,
+) (Transaction, bool, error) {
 	memos, err := convertHexMemosToStrings(txn.Memos)
 	if err != nil {
 		return Transaction{}, false, err
@@ -473,9 +476,6 @@ func (c *RPCClient) AutoFillTx(
 	}
 	// update base settings
 	base := txn.GetBase()
-	if err != nil {
-		return err
-	}
 	fee, err := c.calculateFee(txSignatureCount, DefaultXRPLBaseFee)
 	if err != nil {
 		return err

@@ -9,9 +9,6 @@ import (
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
-	"github.com/CoreumFoundation/coreum/v5/pkg/client"
-	"github.com/CoreumFoundation/coreum/v5/testutil/event"
-	integrationtests "github.com/CoreumFoundation/coreum/v5/testutil/integration"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdkclient "github.com/cosmos/cosmos-sdk/client"
 	sdkmultisig "github.com/cosmos/cosmos-sdk/crypto/keys/multisig"
@@ -24,6 +21,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"golang.org/x/exp/slices"
+
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/testutil/event"
+	integrationtests "github.com/CoreumFoundation/coreum/v5/testutil/integration"
 )
 
 const (

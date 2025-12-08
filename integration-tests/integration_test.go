@@ -10,9 +10,6 @@ import (
 	"time"
 
 	sdkmath "cosmossdk.io/math"
-	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
-	"github.com/CoreumFoundation/coreum/v5/pkg/client"
-	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -25,6 +22,10 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/exp/slices"
+
+	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 )
 
 type payment struct {
@@ -479,7 +480,8 @@ func buildAndStartDevEnv(
 	t.Log("Building and starting services.")
 	instances := lo.Map(
 		[]sdk.AccAddress{trustedAddress1, trustedAddress2, trustedAddress3},
-		func(trustedAddress sdk.AccAddress, index int) *service.Services { //nolint:contextcheck // buildTestingServices intentionally uses context.Background()
+		//nolint:contextcheck // buildTestingServices intentionally uses context.Background()
+		func(trustedAddress sdk.AccAddress, index int) *service.Services {
 			return buildTestingServices(
 				t,
 				zaptest.NewLogger(t),
@@ -913,7 +915,9 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 
 		go func(cfg service.Config) {
 			// Use the actual RunExecutorWithAutoRestart function
-			relayerErrCh <- service.RunExecutorWithAutoRestart(relayerCtx, cfg, txChain.TXChain.ClientContext.Keyring(), zapLogger)
+			err := service.RunExecutorWithAutoRestart(
+				relayerCtx, cfg, txChain.TXChain.ClientContext.Keyring(), zapLogger)
+			relayerErrCh <- err
 		}(serviceCfg)
 	}
 

@@ -4,11 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
 	"github.com/pkg/errors"
 	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 	"go.uber.org/zap"
+
+	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
 )
 
 // RPCTxProvider is RPC transactions provider.

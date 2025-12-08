@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/http"
 	"github.com/stretchr/testify/require"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/metric"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/CoreumFoundation/coreum-tools/pkg/http"
 )
 
 func TestTxScanner_Scan(t *testing.T) {

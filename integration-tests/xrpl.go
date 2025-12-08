@@ -9,9 +9,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/http"
-	txconfig "github.com/CoreumFoundation/coreum/v5/pkg/config"
-	txkeyring "github.com/CoreumFoundation/coreum/v5/pkg/keyring"
 	"github.com/CosmWasm/wasmd/x/wasm"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -22,6 +19,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/xrpl"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
+
+	"github.com/CoreumFoundation/coreum-tools/pkg/http"
+	txconfig "github.com/CoreumFoundation/coreum/v5/pkg/config"
+	txkeyring "github.com/CoreumFoundation/coreum/v5/pkg/keyring"
 )
 
 const (

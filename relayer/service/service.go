@@ -7,11 +7,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/http"
-	"github.com/CoreumFoundation/coreum-tools/pkg/parallel"
-	"github.com/CoreumFoundation/coreum/v5/pkg/client"
-	"github.com/CoreumFoundation/coreum/v5/pkg/config"
-	"github.com/CoreumFoundation/coreum/v5/pkg/config/constant"
 	"github.com/CosmWasm/wasmd/x/wasm"
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -34,6 +29,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/CoreumFoundation/coreum-tools/pkg/http"
+	"github.com/CoreumFoundation/coreum-tools/pkg/parallel"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config/constant"
 )
 
 // XRPLTokenConfig is XRPL token config.

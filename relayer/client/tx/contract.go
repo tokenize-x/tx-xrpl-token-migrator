@@ -6,9 +6,6 @@ import (
 	"strings"
 
 	sdkmath "cosmossdk.io/math"
-	"github.com/CoreumFoundation/coreum/v5/pkg/client"
-	"github.com/CoreumFoundation/coreum/v5/testutil/event"
-	feemodeltypes "github.com/CoreumFoundation/coreum/v5/x/feemodel/types"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -21,6 +18,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 	contractembed "github.com/tokenize-x/tx-xrpl-token-migrator/contract"
+
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/testutil/event"
+	feemodeltypes "github.com/CoreumFoundation/coreum/v5/x/feemodel/types"
 )
 
 // ExecMethod is contract exec method.
@@ -535,8 +536,8 @@ func (c *ContractClient) EstimateExecuteMessages(
 	if err != nil {
 		return sdk.Coin{}, 0, err
 	}
-	amount := feemodelParamsRes.Params.Model.InitialGasPrice.Mul(sdkmath.LegacyNewDecFromInt(sdkmath.NewIntFromUint64(gas))).
-		TruncateInt()
+	gasInt := sdkmath.LegacyNewDecFromInt(sdkmath.NewIntFromUint64(gas))
+	amount := feemodelParamsRes.Params.Model.InitialGasPrice.Mul(gasInt).TruncateInt()
 
 	return sdk.NewCoin(c.cfg.TXDenom, amount), gas, nil
 }
