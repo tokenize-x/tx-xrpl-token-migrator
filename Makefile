@@ -2,7 +2,7 @@ IMPORT_PREFIX=github.com/CoreumFoundation
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 CONTRACT_DIR:=$(ROOT_DIR)/contract
 SCAN_FILES := $(shell find . -type f -name '*.go' -not -name '*mock.go' -not -name '*_gen.go' -not -path "*/vendor/*")
-TX_BUILDER:=$(ROOT_DIR)/../../CoreumFoundation/coreum/bin/coreum-builder
+TX_BUILDER:=$(ROOT_DIR)/../coreum/bin/coreum-builder
 BUILDER = ./bin/tx-xrpl-token-migrator-builder
 
 ###############################################################################
