@@ -119,7 +119,7 @@ func NewServices(
 	if useInMemoryKr {
 		keyInfo, err := kr.KeyByAddress(senderAddress)
 		if err != nil {
-			return nil, errors.Wrapf(err, fmt.Sprintf("failed to get key from keyring for address:%s", cfg.TXSenderAddress))
+			return nil, errors.Wrapf(err, "failed to get key from keyring for address:%s", cfg.TXSenderAddress)
 		}
 		pass := uuid.NewString()
 		armor, err := kr.ExportPrivKeyArmor(keyInfo.Name, pass)
