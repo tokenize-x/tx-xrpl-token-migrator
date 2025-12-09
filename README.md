@@ -139,7 +139,7 @@ chmod +x run-xrpl-bridge-relayer.sh
 ```
 
 You will be asked to `Enter keyring password`, enter it and press `Enter`.
-If you don't see errors after the start, it's conferred correctly. Stop it.
+If you don't see errors after the start, it's configured correctly. Stop it.
 
 #### Add systemctrl service (prev step is required)
 

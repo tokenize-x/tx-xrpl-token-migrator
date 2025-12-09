@@ -276,7 +276,7 @@ func NewServices(
 // services when a configuration change is detected.
 func RunExecutorWithAutoRestart(ctx context.Context, cfg Config, kr keyring.Keyring, zapLogger *zap.Logger) error {
 	for {
-		// Check if context is already cancelled before creating services
+		// Check if context is already canceled before creating services
 		if err := ctx.Err(); err != nil {
 			return err
 		}
@@ -308,16 +308,16 @@ func RunExecutorWithAutoRestart(ctx context.Context, cfg Config, kr keyring.Keyr
 
 		// Handle the result
 		// Config change detected - restart services
-		// parallel.Run has already cancelled all tasks when it returns
+		// parallel.Run has already canceled all tasks when it returns
 		if err != nil && errors.Is(err, watcher.ErrConfigChanged) {
 			services.Logger.Info("Config changed, restarting services")
 			// Services will be recreated on next iteration
 			continue
 		}
 
-		// Context cancelled - graceful shutdown
+		// Context canceled - graceful shutdown
 		if err != nil && errors.Is(err, context.Canceled) {
-			services.Logger.Info("Context cancelled, shutting down")
+			services.Logger.Info("Context canceled, shutting down")
 			return nil
 		}
 

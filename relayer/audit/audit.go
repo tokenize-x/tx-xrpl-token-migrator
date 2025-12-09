@@ -83,7 +83,7 @@ type ContractCallReport struct {
 	UpdateMaxAmountRequests   []ContractCallTx[tx.UpdateMaxAmountRequest]
 }
 
-// NewContractCallReport creates initialised ContractCallReport.
+// NewContractCallReport creates initialized ContractCallReport.
 func NewContractCallReport() *ContractCallReport {
 	return &ContractCallReport{
 		Txs:                       make([]*sdk.TxResponse, 0),
@@ -144,7 +144,7 @@ func NewAuditor(
 	}
 }
 
-// Audit analyses the bridge transactions and returns discrepancy results.
+// Audit analyzes the bridge transactions and returns discrepancy results.
 func (a *Auditor) Audit(ctx context.Context) ([]Discrepancy, error) {
 	contractCallReport, err := a.buildContractCallReport(ctx)
 	if err != nil {
@@ -164,7 +164,7 @@ func (a *Auditor) Audit(ctx context.Context) ([]Discrepancy, error) {
 		return nil, err
 	}
 	a.log.Info("Fetched xrpl transactions.", zap.Int("count", len(xrplTxHashes)))
-	discrepancies = append(discrepancies, a.analiseXrplToTXDiscrepancies(contractCallReport, xrplTxs)...)
+	discrepancies = append(discrepancies, a.analyzeXrplToTXDiscrepancies(contractCallReport, xrplTxs)...)
 
 	discrepancies = lo.Filter(discrepancies, func(d Discrepancy, _ int) bool {
 		return d.Type != KnownDiscrepancies[d.XRPLTx.Hash]
@@ -174,12 +174,12 @@ func (a *Auditor) Audit(ctx context.Context) ([]Discrepancy, error) {
 }
 
 func (a *Auditor) buildContractCallReport(ctx context.Context) (ContractCallReport, error) {
-	a.log.Info("Fetching contact transactions to analise.")
+	a.log.Info("Fetching contact transactions to analyze.")
 	txs, err := a.txChainClient.GetSpendingTransactions(ctx, a.cfg.ContractAddress, a.cfg.StartDate)
 	if err != nil {
 		return ContractCallReport{}, err
 	}
-	a.log.Info("Fetched contact transactions to analise.", zap.Int("count", len(txs)))
+	a.log.Info("Fetched contact transactions to analyze.", zap.Int("count", len(txs)))
 
 	report := NewContractCallReport()
 	for _, txAny := range txs {
@@ -266,7 +266,7 @@ func (a *Auditor) analyzeContractCallDiscrepancies(contractCallReport ContractCa
 	return discrepancies, nil
 }
 
-func (a *Auditor) analiseXrplToTXDiscrepancies(
+func (a *Auditor) analyzeXrplToTXDiscrepancies(
 	contractCallReport ContractCallReport,
 	xrplTransactions map[string]xrpl.Transaction,
 ) []Discrepancy {

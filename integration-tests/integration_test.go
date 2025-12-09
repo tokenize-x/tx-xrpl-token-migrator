@@ -560,7 +560,7 @@ func buildTestingServices(
 		XRPLRecentScanIndexesBack:     30_000,
 		XRPLRecentScanSkipLastIndexes: 0,
 		XRPLMemoSuffix:                xrplTestMemoSuffix,
-		// we don't use the chain ctx here intentionally to fully check the client initialisation
+		// we don't use the chain ctx here intentionally to fully check the client initialization
 		TXRPCURL:          txRPCURL,
 		TXGRPCURL:         txGRPCURL,
 		TXChainID:         chainID,

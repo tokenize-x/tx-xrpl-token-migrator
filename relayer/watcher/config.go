@@ -57,7 +57,7 @@ func (w *ConfigWatcher) Initialize(ctx context.Context) error {
 }
 
 // Watch polls for configuration changes and returns ErrConfigChanged when detected.
-// This function blocks until a config change is detected or context is cancelled.
+// This function blocks until a config change is detected or context is canceled.
 func (w *ConfigWatcher) Watch(ctx context.Context) error {
 	w.log.Info("Starting config watcher")
 
