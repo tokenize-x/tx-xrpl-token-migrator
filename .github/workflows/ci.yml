@@ -46,6 +46,10 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.23.3'
+      - name: Clear crust and builder cache
+        run: |
+          rm -rf ~/.cache/crust
+          rm -rf xrpl-bridge/bin/.cache
       - name: Run ${{ matrix.ci_step }}
         working-directory: ./xrpl-bridge
         run: ${{ matrix.command }}
