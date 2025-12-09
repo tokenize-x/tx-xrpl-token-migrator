@@ -1,3 +1,8 @@
+// TODO(team-discussion): Metric recorder has been updated during the rename from Coreum to TX.
+// Review the following changes that may affect existing monitoring:
+// - Metric names changed from coreum_* to tx_* prefix
+// - Ensure Grafana dashboards and Prometheus alerts are updated to use new metric names
+// - Existing metric consumers may need to be reconfigured
 package metric
 
 import (

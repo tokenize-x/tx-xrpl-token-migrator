@@ -1,3 +1,6 @@
+# TODO(team-discussion): Alert rules have been updated during the rename from Coreum to TX.
+# Verify that alert thresholds and metric names are still valid for existing deployments.
+# Metric names changed: coreum_* -> tx_* (e.g., tx_contract_balance, tx_sender_balance)
 groups:
   - name: Bridge Monitoring
     rules:

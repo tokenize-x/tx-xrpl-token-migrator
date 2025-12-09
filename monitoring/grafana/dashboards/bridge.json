@@ -1,4 +1,5 @@
 {
+  "__TODO_team_discussion": "Dashboard updated during rename from Coreum to TX. Metric names changed from coreum_* to tx_*. Verify existing Grafana deployments are updated.",
   "annotations": {
     "list": [
       {
