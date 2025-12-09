@@ -1,6 +1,6 @@
 # XRPL bridge
 
-The XRPL bridge is one way XRPL to tx bridge.
+The XRPL bridge is one way XRPL to TX bridge.
 
 ## Build
 
@@ -81,9 +81,9 @@ export TX_GRPC_URL="{GRPC URL of TX node}"
 
 ```bash
 export XRPL_RPC_URL="{RPC URL of XRPL node}"
-export TX_CHAIN_ID={tx chain ID}"
+export TX_CHAIN_ID={TX chain ID}"
 export TX_CONTRACT_ADDRESS="{Contract address}"
-export TX_GRPC_URL="{GRPC URL of tx node}"
+export TX_GRPC_URL="{GRPC URL of TX node}"
 export PROMETHEUS_INSTANCE_NAME="{Unique name of your instance}"
 export PROMETHEUS_USERNAME="{Prometheus username}"
 export PROMETHEUS_PASSWORD="{Prometheus password}"
@@ -229,9 +229,9 @@ them.
 * Set variables
 
 ```bash
-export TX_CHAIN_ID={tx chain ID}"
+export TX_CHAIN_ID={TX chain ID}"
 export TX_CONTRACT_ADDRESS="{Contract address}"
-export TX_GRPC_URL="{GRPC URL of tx node}"
+export TX_GRPC_URL="{GRPC URL of TX node}"
 ```
 
 ```bash
@@ -254,9 +254,9 @@ Using the output you can choose which transactions you would like to execute.
 * Set variables
 
 ```bash
-export TX_CHAIN_ID={tx chain ID}"
+export TX_CHAIN_ID={TX chain ID}"
 export TX_CONTRACT_ADDRESS="{Contract address}"
-export TX_GRPC_URL="{GRPC URL of tx node}"
+export TX_GRPC_URL="{GRPC URL of TX node}"
 export TX_EXECUTOR_ADDRESS="{The address which will execute the approved transactions and pay for them}"
 export TX_EVIDENCE_IDS="{Comma separated evidence IDs of the pending approved transactions to be executed}" # (Optional, by default all transactions will be executed.)
 ```
@@ -288,9 +288,9 @@ cat unsigned.json
 * Set variables
 
 ```bash
-export TX_CHAIN_ID={tx chain ID}"
+export TX_CHAIN_ID={TX chain ID}"
 export TX_CONTRACT_ADDRESS="{Contract address}"
-export TX_RPC_URL="{RPC URL of tx node}"
+export TX_RPC_URL="{RPC URL of TX node}"
 export XRPL_RPC_URL="{RPC URL of XRPL node}"
 ```
 
@@ -426,7 +426,7 @@ Save generate codeID.
 * Generate tx to migrate the contract
 
 ```bash
-export TX_CONTRACT_OWNER={tx contract owner}
+export TX_CONTRACT_OWNER={TX contract owner}
 export TX_NEW_CONTRACT_CODE_ID={New contract code ID}
 export TX_CONTRACT_ADDRESS={Contract address}
 
@@ -442,7 +442,7 @@ export TX_CONTRACT_ADDRESS={Contract address}
 * Generate tx to update trusted addresses
 
 ```bash
-export TX_CONTRACT_OWNER={tx contract owner}
+export TX_CONTRACT_OWNER={TX contract owner}
 export TX_NEW_TRUSTED_ADDRESSES={New trusted addresses}
 export TX_CONTRACT_ADDRESS={Contract address}
 
@@ -470,7 +470,7 @@ export TX_CONTRACT_ADDRESS={Contract address}
 * Export node URL
 
 ```
-export TX_CHAIN_ID={tx chain ID}"
+export TX_CHAIN_ID={TX chain ID}"
 export TX_EXECUTOR_ADDRESS="{The address which will execute the approved transactions and pay for them}"
 export TX_NODE="{Node RPC URL}"
 ```
