@@ -133,6 +133,19 @@ func (e *Executor) Start(ctx context.Context) error {
 						return nil
 					}
 
+					// Account sequence mismatch is a transient error that occurs when multiple
+					// transactions are submitted concurrently. It's expected and will be retried,
+					// so we log it as a warning instead of an error to avoid incrementing the error counter.
+					if tx.IsAccountSequenceMismatchError(err) {
+						e.log.Warn(
+							"Account sequence mismatch, retrying",
+							zap.Any("request", sendReq),
+							zap.String("delay", e.cfg.RetryDelay.String()),
+							zap.Error(err),
+						)
+						return retry.Retryable(err)
+					}
+
 					e.log.Error(
 						"Can't execute TX contract transaction, the execution will be repeated",
 						zap.Any("request", sendReq),

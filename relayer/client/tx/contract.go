@@ -57,6 +57,7 @@ const (
 	transactionNotConfirmedErrorString = "Transaction not confirmed"
 	lowAmountErrorString               = "The amount is too low"
 	fundsMismatchErrorString           = "Funds mismatch"
+	accountSequenceMismatchErrorString = "account sequence mismatch"
 )
 
 // DeployAndInstantiateConfig holds attributes used for the contract deployment and instantiation.
@@ -770,6 +771,12 @@ func IsLowAmountError(err error) bool {
 // IsFundsMismatchError returns true if error is FundsMismatch error.
 func IsFundsMismatchError(err error) bool {
 	return isError(err, fundsMismatchErrorString)
+}
+
+// IsAccountSequenceMismatchError returns true if error is account sequence mismatch error.
+// This is a transient error that occurs when multiple transactions are submitted concurrently.
+func IsAccountSequenceMismatchError(err error) bool {
+	return isError(err, accountSequenceMismatchErrorString)
 }
 
 func isError(err error, errorString string) bool {
