@@ -16,7 +16,6 @@ jobs:
         ci_step: [
           "lint",
           "test",
-          "integration tests",
           "contract lint and test"
         ]
         include:
@@ -24,8 +23,6 @@ jobs:
             command: "make build-contract && make lint"
           - ci_step: "test"
             command: "make build-contract && make test"
-          - ci_step: "integration tests"
-            command: "make build-contract && make rebuild-dev-env && make restart-dev-env && make test-integration"
           - ci_step: "contract lint and test"
             command: "make test-contract"
 
@@ -49,6 +46,53 @@ jobs:
       - name: Run ${{ matrix.ci_step }}
         working-directory: ./xrpl-bridge
         run: ${{ matrix.command }}
+      - name: Dump docker logs on failure
+        if: failure()
+        uses: jwalton/gh-docker-logs@v2
+
+  integration-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Free disk space
+        run: |
+          df -h
+          # Remove unused SDKs (keep only Go and Rust)
+          sudo rm -rf /usr/share/dotnet              # .NET
+          sudo rm -rf /usr/local/lib/android         # Android
+          sudo rm -rf /opt/ghc                       # Haskell
+          sudo rm -rf /usr/share/swift               # Swift
+          sudo rm -rf /opt/hostedtoolcache/CodeQL    # CodeQL
+          sudo rm -rf /opt/hostedtoolcache/Python    # Python
+          sudo rm -rf /opt/hostedtoolcache/node      # Node.js
+          sudo docker system prune -af
+          df -h
+      - name: Checkout xrpl bridge
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: xrpl-bridge
+      - name: Checkout coreum
+        uses: actions/checkout@v4
+        with:
+          repository: CoreumFoundation/coreum
+          path: coreum
+          ref: v5.0.1
+      - name: Install go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.3'
+      - name: Build contract
+        working-directory: ./xrpl-bridge
+        run: make build-contract
+      - name: Rebuild dev environment
+        working-directory: ./xrpl-bridge
+        run: make rebuild-dev-env
+      - name: Restart dev environment
+        working-directory: ./xrpl-bridge
+        run: make restart-dev-env
+      - name: Run integration tests
+        working-directory: ./xrpl-bridge
+        run: make test-integration
       - name: Dump docker logs on failure
         if: failure()
         uses: jwalton/gh-docker-logs@v2
