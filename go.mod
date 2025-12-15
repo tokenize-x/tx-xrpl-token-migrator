@@ -1,6 +1,6 @@
 module github.com/tokenize-x/tx-xrpl-token-migrator
 
-go 1.24
+go 1.23.3
 
 // same replacements as in TX
 replace (
@@ -35,7 +35,7 @@ require (
 )
 
 replace (
-	github.com/CoreumFoundation/coreum-tools => github.com/tokenize-x/tx-tools v0.4.1-0.20250609122637-9e62accb7083
+	github.com/CoreumFoundation/coreum-tools => github.com/tokenize-x/tx-tools v0.4.1-0.20241202115740-dbc6962a4d0a
 	github.com/CoreumFoundation/coreum/v5 => github.com/tokenize-x/tx-chain/v5 v5.0.1-0.20250610134908-eb75d44032f2
 )
 
