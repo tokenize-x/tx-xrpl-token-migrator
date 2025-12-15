@@ -1,6 +1,6 @@
 module github.com/tokenize-x/tx-xrpl-token-migrator
 
-go 1.23.3
+go 1.24
 
 // same replacements as in TX
 replace (
@@ -30,8 +30,13 @@ require (
 	github.com/samber/lo v1.49.1
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.10.0
-	go.uber.org/zap v1.23.0
+	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.70.0
+)
+
+replace (
+	github.com/CoreumFoundation/coreum-tools => github.com/tokenize-x/tx-tools v0.4.1-0.20250609122637-9e62accb7083
+	github.com/CoreumFoundation/coreum/v5 => github.com/tokenize-x/tx-chain/v5 v5.0.1-0.20250610134908-eb75d44032f2
 )
 
 require (
@@ -54,7 +59,6 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/benbjohnson/clock v1.1.0 // indirect
 	github.com/bits-and-blooms/bitset v1.13.0 // indirect
 	github.com/bytedance/sonic v1.12.3 // indirect
 	github.com/bytedance/sonic/loader v0.2.0 // indirect
@@ -231,7 +235,6 @@ require (
 	github.com/zondax/ledger-go v0.14.3 // indirect
 	go.etcd.io/bbolt v1.4.0-alpha.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.35.0 // indirect
 	golang.org/x/exp v0.0.0-20250215185904-eff6e970281f
