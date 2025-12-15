@@ -1,12 +1,12 @@
 # XRPL bridge
 
-The XRPL bridge is one way XRPL to coreum bridge.
+The XRPL bridge is one way XRPL to TX bridge.
 
 ## Build
 
 ### Use binary (linux only)
 
-Download binary from the [releases](https://github.com/CoreumFoundation/xrpl-bridge/releases) page to your machine and
+Download binary from the [releases](https://github.com/tokenize-x/tx-xrpl-token-migrator/releases) page to your machine and
 make it executable. Pay attention that repo is private so the binary should be downloaded from the trusted machine.
 
 ### Build from sources
@@ -31,20 +31,20 @@ make build-in-docker
 * Set variables
 
 ```bash
-export COREUM_CHAIN_ID={Coreum chain ID}"
-export COREUM_CONTRACT_TRUSTED_ADDRESSES="{Trusted address 2,trusted address 1}"
-export COREUM_CONTRACT_THRESHOLD="{Threshold}"
-export COREUM_CONTRACT_OWNER="{Owner which is able to withdraw contract balance}"
-export COREUM_CONTRACT_MIN_AMOUNT="{Min allowed amount for a transaction}"
-export COREUM_CONTRACT_MAX_AMOUNT="{Max allowed amount for automated transaction processing}"
-export COREUM_GRPC_URL="{GRPC URL of coreum node}"
+export TX_CHAIN_ID={TX chain ID}"
+export TX_CONTRACT_TRUSTED_ADDRESSES="{Trusted address 2,trusted address 1}"
+export TX_CONTRACT_THRESHOLD="{Threshold}"
+export TX_CONTRACT_OWNER="{Owner which is able to withdraw contract balance}"
+export TX_CONTRACT_MIN_AMOUNT="{Min allowed amount for a transaction}"
+export TX_CONTRACT_MAX_AMOUNT="{Max allowed amount for automated transaction processing}"
+export TX_GRPC_URL="{GRPC URL of TX node}"
 ```
 
 * Store deployer mnemonic to the keystore
 
 ```
 ./relayer keys add --recover contract-deployer \
-    --coreum-chain-id $COREUM_CHAIN_ID \
+    --tx-chain-id $TX_CHAIN_ID \
     --keyring-backend os \
     --home $HOME/.xrpl-bridge
 ```
@@ -52,14 +52,14 @@ export COREUM_GRPC_URL="{GRPC URL of coreum node}"
 * Deploy smart contract
 
 ```
-./relayer deploy-and-instantiate --coreum-chain-id $COREUM_CHAIN_ID \
-    --coreum-contract-trusted-addresses $COREUM_CONTRACT_TRUSTED_ADDRESSES \
-    --coreum-contract-threshold $COREUM_CONTRACT_THRESHOLD \
-    --coreum-contract-owner-address $COREUM_CONTRACT_OWNER \
-    --coreum-contract-min-amount $COREUM_CONTRACT_MIN_AMOUNT \
-    --coreum-contract-max-amount $COREUM_CONTRACT_MAX_AMOUNT \
-    --coreum-grpc-url $COREUM_GRPC_URL \
-    --coreum-sender-address $(./relayer keys show contract-deployer -a --coreum-chain-id $COREUM_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge) \
+./relayer deploy-and-instantiate --tx-chain-id $TX_CHAIN_ID \
+    --tx-contract-trusted-addresses $TX_CONTRACT_TRUSTED_ADDRESSES \
+    --tx-contract-threshold $TX_CONTRACT_THRESHOLD \
+    --tx-contract-owner-address $TX_CONTRACT_OWNER \
+    --tx-contract-min-amount $TX_CONTRACT_MIN_AMOUNT \
+    --tx-contract-max-amount $TX_CONTRACT_MAX_AMOUNT \
+    --tx-grpc-url $TX_GRPC_URL \
+    --tx-sender-address $(./relayer keys show contract-deployer -a --tx-chain-id $TX_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge) \
     --keyring-backend os \
     --home $HOME/.xrpl-bridge
 ```
@@ -70,9 +70,9 @@ export COREUM_GRPC_URL="{GRPC URL of coreum node}"
 
 * Import relayer mnemonic to keyring.
 
-```
+```bash
 ./relayer keys add --recover relayer \
-    --coreum-chain-id $COREUM_CHAIN_ID \
+    --tx-chain-id $TX_CHAIN_ID \
     --keyring-backend os \
     --home $HOME/.xrpl-bridge
 ```
@@ -81,9 +81,9 @@ export COREUM_GRPC_URL="{GRPC URL of coreum node}"
 
 ```bash
 export XRPL_RPC_URL="{RPC URL of XRPL node}"
-export COREUM_CHAIN_ID={Coreum chain ID}"
-export COREUM_CONTRACT_ADDRESS="{Contract address}"
-export COREUM_GRPC_URL="{GRPC URL of coreum node}"
+export TX_CHAIN_ID={TX chain ID}"
+export TX_CONTRACT_ADDRESS="{Contract address}"
+export TX_GRPC_URL="{GRPC URL of TX node}"
 export PROMETHEUS_INSTANCE_NAME="{Unique name of your instance}"
 export PROMETHEUS_USERNAME="{Prometheus username}"
 export PROMETHEUS_PASSWORD="{Prometheus password}"
@@ -92,16 +92,16 @@ export PROMETHEUS_URL="{Prometheus push URL}"
 
 * Create `start` script.
 
-**Mainnet** 
+**Mainnet**
 
 ```bash
 echo "
 echo \$(systemd-ask-password \"Enter keyring password:\") | $PWD/relayer start \\
     --xrpl-rpc-url $XRPL_RPC_URL \\
-    --coreum-chain-id $COREUM_CHAIN_ID \\
-    --coreum-contract-address $COREUM_CONTRACT_ADDRESS \\
-    --coreum-grpc-url $COREUM_GRPC_URL \\
-    --coreum-sender-address $(./relayer keys show relayer -a --coreum-chain-id $COREUM_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge) \\
+    --tx-chain-id $TX_CHAIN_ID \\
+    --tx-contract-address $TX_CONTRACT_ADDRESS \\
+    --tx-grpc-url $TX_GRPC_URL \\
+    --tx-sender-address $(./relayer keys show relayer -a --tx-chain-id $TX_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge) \\
     --prometheus-instance-name $PROMETHEUS_INSTANCE_NAME \\
     --prometheus-username $PROMETHEUS_USERNAME \\
     --prometheus-password $PROMETHEUS_PASSWORD \\
@@ -118,10 +118,10 @@ chmod +x run-xrpl-bridge-relayer.sh
 echo "
 echo \$(systemd-ask-password \"Enter keyring password:\") | $PWD/relayer start \\
     --xrpl-rpc-url $XRPL_RPC_URL \\
-    --coreum-chain-id $COREUM_CHAIN_ID \\
-    --coreum-contract-address $COREUM_CONTRACT_ADDRESS \\
-    --coreum-grpc-url $COREUM_GRPC_URL \\
-    --coreum-sender-address $(./relayer keys show relayer -a --coreum-chain-id $COREUM_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge) \\
+    --tx-chain-id $TX_CHAIN_ID \\
+    --tx-contract-address $TX_CONTRACT_ADDRESS \\
+    --tx-grpc-url $TX_GRPC_URL \\
+    --tx-sender-address $(./relayer keys show relayer -a --tx-chain-id $TX_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge) \\
     --prometheus-instance-name $PROMETHEUS_INSTANCE_NAME \\
     --prometheus-username $PROMETHEUS_USERNAME \\
     --prometheus-password $PROMETHEUS_PASSWORD \\
@@ -139,13 +139,13 @@ chmod +x run-xrpl-bridge-relayer.sh
 ```
 
 You will be asked to `Enter keyring password`, enter it and press `Enter`.
-If you don't see errors after the start, it's conferred correctly. Stop it.
+If you don't see errors after the start, it's configured correctly. Stop it.
 
 #### Add systemctrl service (prev step is required)
 
 * Update `/etc/systemd/journald.conf` to store logs and reboot system.
 
-```
+```toml
 [Journal]
 Storage=persistent
 ```
@@ -229,16 +229,16 @@ them.
 * Set variables
 
 ```bash
-export COREUM_CHAIN_ID={Coreum chain ID}"
-export COREUM_CONTRACT_ADDRESS="{Contract address}"
-export COREUM_GRPC_URL="{GRPC URL of coreum node}"
+export TX_CHAIN_ID={TX chain ID}"
+export TX_CONTRACT_ADDRESS="{Contract address}"
+export TX_GRPC_URL="{GRPC URL of TX node}"
 ```
 
 ```bash
 ./relayer get-pending-approved-transactions \
-  --coreum-contract-address $COREUM_CONTRACT_ADDRESS \
-  --coreum-grpc-url $COREUM_GRPC_URL \
-  --coreum-chain-id $COREUM_CHAIN_ID
+  --tx-contract-address $TX_CONTRACT_ADDRESS \
+  --tx-grpc-url $TX_GRPC_URL \
+  --tx-chain-id $TX_CHAIN_ID
 ```
 
 Output example:
@@ -254,25 +254,25 @@ Using the output you can choose which transactions you would like to execute.
 * Set variables
 
 ```bash
-export COREUM_CHAIN_ID={Coreum chain ID}"
-export COREUM_CONTRACT_ADDRESS="{Contract address}"
-export COREUM_GRPC_URL="{GRPC URL of coreum node}"
-export COREUM_EXECUTOR_ADDRESS="{The address which will execute the approved transactions and pay for them}"
-export COREUM_EVIDENCE_IDS="{Comma separated evidence IDs of the pending approved transactions to be executed}" # (Optional, by default all transactions will be executed.)
+export TX_CHAIN_ID={TX chain ID}"
+export TX_CONTRACT_ADDRESS="{Contract address}"
+export TX_GRPC_URL="{GRPC URL of TX node}"
+export TX_EXECUTOR_ADDRESS="{The address which will execute the approved transactions and pay for them}"
+export TX_EVIDENCE_IDS="{Comma separated evidence IDs of the pending approved transactions to be executed}" # (Optional, by default all transactions will be executed.)
 ```
 
 * Print to file `execute` transaction.
 
 ```bash
 ./relayer build-execute-pending-approved-transaction \
-  --coreum-contract-address $COREUM_CONTRACT_ADDRESS \
-  --coreum-grpc-url $COREUM_GRPC_URL \
-  --coreum-contract-evidence-ids $COREUM_EVIDENCE_IDS \
-  --coreum-chain-id $COREUM_CHAIN_ID \
-  --coreum-sender-address $COREUM_EXECUTOR_ADDRESS > unsigned.json
+  --tx-contract-address $TX_CONTRACT_ADDRESS \
+  --tx-grpc-url $TX_GRPC_URL \
+  --tx-contract-evidence-ids $TX_EVIDENCE_IDS \
+  --tx-chain-id $TX_CHAIN_ID \
+  --tx-sender-address $TX_EXECUTOR_ADDRESS > unsigned.json
 ```
 
-The `--coreum-contract-evidence-ids $COREUM_EVIDENCE_IDS` part is optional, by default all transactions will be
+The `--tx-contract-evidence-ids $TX_EVIDENCE_IDS` part is optional, by default all transactions will be
 executed.
 
 * Check the transaction file content before the execution.
@@ -288,17 +288,17 @@ cat unsigned.json
 * Set variables
 
 ```bash
-export COREUM_CHAIN_ID={Coreum chain ID}"
-export COREUM_CONTRACT_ADDRESS="{Contract address}"
-export COREUM_RPC_URL="{RPC URL of coreum node}"
+export TX_CHAIN_ID={TX chain ID}"
+export TX_CONTRACT_ADDRESS="{Contract address}"
+export TX_RPC_URL="{RPC URL of TX node}"
 export XRPL_RPC_URL="{RPC URL of XRPL node}"
 ```
 
 ```bash
 ./relayer audit \
---coreum-contract-address $COREUM_CONTRACT_ADDRESS \
---coreum-rpc-url $COREUM_RPC_URL \
---coreum-chain-id $COREUM_CHAIN_ID \
+--tx-contract-address $TX_CONTRACT_ADDRESS \
+--tx-rpc-url $TX_RPC_URL \
+--tx-chain-id $TX_CHAIN_ID \
 --xrpl-rpc-url $XRPL_RPC_URL
 ```
 
@@ -414,9 +414,9 @@ If you wish to run two instances of bridge on the same VM, makes sure:
 * Deploy new smart contract
 
 ```bash
-./relayer deploy --coreum-chain-id $COREUM_CHAIN_ID \
-    --coreum-grpc-url $COREUM_GRPC_URL \
-    --coreum-sender-address $(./relayer keys show contract-deployer -a --coreum-chain-id $COREUM_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge) \
+./relayer deploy --tx-chain-id $TX_CHAIN_ID \
+    --tx-grpc-url $TX_GRPC_URL \
+    --tx-sender-address $(./relayer keys show contract-deployer -a --tx-chain-id $TX_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge) \
     --keyring-backend os \
     --home $HOME/.xrpl-bridge
 ```
@@ -426,15 +426,15 @@ Save generate codeID.
 * Generate tx to migrate the contract
 
 ```bash
-export COREUM_CONTRACT_OWNER={Coreum contract owner}
-export COREUM_NEW_CONTRACT_CODE_ID={New contract code ID}
-export COREUM_CONTRACT_ADDRESS={Contract address}
+export TX_CONTRACT_OWNER={TX contract owner}
+export TX_NEW_CONTRACT_CODE_ID={New contract code ID}
+export TX_CONTRACT_ADDRESS={Contract address}
 
-./relayer build-migrate-contract-transaction $COREUM_NEW_CONTRACT_CODE_ID \
-    --coreum-chain-id $COREUM_CHAIN_ID \
-    --coreum-grpc-url $COREUM_GRPC_URL \
-    --coreum-sender-address $COREUM_CONTRACT_OWNER \
-    --coreum-contract-address $COREUM_CONTRACT_ADDRESS > unsigned.json
+./relayer build-migrate-contract-transaction $TX_NEW_CONTRACT_CODE_ID \
+    --tx-chain-id $TX_CHAIN_ID \
+    --tx-grpc-url $TX_GRPC_URL \
+    --tx-sender-address $TX_CONTRACT_OWNER \
+    --tx-contract-address $TX_CONTRACT_ADDRESS > unsigned.json
 ```
 
 * [Sign and broadcast with cored](#Sign-and-broadcast-with-cored)
@@ -442,16 +442,16 @@ export COREUM_CONTRACT_ADDRESS={Contract address}
 * Generate tx to update trusted addresses
 
 ```bash
-export COREUM_CONTRACT_OWNER={Coreum contract owner}
-export COREUM_NEW_TRUSTED_ADDRESSES={New trusted addresses}
-export COREUM_CONTRACT_ADDRESS={Contract address}
+export TX_CONTRACT_OWNER={TX contract owner}
+export TX_NEW_TRUSTED_ADDRESSES={New trusted addresses}
+export TX_CONTRACT_ADDRESS={Contract address}
 
 ./relayer build-update-trusted-addresses \
-    --coreum-chain-id $COREUM_CHAIN_ID \
-    --coreum-grpc-url $COREUM_GRPC_URL \
-    --coreum-sender-address $COREUM_CONTRACT_OWNER \
-    --coreum-contract-trusted-addresses $COREUM_NEW_TRUSTED_ADDRESSES \
-    --coreum-contract-address $COREUM_CONTRACT_ADDRESS > unsigned.json
+    --tx-chain-id $TX_CHAIN_ID \
+    --tx-grpc-url $TX_GRPC_URL \
+    --tx-sender-address $TX_CONTRACT_OWNER \
+    --tx-contract-trusted-addresses $TX_NEW_TRUSTED_ADDRESSES \
+    --tx-contract-address $TX_CONTRACT_ADDRESS > unsigned.json
 ```
 
 * [Sign and broadcast with cored](#Sign-and-broadcast-with-cored)
@@ -460,9 +460,9 @@ export COREUM_CONTRACT_ADDRESS={Contract address}
 
 ```
 ./relayer get-contract-config \
-    --coreum-chain-id $COREUM_CHAIN_ID \
-    --coreum-grpc-url $COREUM_GRPC_URL \
-    --coreum-contract-address $COREUM_CONTRACT_ADDRESS
+    --tx-chain-id $TX_CHAIN_ID \
+    --tx-grpc-url $TX_GRPC_URL \
+    --tx-contract-address $TX_CONTRACT_ADDRESS
 ```
 
 ## Sign and broadcast with cored
@@ -470,21 +470,21 @@ export COREUM_CONTRACT_ADDRESS={Contract address}
 * Export node URL
 
 ```
-export COREUM_CHAIN_ID={Coreum chain ID}"
-export COREUM_EXECUTOR_ADDRESS="{The address which will execute the approved transactions and pay for them}"
-export COREUM_NODE="{Node RPC URL}"
+export TX_CHAIN_ID={TX chain ID}"
+export TX_EXECUTOR_ADDRESS="{The address which will execute the approved transactions and pay for them}"
+export TX_NODE="{Node RPC URL}"
 ```
 
 * Sign with `cored` (the same can be done with the multisig account).
 
 ```bash
-cored tx sign unsigned.json --from $COREUM_EXECUTOR_ADDRESS --output-document signed.json --chain-id $COREUM_CHAIN_ID --node $COREUM_NODE
+cored tx sign unsigned.json --from $TX_EXECUTOR_ADDRESS --output-document signed.json --chain-id $TX_CHAIN_ID --node $TX_NODE
 ```
 
 * Broadcast with `cored`.
 
 ```bash
-cored tx broadcast signed.json -y -b block --chain-id $COREUM_CHAIN_ID --node $COREUM_NODE
+cored tx broadcast signed.json -y -b block --chain-id $TX_CHAIN_ID --node $TX_NODE
 ```
 
 ## Upgrade relayer to V2.2.x

@@ -113,13 +113,13 @@
             "uid": "P3892E10346FD2012"
           },
           "editorMode": "code",
-          "expr": "coreum_sender_balance{job=\"bridge\", exported_instance=~\"$instance\"}/1000000",
+          "expr": "tx_sender_balance{job=\"bridge\", exported_instance=~\"$instance\"}/1000000",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Coreum sender balance",
+      "title": "TX sender balance",
       "transformations": [],
       "type": "timeseries"
     },
@@ -205,13 +205,13 @@
             "uid": "P3892E10346FD2012"
           },
           "editorMode": "code",
-          "expr": "coreum_pending_unapproved_transactions_count{job=\"bridge\", exported_instance=~\"$instance\"}",
+          "expr": "tx_pending_unapproved_transactions_count{job=\"bridge\", exported_instance=~\"$instance\"}",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Coreum pending unapproved transactions count",
+      "title": "TX pending unapproved transactions count",
       "type": "timeseries"
     },
     {
@@ -390,7 +390,7 @@
             "uid": "P3892E10346FD2012"
           },
           "editorMode": "code",
-          "expr": "coreum_contract_balance{job=\"bridge\", exported_instance=~\"$instance\"}/1000000",
+          "expr": "tx_contract_balance{job=\"bridge\", exported_instance=~\"$instance\"}/1000000",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -412,7 +412,7 @@
           "refId": "C"
         }
       ],
-      "title": "Coreum contract balance",
+      "title": "TX contract balance",
       "transformations": [],
       "type": "timeseries"
     },
@@ -498,13 +498,13 @@
             "uid": "P3892E10346FD2012"
           },
           "editorMode": "code",
-          "expr": "coreum_pending_approved_transactions_count{job=\"bridge\", exported_instance=~\"$instance\"}",
+          "expr": "tx_pending_approved_transactions_count{job=\"bridge\", exported_instance=~\"$instance\"}",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Coreum pending approved transactions count",
+      "title": "TX pending approved transactions count",
       "type": "timeseries"
     },
     {
@@ -716,7 +716,7 @@
           "type": "prometheus",
           "uid": "P3892E10346FD2012"
         },
-        "definition": "label_values(coreum_contract_balance,exported_instance)",
+        "definition": "label_values(tx_contract_balance,exported_instance)",
         "hide": 0,
         "includeAll": true,
         "label": "instance",
@@ -724,7 +724,7 @@
         "name": "instance",
         "options": [],
         "query": {
-          "query": "label_values(coreum_contract_balance,exported_instance)",
+          "query": "label_values(tx_contract_balance,exported_instance)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,

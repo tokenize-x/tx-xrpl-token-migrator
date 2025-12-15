@@ -68,13 +68,13 @@ func NewKeyringTxSigner(kr keyring.Keyring) *KeyringTxSigner {
 }
 
 // Sign signs the transaction with the provided key name.
-func (s *KeyringTxSigner) Sign(tx rippledata.Transaction, keyName string) error {
+func (s *KeyringTxSigner) Sign(txn rippledata.Transaction, keyName string) error {
 	key, err := s.extractXRPLPrivKey(keyName)
 	if err != nil {
 		return err
 	}
 
-	if err = rippledata.Sign(tx, key, zeroSeq); err != nil {
+	if err = rippledata.Sign(txn, key, zeroSeq); err != nil {
 		return errors.Wrapf(err, "failed to sign XRPL transaction with keyring")
 	}
 
@@ -82,21 +82,21 @@ func (s *KeyringTxSigner) Sign(tx rippledata.Transaction, keyName string) error 
 }
 
 // MultiSign signs the transaction for the multi-signing with the provided key name.
-func (s *KeyringTxSigner) MultiSign(tx rippledata.MultiSignable, keyName string) (rippledata.Signer, error) {
+func (s *KeyringTxSigner) MultiSign(txn rippledata.MultiSignable, keyName string) (rippledata.Signer, error) {
 	key, err := s.extractXRPLPrivKey(keyName)
 	if err != nil {
 		return rippledata.Signer{}, err
 	}
 	acc := key.ExtractAccountFromXRPLKey()
-	if err := rippledata.MultiSign(tx, key, zeroSeq, acc); err != nil {
+	if err := rippledata.MultiSign(txn, key, zeroSeq, acc); err != nil {
 		return rippledata.Signer{}, err
 	}
 
 	return rippledata.Signer{
 		Signer: rippledata.SignerItem{
 			Account:       acc,
-			TxnSignature:  tx.GetSignature(),
-			SigningPubKey: tx.GetPublicKey(),
+			TxnSignature:  txn.GetSignature(),
+			SigningPubKey: txn.GetPublicKey(),
 		},
 	}, nil
 }
@@ -163,8 +163,8 @@ func NewPrivKeyTxSigner(privKey cryptotypes.PrivKey) *PrivKeyTxSigner {
 }
 
 // Sign signs the transaction.
-func (s *PrivKeyTxSigner) Sign(tx rippledata.Transaction) error {
-	if err := rippledata.Sign(tx, s.key, zeroSeq); err != nil {
+func (s *PrivKeyTxSigner) Sign(txn rippledata.Transaction) error {
+	if err := rippledata.Sign(txn, s.key, zeroSeq); err != nil {
 		return errors.Wrapf(err, "failed to sign XRPL transaction with keyring")
 	}
 
@@ -172,17 +172,17 @@ func (s *PrivKeyTxSigner) Sign(tx rippledata.Transaction) error {
 }
 
 // MultiSign signs the transaction for the multi-signing.
-func (s *PrivKeyTxSigner) MultiSign(tx rippledata.MultiSignable) (rippledata.Signer, error) {
+func (s *PrivKeyTxSigner) MultiSign(txn rippledata.MultiSignable) (rippledata.Signer, error) {
 	acc := s.key.ExtractAccountFromXRPLKey()
-	if err := rippledata.MultiSign(tx, s.key, zeroSeq, acc); err != nil {
+	if err := rippledata.MultiSign(txn, s.key, zeroSeq, acc); err != nil {
 		return rippledata.Signer{}, err
 	}
 
 	return rippledata.Signer{
 		Signer: rippledata.SignerItem{
 			Account:       acc,
-			TxnSignature:  tx.GetSignature(),
-			SigningPubKey: tx.GetPublicKey(),
+			TxnSignature:  txn.GetSignature(),
+			SigningPubKey: txn.GetPublicKey(),
 		},
 	}, nil
 }

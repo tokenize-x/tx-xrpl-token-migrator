@@ -9,19 +9,20 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/CosmWasm/wasmd/x/wasm"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/pkg/errors"
 	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/xrpl"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/http"
-	coreumapp "github.com/CoreumFoundation/coreum/v4/app"
-	coreumconfig "github.com/CoreumFoundation/coreum/v4/pkg/config"
-	coreumkeyring "github.com/CoreumFoundation/coreum/v4/pkg/keyring"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/xrpl"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
+	txconfig "github.com/CoreumFoundation/coreum/v5/pkg/config"
+	txkeyring "github.com/CoreumFoundation/coreum/v5/pkg/keyring"
 )
 
 const (
@@ -161,33 +162,33 @@ func (c XRPLChain) FundAccount(ctx context.Context, t *testing.T, acc rippledata
 
 // AutoFillSignAndSubmitTx autofills the transaction and submits it.
 func (c XRPLChain) AutoFillSignAndSubmitTx(
-	ctx context.Context, t *testing.T, tx rippledata.Transaction, acc rippledata.Account,
+	ctx context.Context, t *testing.T, txn rippledata.Transaction, acc rippledata.Account,
 ) error {
 	t.Helper()
 
-	c.AutoFillTx(ctx, t, tx, acc)
-	return c.SignAndSubmitTx(ctx, t, tx, acc)
+	c.AutoFillTx(ctx, t, txn, acc)
+	return c.SignAndSubmitTx(ctx, t, txn, acc)
 }
 
 // SignAndSubmitTx signs the transaction from the signer and submits it.
 func (c XRPLChain) SignAndSubmitTx(
-	ctx context.Context, t *testing.T, tx rippledata.Transaction, acc rippledata.Account,
+	ctx context.Context, t *testing.T, txn rippledata.Transaction, acc rippledata.Account,
 ) error {
 	t.Helper()
 
-	require.NoError(t, c.signer.Sign(tx, acc.String()))
-	return c.RPCClient().SubmitAndAwaitSuccess(ctx, tx)
+	require.NoError(t, c.signer.Sign(txn, acc.String()))
+	return c.RPCClient().SubmitAndAwaitSuccess(ctx, txn)
 }
 
 // AutoFillTx add seq number and fee for the transaction.
 func (c XRPLChain) AutoFillTx(
 	ctx context.Context,
 	t *testing.T,
-	tx rippledata.Transaction,
+	txn rippledata.Transaction,
 	sender rippledata.Account,
 ) {
 	t.Helper()
-	require.NoError(t, c.rpcClient.AutoFillTx(ctx, tx, sender, 1))
+	require.NoError(t, c.rpcClient.AutoFillTx(ctx, txn, sender, 1))
 }
 
 func extractPrivateKeyFromSeed(seedPhrase string) (string, error) {
@@ -200,6 +201,6 @@ func extractPrivateKeyFromSeed(seedPhrase string) (string, error) {
 }
 
 func createInMemoryKeyring() keyring.Keyring {
-	encodingConfig := coreumconfig.NewEncodingConfig(coreumapp.ModuleBasics)
-	return coreumkeyring.NewConcurrentSafeKeyring(keyring.NewInMemory(encodingConfig.Codec))
+	encodingConfig := txconfig.NewEncodingConfig(auth.AppModuleBasic{}, wasm.AppModuleBasic{})
+	return txkeyring.NewConcurrentSafeKeyring(keyring.NewInMemory(encodingConfig.Codec))
 }

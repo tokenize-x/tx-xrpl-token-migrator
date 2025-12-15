@@ -2,8 +2,8 @@ IMPORT_PREFIX=github.com/CoreumFoundation
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 CONTRACT_DIR:=$(ROOT_DIR)/contract
 SCAN_FILES := $(shell find . -type f -name '*.go' -not -name '*mock.go' -not -name '*_gen.go' -not -path "*/vendor/*")
-COREUM_BUILDER:=$(ROOT_DIR)/../coreum/bin/coreum-builder
-BUILDER = ./bin/xrpl-bridge-builder
+TX_BUILDER:=$(ROOT_DIR)/../coreum/bin/coreum-builder
+BUILDER = ./bin/tx-xrpl-token-migrator-builder
 
 ###############################################################################
 ###                                 Build                                  ###
@@ -25,9 +25,9 @@ build:
 
 .PHONY: build-in-docker
 build-in-docker:
-	docker build --build-arg BUILD_VERSION=$(BUILD_VERSION) . -t xrpl-bridge-builder
+	docker build --build-arg BUILD_VERSION=$(BUILD_VERSION) . -t tx-xrpl-token-migrator-builder
 	mkdir -p artifacts
-	docker run --rm --entrypoint cat xrpl-bridge-builder /code/artifacts/relayer > artifacts/relayer
+	docker run --rm --entrypoint cat tx-xrpl-token-migrator-builder /code/artifacts/relayer > artifacts/relayer
 
 ###############################################################################
 ###                               Development                               ###
@@ -70,8 +70,8 @@ test-contract:
 
 .PHONY: restart-dev-env
 restart-dev-env:
-	${COREUM_BUILDER} znet remove && ${COREUM_BUILDER} znet start --profiles=1cored,xrpl
+	${TX_BUILDER} znet remove && ${TX_BUILDER} znet start --profiles=1cored,xrpl
 
 .PHONY: rebuild-dev-env
 rebuild-dev-env:
-	${COREUM_BUILDER} build images
+	${TX_BUILDER} build images

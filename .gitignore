@@ -2,6 +2,6 @@
 .vscode
 vendor
 *.iml
-.xrpl-bridge
+.tx-xrpl-token-migrator
 /bin
 artifacts

@@ -1,4 +1,4 @@
-package coreum
+package tx
 
 import (
 	"context"
@@ -17,11 +17,11 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
+	contractembed "github.com/tokenize-x/tx-xrpl-token-migrator/contract"
 
-	"github.com/CoreumFoundation/coreum/v4/pkg/client"
-	"github.com/CoreumFoundation/coreum/v4/testutil/event"
-	feemodeltypes "github.com/CoreumFoundation/coreum/v4/x/feemodel/types"
-	contractembed "github.com/CoreumFoundation/xrpl-bridge/contract"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/testutil/event"
+	feemodeltypes "github.com/CoreumFoundation/coreum/v5/x/feemodel/types"
 )
 
 // ExecMethod is contract exec method.
@@ -177,19 +177,19 @@ type sentTxQueryRequest struct {
 // ContractClientConfig represent the ContractClient config.
 type ContractClientConfig struct {
 	ContractAddress    sdk.AccAddress
-	CoreumDenom        string
+	TXDenom            string
 	GasMultiplier      float64
 	GasPriceMultiplier sdkmath.LegacyDec
 	ContractPageSize   uint32
 }
 
 // DefaultContractClientConfig returns default ContractClient config.
-func DefaultContractClientConfig(contractAddress sdk.AccAddress, coreumDenom string) ContractClientConfig {
+func DefaultContractClientConfig(contractAddress sdk.AccAddress, txDenom string) ContractClientConfig {
 	return ContractClientConfig{
 		ContractAddress:    contractAddress,
-		CoreumDenom:        coreumDenom,
+		TXDenom:            txDenom,
 		GasMultiplier:      1.5,
-		GasPriceMultiplier: sdk.MustNewDecFromStr("1.2"),
+		GasPriceMultiplier: sdkmath.LegacyMustNewDecFromStr("1.2"),
 		ContractPageSize:   500,
 	}
 }
@@ -497,18 +497,18 @@ func (c *ContractClient) BuildExecutePendingMessages(
 
 	msgs := make([]sdk.Msg, 0)
 	includeAll := len(evidenceIDsMap) == 0
-	for _, tx := range approvedTransactions {
-		if _, ok := evidenceIDsMap[tx.EvidenceID]; includeAll || ok {
-			msg, err := c.buildExecuteWithFunds(sender, sdk.NewCoins(tx.Amount), map[ExecMethod]ExecutePendingRequest{
+	for _, txn := range approvedTransactions {
+		if _, ok := evidenceIDsMap[txn.EvidenceID]; includeAll || ok {
+			msg, err := c.buildExecuteWithFunds(sender, sdk.NewCoins(txn.Amount), map[ExecMethod]ExecutePendingRequest{
 				ExecMethodExecutePending: {
-					EvidenceID: tx.EvidenceID,
+					EvidenceID: txn.EvidenceID,
 				},
 			})
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to execute %s Method", ExecMethodExecutePending)
 			}
 			msgs = append(msgs, msg)
-			delete(evidenceIDsMap, tx.EvidenceID)
+			delete(evidenceIDsMap, txn.EvidenceID)
 		}
 	}
 
@@ -536,10 +536,10 @@ func (c *ContractClient) EstimateExecuteMessages(
 	if err != nil {
 		return sdk.Coin{}, 0, err
 	}
-	amount := feemodelParamsRes.Params.Model.InitialGasPrice.Mul(sdk.NewDecFromInt(sdk.NewIntFromUint64(gas))).
-		TruncateInt()
+	gasInt := sdkmath.LegacyNewDecFromInt(sdkmath.NewIntFromUint64(gas))
+	amount := feemodelParamsRes.Params.Model.InitialGasPrice.Mul(gasInt).TruncateInt()
 
-	return sdk.NewCoin(c.cfg.CoreumDenom, amount), gas, nil
+	return sdk.NewCoin(c.cfg.TXDenom, amount), gas, nil
 }
 
 // calculateGas calculates gas using legacy amino codec to cover both multisig and basic accounts.
@@ -634,17 +634,17 @@ func (c *ContractClient) GetContractConfig(ctx context.Context) (Config, error) 
 
 // GetPendingTx returns a pending transaction.
 func (c *ContractClient) GetPendingTx(ctx context.Context, evidenceID string) (Transaction, error) {
-	var tx Transaction
+	var txn Transaction
 	err := c.query(ctx, map[QueryMethod]pendingTxQueryRequest{
 		QueryMethodGetPendingTransaction: {
 			EvidenceID: evidenceID,
 		},
-	}, &tx)
+	}, &txn)
 	if err != nil {
 		return Transaction{}, errors.Wrapf(err, "failed to query %s", QueryMethodGetPendingTransaction)
 	}
 
-	return tx, nil
+	return txn, nil
 }
 
 // GetPendingTxs returns a list of pending transactions.
@@ -669,17 +669,17 @@ func (c *ContractClient) GetPendingTxs(
 
 // GetSentTx returns a sent transaction.
 func (c *ContractClient) GetSentTx(ctx context.Context, id string) (Transaction, error) {
-	var tx Transaction
+	var txn Transaction
 	err := c.query(ctx, map[QueryMethod]sentTxQueryRequest{
 		QueryMethodGetSentTransaction: {
 			ID: id,
 		},
-	}, &tx)
+	}, &txn)
 	if err != nil {
 		return Transaction{}, errors.Wrapf(err, "failed to query %s", QueryMethodGetSentTransaction)
 	}
 
-	return tx, nil
+	return txn, nil
 }
 
 // GetSentTxs returns a list of sent transactions.

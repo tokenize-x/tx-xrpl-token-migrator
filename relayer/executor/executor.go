@@ -6,27 +6,27 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/finder"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 	"go.uber.org/zap"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/finder"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
 )
 
-// ContractClient is coreum contract client interface.
+// ContractClient is TX contract client interface.
 type ContractClient interface {
 	ThresholdBankSend(
 		ctx context.Context,
 		sender sdk.AccAddress,
-		requests ...coreum.ThresholdBankSendRequest,
+		requests ...tx.ThresholdBankSendRequest,
 	) (*sdk.TxResponse, error)
-	GetContractConfig(ctx context.Context) (coreum.Config, error)
+	GetContractConfig(ctx context.Context) (tx.Config, error)
 }
 
 // Finder is transactions finder interface.
 type Finder interface {
-	SubscribeCoreumSendTransactions(ctx context.Context, ch chan<- finder.PendingCoreumSendTransaction) error
+	SubscribeTXSendTransactions(ctx context.Context, ch chan<- finder.PendingTXSendTransaction) error
 }
 
 // Config represents the executor config.
@@ -43,7 +43,7 @@ func DefaultConfig(senderAddress sdk.AccAddress) Config {
 	}
 }
 
-// Executor is coreum transaction executor.
+// Executor is TX transaction executor.
 type Executor struct {
 	cfg            Config
 	log            logger.Logger
@@ -65,10 +65,10 @@ func NewExecutor(cfg Config, log logger.Logger, contractClient ContractClient, f
 func (e *Executor) Start(ctx context.Context) error {
 	e.log.Info("Starting executor.")
 
-	txsCh := make(chan finder.PendingCoreumSendTransaction)
+	txsCh := make(chan finder.PendingTXSendTransaction)
 
 	for _, f := range e.finders {
-		if err := f.SubscribeCoreumSendTransactions(ctx, txsCh); err != nil {
+		if err := f.SubscribeTXSendTransactions(ctx, txsCh); err != nil {
 			return err
 		}
 	}
@@ -80,11 +80,11 @@ func (e *Executor) Start(ctx context.Context) error {
 			select {
 			case <-ctx.Done():
 				return
-			case tx := <-txsCh:
+			case txn := <-txsCh:
 				err := retry.Do(ctx, e.cfg.RetryDelay, func() error {
 					e.log.Info(
 						"Found valid transaction.",
-						zap.Any("tx", tx),
+						zap.Any("tx", txn),
 					)
 
 					contractCfg, err := e.contractClient.GetContractConfig(ctx)
@@ -92,13 +92,13 @@ func (e *Executor) Start(ctx context.Context) error {
 						return retry.Retryable(err)
 					}
 
-					sendReq := coreum.ThresholdBankSendRequest{
-						ID:        tx.XRPLTxHash,
-						Amount:    tx.CoreumAmount,
-						Recipient: tx.CoreumDestination.String(),
+					sendReq := tx.ThresholdBankSendRequest{
+						ID:        txn.XRPLTxHash,
+						Amount:    txn.TXAmount,
+						Recipient: txn.TXDestination.String(),
 					}
 
-					if contractCfg.MinAmount.GT(tx.CoreumAmount.Amount) {
+					if contractCfg.MinAmount.GT(txn.TXAmount.Amount) {
 						e.log.Info(
 							"Low amount, execution is skipped.",
 							zap.String("senderAddress", e.cfg.SenderAddress.String()),
@@ -116,25 +116,25 @@ func (e *Executor) Start(ctx context.Context) error {
 						)
 						return nil
 					}
-					if coreum.IsEvidenceProvidedError(err) {
+					if tx.IsEvidenceProvidedError(err) {
 						e.log.Debug(
 							"Evidence has already been submitted.",
 							zap.String("senderAddress", e.cfg.SenderAddress.String()),
-							zap.String("xrplTxHash", tx.XRPLTxHash),
+							zap.String("xrplTxHash", txn.XRPLTxHash),
 						)
 						return nil
 					}
-					if coreum.IsTransferSentError(err) {
+					if tx.IsTransferSentError(err) {
 						e.log.Debug(
 							"Transfer has already been sent.",
 							zap.String("senderAddress", e.cfg.SenderAddress.String()),
-							zap.String("xrplTxHash", tx.XRPLTxHash),
+							zap.String("xrplTxHash", txn.XRPLTxHash),
 						)
 						return nil
 					}
 
 					e.log.Error(
-						"Can't execute coreum contract transaction, the execution will be repeated",
+						"Can't execute TX contract transaction, the execution will be repeated",
 						zap.Any("request", sendReq),
 						zap.String("delay", e.cfg.RetryDelay.String()),
 						zap.Error(err),

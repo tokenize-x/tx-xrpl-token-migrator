@@ -6,10 +6,10 @@ import (
 
 	"github.com/pkg/errors"
 	rippledata "github.com/rubblelabs/ripple/data"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 	"go.uber.org/zap"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
 )
 
 // RPCTxProvider is RPC transactions provider.
@@ -23,7 +23,7 @@ type RPCTxProvider interface {
 	GetCurrentLedger(ctx context.Context) (int64, error)
 }
 
-// MetricRecorder is coreum metric recorder interface.
+// MetricRecorder is TX metric recorder interface.
 type MetricRecorder interface {
 	SetXRPLLatestAccountLedgerIndex(v int64)
 }

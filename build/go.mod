@@ -1,21 +1,21 @@
-module github.com/CoreumFoundation/xrpl-bridge/build
+module github.com/tokenize-x/tx-xrpl-token-migrator/build
 
-go 1.22.0
-
-toolchain go1.22.10
+go 1.23.3
 
 // Crust replacements
 replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 
-require github.com/CoreumFoundation/crust v0.0.0-20241225103102-0cb70152a971
+require github.com/CoreumFoundation/crust v0.0.0-20250404130536-23de310e6eb8
+
+replace github.com/CoreumFoundation/crust => github.com/tokenize-x/tx-crust v0.0.0-20250404130536-23de310e6eb8
 
 require (
-	github.com/CoreumFoundation/coreum-tools v0.4.1-0.20240321120602-0a9c50facc68 // indirect
+	github.com/CoreumFoundation/coreum-tools v0.4.1-0.20241202115740-dbc6962a4d0a // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/samber/lo v1.39.0 // indirect
+	github.com/samber/lo v1.49.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/exp v0.0.0-20241204233417-43b7b7cde48d // indirect
-	golang.org/x/mod v0.22.0 // indirect
+	golang.org/x/mod v0.23.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 )

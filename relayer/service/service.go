@@ -7,14 +7,24 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/CosmWasm/wasmd/x/wasm"
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/samber/lo"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/audit"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/xrpl"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/executor"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/finder"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/metric"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/watcher"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -22,18 +32,9 @@ import (
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/http"
 	"github.com/CoreumFoundation/coreum-tools/pkg/parallel"
-	"github.com/CoreumFoundation/coreum/v4/app"
-	"github.com/CoreumFoundation/coreum/v4/pkg/client"
-	"github.com/CoreumFoundation/coreum/v4/pkg/config"
-	"github.com/CoreumFoundation/coreum/v4/pkg/config/constant"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/audit"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/xrpl"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/executor"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/finder"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/metric"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/watcher"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config/constant"
 )
 
 // XRPLTokenConfig is XRPL token config.
@@ -53,11 +54,11 @@ type Config struct {
 
 	XRPLMemoSuffix string
 
-	CoreumChainID         string
-	CoreumRPCURL          string
-	CoreumGRPCURL         string
-	CoreumSenderAddress   string
-	CoreumContractAddress string
+	TXChainID         string
+	TXRPCURL          string
+	TXGRPCURL         string
+	TXSenderAddress   string
+	TXContractAddress string
 
 	PrometheusURL          string
 	PrometheusInstanceName string
@@ -70,17 +71,17 @@ type Config struct {
 
 // Services is the struct which aggregates application service.
 type Services struct {
-	Config                Config
-	Logger                logger.Logger
-	XRPLTxScanner         *xrpl.TxScanner
-	CoreumContractClient  *coreum.ContractClient
-	ConfigWatcher         *watcher.ConfigWatcher
-	Finders               []*finder.Finder
-	Executor              *executor.Executor
-	MetricRecorder        *metric.Recorder
-	MetricPusher          *metric.Pusher
-	CoreumMetricCollector *metric.CoreumCollector
-	Auditor               *audit.Auditor
+	Config            Config
+	Logger            logger.Logger
+	XRPLTxScanner     *xrpl.TxScanner
+	TXContractClient  *tx.ContractClient
+	ConfigWatcher     *watcher.ConfigWatcher
+	Finders           []*finder.Finder
+	Executor          *executor.Executor
+	MetricRecorder    *metric.Recorder
+	MetricPusher      *metric.Pusher
+	TXMetricCollector *metric.TXCollector
+	Auditor           *audit.Auditor
 }
 
 // NewServices returns new instance on the services.
@@ -102,14 +103,14 @@ func NewServices(
 	scannerCfg.RecentScanSkipLastIndexes = cfg.XRPLRecentScanSkipLastIndexes
 	xrplTxScanner := xrpl.NewTxScanner(scannerCfg, log, xrplRPCClient, metricRecorder)
 
-	network, err := config.NetworkConfigByChainID(constant.ChainID(cfg.CoreumChainID))
+	network, err := config.NetworkConfigByChainID(constant.ChainID(cfg.TXChainID))
 	if err != nil {
 		return nil, err
 	}
 
 	var senderAddress sdk.AccAddress
-	if cfg.CoreumSenderAddress != "" {
-		senderAddress, err = sdk.AccAddressFromBech32(cfg.CoreumSenderAddress)
+	if cfg.TXSenderAddress != "" {
+		senderAddress, err = sdk.AccAddressFromBech32(cfg.TXSenderAddress)
 		if err != nil {
 			return nil, errors.Wrapf(err, "invalid sender address")
 		}
@@ -118,22 +119,22 @@ func NewServices(
 	if useInMemoryKr {
 		keyInfo, err := kr.KeyByAddress(senderAddress)
 		if err != nil {
-			return nil, errors.Wrapf(err, fmt.Sprintf("failed to get key from keyring for address:%s", cfg.CoreumSenderAddress))
+			return nil, errors.Wrapf(err, "failed to get key from keyring for address:%s", cfg.TXSenderAddress)
 		}
 		pass := uuid.NewString()
 		armor, err := kr.ExportPrivKeyArmor(keyInfo.Name, pass)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to export key")
 		}
-		kr = keyring.NewInMemory(config.NewEncodingConfig(app.ModuleBasics).Codec)
+		kr = keyring.NewInMemory(config.NewEncodingConfig(auth.AppModuleBasic{}, wasm.AppModuleBasic{}).Codec)
 		if err := kr.ImportPrivKey(keyInfo.Name, armor, pass); err != nil {
 			return nil, errors.Wrapf(err, "failed to import key")
 		}
 	}
 
 	var contractAddress sdk.AccAddress
-	if cfg.CoreumContractAddress != "" {
-		contractAddress, err = sdk.AccAddressFromBech32(cfg.CoreumContractAddress)
+	if cfg.TXContractAddress != "" {
+		contractAddress, err = sdk.AccAddressFromBech32(cfg.TXContractAddress)
 		if err != nil {
 			return nil, errors.Wrapf(err, "invalid contract address")
 		}
@@ -141,36 +142,36 @@ func NewServices(
 		// TODO: to be revised in the next PR
 		return nil, errors.New("contract address is required")
 	}
-	coreumClientCtx := client.NewContext(client.DefaultContextConfig(), app.ModuleBasics).
+	txClientCtx := client.NewContext(client.DefaultContextConfig(), auth.AppModuleBasic{}, wasm.AppModuleBasic{}).
 		WithChainID(string(network.ChainID())).
 		WithKeyring(kr)
 
-	if cfg.CoreumRPCURL != "" {
-		coreumRPCClient, err := cosmosclient.NewClientFromNode(cfg.CoreumRPCURL)
+	if cfg.TXRPCURL != "" {
+		txRPCClient, err := cosmosclient.NewClientFromNode(cfg.TXRPCURL)
 		if err != nil {
-			return nil, errors.Wrapf(err, "faild to create coreum RPC client")
+			return nil, errors.Wrapf(err, "faild to create TX RPC client")
 		}
-		coreumClientCtx = coreumClientCtx.WithClient(coreumRPCClient)
+		txClientCtx = txClientCtx.WithClient(txRPCClient)
 	}
 
-	if cfg.CoreumGRPCURL != "" {
-		coreumGRPCClient, err := getGRPCClientConn(cfg.CoreumGRPCURL)
+	if cfg.TXGRPCURL != "" {
+		txGRPCClient, err := getGRPCClientConn(cfg.TXGRPCURL)
 		if err != nil {
 			return nil, err
 		}
-		coreumClientCtx = coreumClientCtx.WithGRPCClient(coreumGRPCClient)
+		txClientCtx = txClientCtx.WithGRPCClient(txGRPCClient)
 	}
 
-	coreumContractClient := coreum.NewContractClient(
-		coreum.DefaultContractClientConfig(
+	txContractClient := tx.NewContractClient(
+		tx.DefaultContractClientConfig(
 			contractAddress,
 			network.Denom(),
 		),
-		coreumClientCtx,
+		txClientCtx,
 	)
 
 	// Query contract for initial configuration
-	config, err := coreumContractClient.GetContractConfig(ctx)
+	config, err := txContractClient.GetContractConfig(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to query initial contract config")
 	}
@@ -194,7 +195,7 @@ func NewServices(
 	txExecutor := executor.NewExecutor(
 		executor.DefaultConfig(senderAddress),
 		log,
-		coreumContractClient,
+		txContractClient,
 		lo.Map(txFinders, func(f *finder.Finder, _ int) executor.Finder {
 			return f
 		}),
@@ -211,7 +212,7 @@ func NewServices(
 			PollInterval:    pollInterval,
 		},
 		log,
-		coreumContractClient,
+		txContractClient,
 	)
 
 	// Initialize ConfigWatcher with current version
@@ -236,37 +237,37 @@ func NewServices(
 		}
 	}
 
-	coreumMetricCollector := metric.NewCoreumCollector(
-		metric.DefaultCoreumRecorderConfig(contractAddress, senderAddress, network.Denom()),
+	txMetricCollector := metric.NewTXCollector(
+		metric.DefaultTXRecorderConfig(contractAddress, senderAddress, network.Denom()),
 		log,
-		coreumClientCtx,
+		txClientCtx,
 		metricRecorder,
-		coreumContractClient,
+		txContractClient,
 	)
 
-	coreumChainClient := coreum.NewChainClient(coreum.DefaultChainClientConfig(), log, coreumClientCtx)
+	txChainClient := tx.NewChainClient(tx.DefaultChainClientConfig(), log, txClientCtx)
 
 	auditor := audit.NewAuditor(audit.AuditorConfig{
 		ContractAddress: contractAddress.String(),
 		XRPLMemoSuffix:  cfg.XRPLMemoSuffix,
-		CoreumDenom:     network.Denom(),
-		CoreumDecimals:  6,
+		TXDenom:         network.Denom(),
+		TXDecimals:      6,
 		XRPLTokens:      auditTokensCfg,
 		StartDate:       cfg.AuditStartDate,
-	}, log, coreumChainClient, xrplRPCClient)
+	}, log, txChainClient, xrplRPCClient)
 
 	return &Services{
-		Config:                cfg,
-		Logger:                log,
-		XRPLTxScanner:         xrplTxScanner,
-		CoreumContractClient:  coreumContractClient,
-		ConfigWatcher:         configWatcher,
-		Finders:               txFinders,
-		Executor:              txExecutor,
-		MetricRecorder:        metricRecorder,
-		MetricPusher:          metricPusher,
-		CoreumMetricCollector: coreumMetricCollector,
-		Auditor:               auditor,
+		Config:            cfg,
+		Logger:            log,
+		XRPLTxScanner:     xrplTxScanner,
+		TXContractClient:  txContractClient,
+		ConfigWatcher:     configWatcher,
+		Finders:           txFinders,
+		Executor:          txExecutor,
+		MetricRecorder:    metricRecorder,
+		MetricPusher:      metricPusher,
+		TXMetricCollector: txMetricCollector,
+		Auditor:           auditor,
 	}, nil
 }
 
@@ -275,7 +276,7 @@ func NewServices(
 // services when a configuration change is detected.
 func RunExecutorWithAutoRestart(ctx context.Context, cfg Config, kr keyring.Keyring, zapLogger *zap.Logger) error {
 	for {
-		// Check if context is already cancelled before creating services
+		// Check if context is already canceled before creating services
 		if err := ctx.Err(); err != nil {
 			return err
 		}
@@ -286,7 +287,7 @@ func RunExecutorWithAutoRestart(ctx context.Context, cfg Config, kr keyring.Keyr
 			return errors.Wrap(err, "failed to create services")
 		}
 
-		services.Logger.Info("Starting relayer", zap.String("contract-address", cfg.CoreumContractAddress))
+		services.Logger.Info("Starting relayer", zap.String("contract-address", cfg.TXContractAddress))
 
 		// Start metric collectors and pushers in parallel with executor and watcher
 		// parallel.Run manages its own context lifecycle - when it returns, all tasks are already stopped
@@ -295,9 +296,9 @@ func RunExecutorWithAutoRestart(ctx context.Context, cfg Config, kr keyring.Keyr
 			// Watcher uses Exit mode to initiate graceful shutdown when config changes
 			spawn("watcher", parallel.Exit, services.ConfigWatcher.Watch)
 			// Spawn metric collector tasks - use Fail mode as they should never return unless context is closed
-			spawn("collect-contract-balance", parallel.Fail, services.CoreumMetricCollector.CollectContractBalance)
-			spawn("collect-sender-balance", parallel.Fail, services.CoreumMetricCollector.CollectSenderBalance)
-			spawn("collect-pending-transactions", parallel.Fail, services.CoreumMetricCollector.CollectPendingTransactions)
+			spawn("collect-contract-balance", parallel.Fail, services.TXMetricCollector.CollectContractBalance)
+			spawn("collect-sender-balance", parallel.Fail, services.TXMetricCollector.CollectSenderBalance)
+			spawn("collect-pending-transactions", parallel.Fail, services.TXMetricCollector.CollectPendingTransactions)
 			// Spawn metric pusher - use Fail mode as it should never return unless context is closed
 			if services.MetricPusher != nil {
 				spawn("metric-pusher", parallel.Fail, services.MetricPusher.PushMetrics)
@@ -307,16 +308,16 @@ func RunExecutorWithAutoRestart(ctx context.Context, cfg Config, kr keyring.Keyr
 
 		// Handle the result
 		// Config change detected - restart services
-		// parallel.Run has already cancelled all tasks when it returns
+		// parallel.Run has already canceled all tasks when it returns
 		if err != nil && errors.Is(err, watcher.ErrConfigChanged) {
 			services.Logger.Info("Config changed, restarting services")
 			// Services will be recreated on next iteration
 			continue
 		}
 
-		// Context cancelled - graceful shutdown
+		// Context canceled - graceful shutdown
 		if err != nil && errors.Is(err, context.Canceled) {
-			services.Logger.Info("Context cancelled, shutting down")
+			services.Logger.Info("Context canceled, shutting down")
 			return nil
 		}
 
@@ -333,12 +334,12 @@ func RunExecutorWithAutoRestart(ctx context.Context, cfg Config, kr keyring.Keyr
 
 // createFindersAndAuditConfig creates finders and audit config from token configuration.
 func createFindersAndAuditConfig(
-	tokens []coreum.XRPLToken,
+	tokens []tx.XRPLToken,
 	xrplHistoryScanStartLedger int64,
 	xrplRecentScanIndexesBack int64,
 	xrplMemoSuffix string,
-	coreumDenom string,
-	coreumDecimals int,
+	txDenom string,
+	txDecimals int,
 	log logger.Logger,
 	txScanner *xrpl.TxScanner,
 ) ([]*finder.Finder, []audit.XRPLTokenConfig, error) {
@@ -364,8 +365,8 @@ func createFindersAndAuditConfig(
 			XRPLHistoryScanStartLedger: xrplHistoryScanStartLedger,
 			XRPLRecentScanIndexesBack:  xrplRecentScanIndexesBack,
 			XRPLMemoSuffix:             xrplMemoSuffix,
-			CoreumDenom:                coreumDenom,
-			CoreumDecimals:             coreumDecimals,
+			TXDenom:                    txDenom,
+			TXDecimals:                 txDecimals,
 		}, log, txScanner)
 		finders = append(finders, txFinder)
 
@@ -385,7 +386,7 @@ func getGRPCClientConn(grpcURL string) (*grpc.ClientConn, error) {
 		return nil, errors.Wrap(err, "failed to parse grpc URL")
 	}
 
-	encodingConfig := config.NewEncodingConfig(app.ModuleBasics)
+	encodingConfig := config.NewEncodingConfig(auth.AppModuleBasic{}, wasm.AppModuleBasic{})
 	pc, ok := encodingConfig.Codec.(codec.GRPCCodecProvider)
 	if !ok {
 		return nil, errors.New("failed to cast codec to codec.GRPCCodecProvider)")
@@ -395,13 +396,13 @@ func getGRPCClientConn(grpcURL string) (*grpc.ClientConn, error) {
 
 	// https - tls grpc
 	if parsedURL.Scheme == "https" {
-		grpcClient, err := grpc.Dial(
+		grpcClient, err := grpc.NewClient(
 			host,
 			grpc.WithDefaultCallOptions(grpc.ForceCodec(pc.GRPCCodec())),
 			grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})),
 		)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to dial grpc")
+			return nil, errors.Wrap(err, "failed to create grpc client")
 		}
 		return grpcClient, nil
 	}
@@ -411,12 +412,12 @@ func getGRPCClientConn(grpcURL string) (*grpc.ClientConn, error) {
 		host = fmt.Sprintf("%s:%s", parsedURL.Scheme, parsedURL.Opaque)
 	}
 	// http - insecure
-	grpcClient, err := grpc.Dial(
+	grpcClient, err := grpc.NewClient(
 		host,
 		grpc.WithDefaultCallOptions(grpc.ForceCodec(pc.GRPCCodec())),
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to dial grpc")
+		return nil, errors.Wrap(err, "failed to create grpc client")
 	}
 
 	return grpcClient, nil

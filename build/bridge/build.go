@@ -7,7 +7,7 @@ import (
 	"github.com/CoreumFoundation/crust/build/types"
 )
 
-// Lint lints coreum repo.
+// Lint lints tx-xrpl-token-migrator repo.
 func Lint(ctx context.Context, deps types.DepsFunc) error {
 	return golang.Lint(ctx, deps)
 }

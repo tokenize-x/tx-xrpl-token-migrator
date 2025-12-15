@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -16,15 +17,15 @@ import (
 	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/service"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/exp/slices"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
-	"github.com/CoreumFoundation/coreum/v4/pkg/client"
-	"github.com/CoreumFoundation/coreum/v4/testutil/integration"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/client/coreum"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/service"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 )
 
 type payment struct {
@@ -34,7 +35,7 @@ type payment struct {
 	currency rippledata.Currency
 }
 
-func TestXRPLToCoreumBridgingMultiTokenSending(t *testing.T) {
+func TestXRPLToTXBridgingMultiTokenSending(t *testing.T) {
 	t.Parallel()
 
 	ctx, chains := NewTestingContext(t)
@@ -42,7 +43,7 @@ func TestXRPLToCoreumBridgingMultiTokenSending(t *testing.T) {
 	requireT := require.New(t)
 
 	xrplChain := chains.XRPL
-	coreumChain := chains.Coreum
+	txChain := chains.TX
 
 	coreIssuer := xrplChain.GenAccount(ctx, t, 10)
 	coreCurrency, err := rippledata.NewCurrency(xrplCORECurrency)
@@ -81,9 +82,9 @@ func TestXRPLToCoreumBridgingMultiTokenSending(t *testing.T) {
 
 	xrplSender := prepareXRPLSender(ctx, t, xrplChain, tokens)
 
-	recipient1Address := coreumChain.GenAccount()
-	recipient2Address := coreumChain.GenAccount()
-	recipient3Address := coreumChain.GenAccount()
+	recipient1Address := txChain.TXChain.GenAccount()
+	recipient2Address := txChain.TXChain.GenAccount()
+	recipient3Address := txChain.TXChain.GenAccount()
 
 	sendPayments(ctx, t, xrplChain, xrplSender, []payment{
 		{
@@ -127,8 +128,8 @@ func TestXRPLToCoreumBridgingMultiTokenSending(t *testing.T) {
 	instances := buildAndStartDevEnv(ctx, t, chains, tokens)
 
 	awaitForBalance(
-		ctx, t, coreumChain.ClientContext, recipient1Address.String(), coreumChain.NewCoin(
-			sdk.NewInt(
+		ctx, t, txChain.TXChain.ClientContext, recipient1Address.String(), txChain.TXChain.NewCoin(
+			sdkmath.NewInt(
 				// SOLO
 				18750000+8750000+
 					// XCORE
@@ -139,8 +140,8 @@ func TestXRPLToCoreumBridgingMultiTokenSending(t *testing.T) {
 	)
 
 	awaitForBalance(
-		ctx, t, coreumChain.ClientContext, recipient2Address.String(), coreumChain.NewCoin(
-			sdk.NewInt(
+		ctx, t, txChain.TXChain.ClientContext, recipient2Address.String(), txChain.TXChain.NewCoin(
+			sdkmath.NewInt(
 				// CORE
 				42345000+
 					// XCORE
@@ -150,18 +151,18 @@ func TestXRPLToCoreumBridgingMultiTokenSending(t *testing.T) {
 	// the third sender includes the low and high amount checks, the low amount will be skipped the high will be locked
 	// in the pending transactions. We use multiple amounts here since the low and high amounts are between
 	// the transactions with the valid amounts.
-	recipient3ExpectedBalance := sdk.NewInt(
+	recipient3ExpectedBalance := sdkmath.NewInt(
 		// CORE
 		15000000 + 7000000,
 	)
 	awaitForBalance(
-		ctx, t, coreumChain.ClientContext, recipient3Address.String(), coreumChain.NewCoin(recipient3ExpectedBalance),
+		ctx, t, txChain.TXChain.ClientContext, recipient3Address.String(), txChain.TXChain.NewCoin(recipient3ExpectedBalance),
 	)
 
 	// check that one xCore transaction is pending due to amount limit
-	highAmount := coreumChain.NewCoin(sdk.NewInt(250000000))
+	highAmount := txChain.TXChain.NewCoin(sdkmath.NewInt(250000000))
 
-	pendingTxs, err := instances[0].CoreumContractClient.GetPendingTxs(ctx, nil, nil)
+	pendingTxs, err := instances[0].TXContractClient.GetPendingTxs(ctx, nil, nil)
 	require.NoError(t, err)
 	require.Len(t, pendingTxs, 2) // one xCore and one solo
 
@@ -171,11 +172,11 @@ func TestXRPLToCoreumBridgingMultiTokenSending(t *testing.T) {
 	})
 
 	highAmountPendingTx := pendingTxs[0]
-	expectedHighAmountPendingTx := coreum.Transaction{
+	expectedHighAmountPendingTx := tx.Transaction{
 		Amount:    highAmount,
 		Recipient: recipient3Address.String(),
 		EvidenceProviders: lo.Map(instances, func(instance *service.Services, _ int) string {
-			return instance.Config.CoreumSenderAddress
+			return instance.Config.TXSenderAddress
 		}),
 	}
 	slices.Sort(expectedHighAmountPendingTx.EvidenceProviders)
@@ -183,9 +184,9 @@ func TestXRPLToCoreumBridgingMultiTokenSending(t *testing.T) {
 	requireT.Equal(expectedHighAmountPendingTx, highAmountPendingTx.Transaction)
 
 	// execute the pending transaction
-	_, err = instances[0].CoreumContractClient.ExecutePending(
+	_, err = instances[0].TXContractClient.ExecutePending(
 		ctx,
-		sdk.MustAccAddressFromBech32(instances[0].Config.CoreumSenderAddress),
+		sdk.MustAccAddressFromBech32(instances[0].Config.TXSenderAddress),
 		highAmount,
 		highAmountPendingTx.EvidenceID,
 	)
@@ -193,20 +194,20 @@ func TestXRPLToCoreumBridgingMultiTokenSending(t *testing.T) {
 	awaitForBalance(
 		ctx,
 		t,
-		coreumChain.ClientContext,
+		txChain.TXChain.ClientContext,
 		recipient3Address.String(),
-		coreumChain.NewCoin(recipient3ExpectedBalance.Add(highAmount.Amount)),
+		txChain.TXChain.NewCoin(recipient3ExpectedBalance.Add(highAmount.Amount)),
 	)
 
 	// check that one solo transaction is pending due to amount limit
-	highAmount = coreumChain.NewCoin(sdk.NewInt(312500000))
+	highAmount = txChain.TXChain.NewCoin(sdkmath.NewInt(312500000))
 
 	highAmountPendingTx = pendingTxs[1]
-	expectedHighAmountPendingTx = coreum.Transaction{
+	expectedHighAmountPendingTx = tx.Transaction{
 		Amount:    highAmount,
 		Recipient: recipient1Address.String(),
 		EvidenceProviders: lo.Map(instances, func(instance *service.Services, _ int) string {
-			return instance.Config.CoreumSenderAddress
+			return instance.Config.TXSenderAddress
 		}),
 	}
 	slices.Sort(expectedHighAmountPendingTx.EvidenceProviders)
@@ -214,16 +215,16 @@ func TestXRPLToCoreumBridgingMultiTokenSending(t *testing.T) {
 	requireT.Equal(expectedHighAmountPendingTx, highAmountPendingTx.Transaction)
 
 	// execute the pending transaction
-	_, err = instances[0].CoreumContractClient.ExecutePending(
+	_, err = instances[0].TXContractClient.ExecutePending(
 		ctx,
-		sdk.MustAccAddressFromBech32(instances[0].Config.CoreumSenderAddress),
+		sdk.MustAccAddressFromBech32(instances[0].Config.TXSenderAddress),
 		highAmount,
 		highAmountPendingTx.EvidenceID,
 	)
 	requireT.NoError(err)
 }
 
-func TestXRPLToCoreumBridgingTokenActivationDate(t *testing.T) {
+func TestXRPLToTXBridgingTokenActivationDate(t *testing.T) {
 	t.Parallel()
 
 	ctx, chains := NewTestingContext(t)
@@ -231,7 +232,7 @@ func TestXRPLToCoreumBridgingTokenActivationDate(t *testing.T) {
 	requireT := require.New(t)
 
 	xrplChain := chains.XRPL
-	coreumChain := chains.Coreum
+	txChain := chains.TX
 
 	coreIssuer := xrplChain.GenAccount(ctx, t, 10)
 	coreCurrency, err := rippledata.NewCurrency(xrplCORECurrency)
@@ -272,7 +273,7 @@ func TestXRPLToCoreumBridgingTokenActivationDate(t *testing.T) {
 
 	xrplSender := prepareXRPLSender(ctx, t, xrplChain, tokens)
 
-	recipientAddress := coreumChain.GenAccount()
+	recipientAddress := txChain.TXChain.GenAccount()
 
 	sendPayments(ctx, t, xrplChain, xrplSender, []payment{
 		{
@@ -310,8 +311,8 @@ func TestXRPLToCoreumBridgingTokenActivationDate(t *testing.T) {
 	buildAndStartDevEnv(ctx, t, chains, tokens)
 
 	awaitForBalance(
-		ctx, t, coreumChain.ClientContext, recipientAddress.String(), coreumChain.NewCoin(
-			sdk.NewInt(
+		ctx, t, txChain.TXChain.ClientContext, recipientAddress.String(), txChain.TXChain.NewCoin(
+			sdkmath.NewInt(
 				// only CORE related balance is expected, the XCORE and SOLO are not activated
 				150000000+35000000,
 			)),
@@ -358,7 +359,7 @@ func prepareXRPLSender(
 		currency, err := rippledata.NewCurrency(token.XRPLCurrency)
 		requireT.NoError(err)
 
-		trustSetForCoreumTx := rippledata.TrustSet{
+		trustSetForTXTx := rippledata.TrustSet{
 			LimitAmount: rippledata.Amount{
 				Value:    valueToFund,
 				Issuer:   *issuer,
@@ -369,7 +370,7 @@ func prepareXRPLSender(
 				Flags:           lo.ToPtr(rippledata.TxSetNoRipple),
 			},
 		}
-		requireT.NoError(xrplChain.AutoFillSignAndSubmitTx(ctx, t, &trustSetForCoreumTx, xrplSender))
+		requireT.NoError(xrplChain.AutoFillSignAndSubmitTx(ctx, t, &trustSetForTXTx, xrplSender))
 
 		fundXRPLSenderTx := rippledata.Payment{
 			Destination: xrplSender,
@@ -434,23 +435,23 @@ func buildAndStartDevEnv(
 	requireT := require.New(t)
 
 	xrplChain := chains.XRPL
-	coreumChain := chains.Coreum
+	txChain := chains.TX
 
-	owner := coreumChain.GenAccount()
+	owner := txChain.TXChain.GenAccount()
 
-	trustedAddress1 := coreumChain.GenAccount()
-	trustedAddress2 := coreumChain.GenAccount()
-	trustedAddress3 := coreumChain.GenAccount()
+	trustedAddress1 := txChain.TXChain.GenAccount()
+	trustedAddress2 := txChain.TXChain.GenAccount()
+	trustedAddress3 := txChain.TXChain.GenAccount()
 
 	t.Log("Funding trusted addresses.")
-	coreumChain.Faucet.FundAccounts(ctx, t,
-		integration.NewFundedAccount(owner, coreumChain.NewCoin(sdk.NewInt(5000000000))),
-		integration.NewFundedAccount(trustedAddress1, coreumChain.NewCoin(sdk.NewInt(5000000000))),
-		integration.NewFundedAccount(trustedAddress2, coreumChain.NewCoin(sdk.NewInt(5000000000))),
-		integration.NewFundedAccount(trustedAddress3, coreumChain.NewCoin(sdk.NewInt(5000000000))),
+	txChain.TXChain.Faucet.FundAccounts(ctx, t,
+		integration.NewFundedAccount(owner, txChain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress1, txChain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress2, txChain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress3, txChain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
 	)
 
-	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil, ""), coreumChain.ClientContext)
+	contractClient := tx.NewContractClient(tx.DefaultContractClientConfig(nil, ""), txChain.TXChain.ClientContext)
 
 	t.Log("Deploying and instantiating the smart contract.")
 	trustedAddresses := []string{
@@ -458,20 +459,20 @@ func buildAndStartDevEnv(
 		trustedAddress2.String(),
 		trustedAddress3.String(),
 	}
-	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
+	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, tx.DeployAndInstantiateConfig{
 		Owner:            owner.String(),
 		Admin:            owner.String(),
 		TrustedAddresses: trustedAddresses,
 		Threshold:        2,
-		MinAmount:        sdk.NewInt(100),
-		MaxAmount:        sdk.NewInt(200_000_000),
+		MinAmount:        sdkmath.NewIntFromUint64(100),
+		MaxAmount:        sdkmath.NewIntFromUint64(200_000_000),
 		XRPLTokens:       convertServiceTokensToContractTokens(tokens),
 		Label:            "bank_threshold_send",
 	})
 	requireT.NoError(err)
 
-	coinToFundContract := coreumChain.NewCoin(sdk.NewInt(10_000_000_000))
-	coreumChain.Faucet.FundAccounts(ctx, t, integration.NewFundedAccount(contractAddr, coinToFundContract))
+	coinToFundContract := txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(10_000_000_000))
+	txChain.TXChain.Faucet.FundAccounts(ctx, t, integration.NewFundedAccount(contractAddr, coinToFundContract))
 
 	requireT.NoError(contractClient.SetContractAddress(contractAddr))
 	t.Logf("Contract deployed and instantiated, address:%s.", contractAddr)
@@ -479,14 +480,15 @@ func buildAndStartDevEnv(
 	t.Log("Building and starting services.")
 	instances := lo.Map(
 		[]sdk.AccAddress{trustedAddress1, trustedAddress2, trustedAddress3},
+		//nolint:contextcheck // buildTestingServices intentionally uses context.Background()
 		func(trustedAddress sdk.AccAddress, index int) *service.Services {
 			return buildTestingServices(
 				t,
 				zaptest.NewLogger(t),
-				coreumChain.ChainSettings.ChainID,
-				coreumChain.ClientContext.Keyring(),
-				coreumChain.Config().RPCAddress,
-				coreumChain.Config().GRPCAddress,
+				txChain.TXChain.ChainSettings.ChainID,
+				txChain.TXChain.ClientContext.Keyring(),
+				txChain.Config().RPCAddress,
+				txChain.Config().GRPCAddress,
 				xrplChain.Config().RPCAddress,
 				trustedAddress,
 				contractAddr,
@@ -510,7 +512,7 @@ func buildAndStartDevEnv(
 		}(instance)
 	}
 
-	t.Cleanup(func() {
+	t.Cleanup(func() { //nolint:contextcheck // cleanup creates its own context for audit
 		cancel()
 		wg.Wait()
 		requireT.Empty(executionErrors)
@@ -531,10 +533,10 @@ func buildAndStartDevEnv(
 	return instances
 }
 
-func convertServiceTokensToContractTokens(tokens []service.XRPLTokenConfig) []coreum.XRPLToken {
-	contractTokens := make([]coreum.XRPLToken, 0, len(tokens))
+func convertServiceTokensToContractTokens(tokens []service.XRPLTokenConfig) []tx.XRPLToken {
+	contractTokens := make([]tx.XRPLToken, 0, len(tokens))
 	for _, token := range tokens {
-		contractTokens = append(contractTokens, coreum.XRPLToken{
+		contractTokens = append(contractTokens, tx.XRPLToken{
 			Currency:       token.XRPLCurrency,
 			Issuer:         token.XRPLIssuer,
 			ActivationDate: uint64(token.ActivationDate.Unix()),
@@ -549,7 +551,7 @@ func buildTestingServices(
 	zapLogger *zap.Logger,
 	chainID string,
 	kr keyring.Keyring,
-	coreumRPCURL, coreumGRPCURL, xrplRPCAddress string,
+	txRPCURL, txGRPCURL, xrplRPCAddress string,
 	senderAddress, contractAddress sdk.AccAddress,
 ) *service.Services {
 	services, err := service.NewServices(context.Background(), service.Config{
@@ -558,12 +560,12 @@ func buildTestingServices(
 		XRPLRecentScanIndexesBack:     30_000,
 		XRPLRecentScanSkipLastIndexes: 0,
 		XRPLMemoSuffix:                xrplTestMemoSuffix,
-		// we don't use the chain ctx here intentionally to fully check the client initialisation
-		CoreumRPCURL:          coreumRPCURL,
-		CoreumGRPCURL:         coreumGRPCURL,
-		CoreumChainID:         chainID,
-		CoreumSenderAddress:   senderAddress.String(),
-		CoreumContractAddress: contractAddress.String(),
+		// we don't use the chain ctx here intentionally to fully check the client initialization
+		TXRPCURL:          txRPCURL,
+		TXGRPCURL:         txGRPCURL,
+		TXChainID:         chainID,
+		TXSenderAddress:   senderAddress.String(),
+		TXContractAddress: contractAddress.String(),
 	}, kr, true, zapLogger)
 	require.NoError(t, err)
 
@@ -620,7 +622,7 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 	requireT := require.New(t)
 
 	xrplChain := chains.XRPL
-	coreumChain := chains.Coreum
+	txChain := chains.TX
 
 	// Setup token issuer
 	tokenIssuer := xrplChain.GenAccount(ctx, t, 10)
@@ -643,7 +645,7 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 	instances := buildAndStartDevEnv(ctx, t, chains, tokens)
 
 	xrplSender := prepareXRPLSender(ctx, t, xrplChain, tokens)
-	recipientAddress := coreumChain.GenAccount()
+	recipientAddress := txChain.TXChain.GenAccount()
 
 	// Send initial payment from XRPL
 	sendAmount := "100.0"
@@ -659,11 +661,11 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 	t.Log("waiting for initial transaction to be processed")
 
 	// Calculate expected balance with initial multiplier (1.0)
-	expectedInitialBalance := coreumChain.NewCoin(sdk.NewInt(100_000000)) // 100.0 * 1.0 * 10^6
+	expectedInitialBalance := txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(100_000000)) // 100.0 * 1.0 * 10^6
 	awaitForBalance(
 		ctx,
 		t,
-		coreumChain.ClientContext,
+		txChain.TXChain.ClientContext,
 		recipientAddress.String(),
 		expectedInitialBalance,
 	)
@@ -671,7 +673,7 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 	t.Log("initial transaction processed successfully")
 
 	// Record the initial balance
-	bankClient := banktypes.NewQueryClient(coreumChain.ClientContext)
+	bankClient := banktypes.NewQueryClient(txChain.TXChain.ClientContext)
 	balanceRes, err := bankClient.Balance(ctx, &banktypes.QueryBalanceRequest{
 		Address: recipientAddress.String(),
 		Denom:   expectedInitialBalance.Denom,
@@ -682,8 +684,8 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 	t.Logf("balance after first transaction: %s", balanceAfterFirst.String())
 
 	// Get contract client from one of the instances
-	contractClient := instances[0].CoreumContractClient
-	trustedAddress := sdk.MustAccAddressFromBech32(instances[0].Config.CoreumSenderAddress)
+	contractClient := instances[0].TXContractClient
+	trustedAddress := sdk.MustAccAddressFromBech32(instances[0].Config.TXSenderAddress)
 
 	// Get all sent transactions to find our transaction hash
 	offset := uint64(0)
@@ -694,9 +696,9 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 
 	// Find the transaction we just sent
 	var ourTxHash string
-	for _, tx := range sentTxs {
-		if tx.Recipient == recipientAddress.String() && tx.Amount.Amount.Equal(expectedInitialBalance.Amount) {
-			ourTxHash = tx.ID
+	for _, txn := range sentTxs {
+		if txn.Recipient == recipientAddress.String() && txn.Amount.Amount.Equal(expectedInitialBalance.Amount) {
+			ourTxHash = txn.ID
 			break
 		}
 	}
@@ -708,14 +710,14 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 	_, err = contractClient.ThresholdBankSend(
 		ctx,
 		trustedAddress,
-		coreum.ThresholdBankSendRequest{
+		tx.ThresholdBankSendRequest{
 			ID:        ourTxHash,
 			Amount:    expectedInitialBalance,
 			Recipient: recipientAddress.String(),
 		},
 	)
 	requireT.Error(err, "submitting duplicate transaction should fail")
-	requireT.True(coreum.IsTransferSentError(err), "error should be TransferSent error, got: %v", err)
+	requireT.True(tx.IsTransferSentError(err), "error should be TransferSent error, got: %v", err)
 	t.Log("contract correctly rejected duplicate transaction")
 
 	// Wait a bit to ensure no duplicate processing happened
@@ -741,7 +743,7 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 
 	// Update multiplier
 	newMultiplier := "2.0"
-	newTokens := []coreum.XRPLToken{
+	newTokens := []tx.XRPLToken{
 		{
 			Currency:       xrplCORECurrency,
 			Issuer:         tokenIssuer.String(),
@@ -756,10 +758,10 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 	contractOwner := sdk.MustAccAddressFromBech32(config.Owner)
 
 	// Create a contract client with the chain's keyring which has the owner account
-	contractAddr := sdk.MustAccAddressFromBech32(instances[0].Config.CoreumContractAddress)
-	ownerContractClient := coreum.NewContractClient(
-		coreum.DefaultContractClientConfig(contractAddr, coreumChain.ChainSettings.Denom),
-		coreumChain.ClientContext,
+	contractAddr := sdk.MustAccAddressFromBech32(instances[0].Config.TXContractAddress)
+	ownerContractClient := tx.NewContractClient(
+		tx.DefaultContractClientConfig(contractAddr, txChain.TXChain.ChainSettings.Denom),
+		txChain.TXChain.ClientContext,
 	)
 
 	_, err = ownerContractClient.UpdateXRPLTokens(ctx, contractOwner, newTokens)
@@ -770,12 +772,12 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 	// Even though the multiplier changed, the transaction hash is the same
 	// and should still be rejected
 	// 100.0 * 2.0 * 10^6 (what it WOULD be with new multiplier)
-	newExpectedAmount := coreumChain.NewCoin(sdk.NewInt(200_000000))
+	newExpectedAmount := txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(200_000000))
 
 	_, err = contractClient.ThresholdBankSend(
 		ctx,
 		trustedAddress,
-		coreum.ThresholdBankSendRequest{
+		tx.ThresholdBankSendRequest{
 			ID:        ourTxHash, // Same transaction hash!
 			Amount:    newExpectedAmount,
 			Recipient: recipientAddress.String(),
@@ -783,7 +785,7 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 	)
 	requireT.Error(err, "submitting same transaction with different multiplier should fail")
 	requireT.True(
-		coreum.IsTransferSentError(err),
+		tx.IsTransferSentError(err),
 		"error should be TransferSent error even with multiplier change, got: %v",
 		err,
 	)
@@ -826,7 +828,7 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 	requireT := require.New(t)
 
 	xrplChain := chains.XRPL
-	coreumChain := chains.Coreum
+	txChain := chains.TX
 
 	// Setup token issuer
 	tokenIssuer := xrplChain.GenAccount(ctx, t, 10)
@@ -846,23 +848,23 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 	}
 
 	// Deploy contract and start relayer
-	owner := coreumChain.GenAccount()
-	trustedAddress1 := coreumChain.GenAccount()
-	trustedAddress2 := coreumChain.GenAccount()
-	trustedAddress3 := coreumChain.GenAccount()
+	owner := txChain.TXChain.GenAccount()
+	trustedAddress1 := txChain.TXChain.GenAccount()
+	trustedAddress2 := txChain.TXChain.GenAccount()
+	trustedAddress3 := txChain.TXChain.GenAccount()
 
 	t.Log("Funding accounts.")
-	coreumChain.Faucet.FundAccounts(ctx, t,
-		integration.NewFundedAccount(owner, coreumChain.NewCoin(sdk.NewInt(5000000000))),
-		integration.NewFundedAccount(trustedAddress1, coreumChain.NewCoin(sdk.NewInt(5000000000))),
-		integration.NewFundedAccount(trustedAddress2, coreumChain.NewCoin(sdk.NewInt(5000000000))),
-		integration.NewFundedAccount(trustedAddress3, coreumChain.NewCoin(sdk.NewInt(5000000000))),
+	txChain.TXChain.Faucet.FundAccounts(ctx, t,
+		integration.NewFundedAccount(owner, txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(5000000000))),
+		integration.NewFundedAccount(trustedAddress1, txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(5000000000))),
+		integration.NewFundedAccount(trustedAddress2, txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(5000000000))),
+		integration.NewFundedAccount(trustedAddress3, txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(5000000000))),
 	)
 
-	contractClient := coreum.NewContractClient(coreum.DefaultContractClientConfig(nil, ""), coreumChain.ClientContext)
+	contractClient := tx.NewContractClient(tx.DefaultContractClientConfig(nil, ""), txChain.TXChain.ClientContext)
 
 	t.Log("Deploying and instantiating the smart contract with initial config.")
-	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, coreum.DeployAndInstantiateConfig{
+	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, tx.DeployAndInstantiateConfig{
 		Owner: owner.String(),
 		Admin: owner.String(),
 		TrustedAddresses: []string{
@@ -871,15 +873,15 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 			trustedAddress3.String(),
 		},
 		Threshold:  2,
-		MinAmount:  sdk.NewInt(100),
-		MaxAmount:  sdk.NewInt(200_000_000),
+		MinAmount:  sdkmath.NewIntFromUint64(100),
+		MaxAmount:  sdkmath.NewIntFromUint64(200_000_000),
 		XRPLTokens: convertServiceTokensToContractTokens(initialTokens),
 		Label:      "bank_threshold_send",
 	})
 	requireT.NoError(err)
 
-	coinToFundContract := coreumChain.NewCoin(sdk.NewInt(10_000_000_000))
-	coreumChain.Faucet.FundAccounts(ctx, t, integration.NewFundedAccount(contractAddr, coinToFundContract))
+	coinToFundContract := txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(10_000_000_000))
+	txChain.TXChain.Faucet.FundAccounts(ctx, t, integration.NewFundedAccount(contractAddr, coinToFundContract))
 
 	requireT.NoError(contractClient.SetContractAddress(contractAddr))
 	t.Logf("Contract deployed and instantiated, address:%s.", contractAddr)
@@ -892,10 +894,10 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 		XRPLRecentScanIndexesBack:     30_000,
 		XRPLRecentScanSkipLastIndexes: 0,
 		XRPLMemoSuffix:                xrplTestMemoSuffix,
-		CoreumRPCURL:                  coreumChain.Config().RPCAddress,
-		CoreumGRPCURL:                 coreumChain.Config().GRPCAddress,
-		CoreumChainID:                 coreumChain.ChainSettings.ChainID,
-		CoreumContractAddress:         contractAddr.String(),
+		TXRPCURL:                      txChain.Config().RPCAddress,
+		TXGRPCURL:                     txChain.Config().GRPCAddress,
+		TXChainID:                     txChain.TXChain.ChainSettings.ChainID,
+		TXContractAddress:             contractAddr.String(),
 		ConfigWatcherPollInterval:     2 * time.Second, // Short interval for testing
 	}
 
@@ -909,11 +911,13 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 	// Start 3 relayers (one for each trusted address) to meet threshold of 2
 	for _, trustedAddr := range trustedAddresses {
 		serviceCfg := baseServiceCfg
-		serviceCfg.CoreumSenderAddress = trustedAddr.String()
+		serviceCfg.TXSenderAddress = trustedAddr.String()
 
 		go func(cfg service.Config) {
 			// Use the actual RunExecutorWithAutoRestart function
-			relayerErrCh <- service.RunExecutorWithAutoRestart(relayerCtx, cfg, coreumChain.ClientContext.Keyring(), zapLogger)
+			err := service.RunExecutorWithAutoRestart(
+				relayerCtx, cfg, txChain.TXChain.ClientContext.Keyring(), zapLogger)
+			relayerErrCh <- err
 		}(serviceCfg)
 	}
 
@@ -936,7 +940,7 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 
 	// Prepare XRPL sender
 	xrplSender := prepareXRPLSender(ctx, t, xrplChain, initialTokens)
-	recipientAddress := coreumChain.GenAccount()
+	recipientAddress := txChain.TXChain.GenAccount()
 
 	// Send first transaction with initial multiplier (1.0)
 	t.Log("Sending first transaction with initial config (multiplier 1.0)")
@@ -951,13 +955,13 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 	})
 
 	// Wait for first transaction to be processed
-	expectedInitialBalance := coreumChain.NewCoin(sdk.NewInt(100_000000)) // 100.0 * 1.0 * 10^6
-	awaitForBalance(ctx, t, coreumChain.ClientContext, recipientAddress.String(), expectedInitialBalance)
+	expectedInitialBalance := txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(100_000000)) // 100.0 * 1.0 * 10^6
+	awaitForBalance(ctx, t, txChain.TXChain.ClientContext, recipientAddress.String(), expectedInitialBalance)
 	t.Log("First transaction processed with initial multiplier")
 
 	// Update contract config with new multiplier (2.0)
 	t.Log("Updating contract config with new multiplier (2.0)")
-	newTokens := []coreum.XRPLToken{
+	newTokens := []tx.XRPLToken{
 		{
 			Currency:       xrplCORECurrency,
 			Issuer:         tokenIssuer.String(),
@@ -994,12 +998,12 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 
 	// Wait for second transaction to be processed with new multiplier
 	// Expected: 100 * 1.0 + 50 * 2.0 = 100 + 100 = 200
-	expectedFinalBalance := coreumChain.NewCoin(sdk.NewInt(200_000000))
-	awaitForBalance(ctx, t, coreumChain.ClientContext, recipientAddress.String(), expectedFinalBalance)
+	expectedFinalBalance := txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(200_000000))
+	awaitForBalance(ctx, t, txChain.TXChain.ClientContext, recipientAddress.String(), expectedFinalBalance)
 	t.Log("Second transaction processed with new multiplier (2.0)")
 
 	// Verify the balance is correct
-	bankClient := banktypes.NewQueryClient(coreumChain.ClientContext)
+	bankClient := banktypes.NewQueryClient(txChain.TXChain.ClientContext)
 	balanceRes, err := bankClient.Balance(ctx, &banktypes.QueryBalanceRequest{
 		Address: recipientAddress.String(),
 		Denom:   expectedFinalBalance.Denom,

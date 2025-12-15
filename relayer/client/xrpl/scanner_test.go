@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/metric"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/CoreumFoundation/coreum-tools/pkg/http"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/metric"
 )
 
 func TestTxScanner_Scan(t *testing.T) {

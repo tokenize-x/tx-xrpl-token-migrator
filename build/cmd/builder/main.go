@@ -1,8 +1,9 @@
 package main
 
 import (
+	selfBuild "github.com/tokenize-x/tx-xrpl-token-migrator/build"
+
 	"github.com/CoreumFoundation/crust/build"
-	selfBuild "github.com/CoreumFoundation/xrpl-bridge/build"
 )
 
 func main() {

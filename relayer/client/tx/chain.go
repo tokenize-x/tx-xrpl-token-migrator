@@ -1,4 +1,4 @@
-package coreum
+package tx
 
 import (
 	"context"
@@ -13,10 +13,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 	"go.uber.org/zap"
 
-	"github.com/CoreumFoundation/coreum/v4/pkg/client"
-	"github.com/CoreumFoundation/xrpl-bridge/relayer/logger"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
 )
 
 // ChainClientConfig represent the ChainClient config.
@@ -35,7 +35,7 @@ func DefaultChainClientConfig() ChainClientConfig {
 	}
 }
 
-// ChainClient is the coreum chain client.
+// ChainClient is the TX blockchain client.
 type ChainClient struct {
 	cfg        ChainClientConfig
 	log        logger.Logger
@@ -63,7 +63,7 @@ func (c *ChainClient) GetSpendingTransactions(
 func (c *ChainClient) queryTransactionsByEvents(
 	ctx context.Context, event string, startDate time.Time,
 ) ([]*sdk.TxResponse, error) {
-	c.log.Info("Fetching coreum transactions.", zap.String("event", event))
+	c.log.Info("Fetching TX blockchain transactions.", zap.String("event", event))
 
 	tmEvents := []string{event}
 	// call fast to get total pages
@@ -97,9 +97,8 @@ func (c *ChainClient) queryTransactionsByEvents(
 		}
 		c.log.Info("Fetched page ", zap.String("Page", fmt.Sprintf("%d/%d", pageToFetch, pagesTotal)))
 		reqCtxCancel()
-		for _, tx := range res.Txs {
-			tx := tx
-			timestamp, err := time.ParseInLocation("2006-01-02 15:04:05.999999999 -0700 MST", tx.Timestamp, time.UTC)
+		for _, txn := range res.Txs {
+			timestamp, err := time.ParseInLocation("2006-01-02 15:04:05.999999999 -0700 MST", txn.Timestamp, time.UTC)
 			if err != nil {
 				return nil, err
 			}
@@ -112,10 +111,10 @@ func (c *ChainClient) queryTransactionsByEvents(
 				return txs, nil
 			}
 			// keep success transactions only
-			if tx.Code != 0 {
+			if txn.Code != 0 {
 				continue
 			}
-			txs = append(txs, tx)
+			txs = append(txs, txn)
 		}
 	}
 
@@ -151,18 +150,17 @@ func (c *ChainClient) queryTxsByEvents(
 	wg := sync.WaitGroup{}
 	errs := make([]error, 0)
 	wg.Add(len(txs))
-	for _, tx := range txs {
-		tx := tx
+	for _, txn := range txs {
 		c.workerPool.Submit(func() {
 			defer wg.Done()
-			block, err := node.Block(ctx, &tx.Height)
+			block, err := node.Block(ctx, &txn.Height)
 			if err != nil {
 				mu.Lock()
 				errs = append(errs, err)
 				mu.Unlock()
 				return
 			}
-			tx.Timestamp = block.Block.Header.Time.String()
+			txn.Timestamp = block.Block.Header.Time.String()
 		})
 	}
 	wg.Wait()
