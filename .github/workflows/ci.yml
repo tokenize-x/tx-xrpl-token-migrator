@@ -29,7 +29,7 @@ jobs:
           - ci_step: "contract lint and test"
             command: "make test-contract"
 
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     steps:
       - name: Checkout xrpl bridge
         uses: actions/checkout@v4
