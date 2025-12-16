@@ -137,7 +137,7 @@ func RootCmd(ctx context.Context) (*cobra.Command, error) {
 	cmd.AddCommand(BuildExecutePendingApprovedTransactionsCmd(ctx))
 	cmd.AddCommand(BuildMigrateContractTransactionCmd(ctx))
 	cmd.AddCommand(BuildUpdateTrustedAddressesTransactionCmd(ctx))
-	cmd.AddCommand(BuildUpdateXRPLTokensTransactionCmd(ctx))
+	cmd.AddCommand(BuildAddXRPLTokensTransactionCmd(ctx))
 	cmd.AddCommand(AuditCmd(ctx))
 
 	cmd.AddCommand(keys.Commands())
@@ -703,11 +703,11 @@ func BuildUpdateTrustedAddressesTransactionCmd(ctx context.Context) *cobra.Comma
 	return cmd
 }
 
-// BuildUpdateXRPLTokensTransactionCmd builds transaction for the update_xrpl_tokens contract method.
-func BuildUpdateXRPLTokensTransactionCmd(ctx context.Context) *cobra.Command {
+// BuildAddXRPLTokensTransactionCmd builds transaction for the add_xrpl_tokens contract method.
+func BuildAddXRPLTokensTransactionCmd(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "build-update-xrpl-tokens",
-		Short: "Builds transaction for the update_xrpl_tokens method",
+		Use:   "build-add-xrpl-tokens",
+		Short: "Builds transaction for the add_xrpl_tokens method",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := readServicesConfig(cmd)
 			if err != nil {
@@ -754,7 +754,7 @@ func BuildUpdateXRPLTokensTransactionCmd(ctx context.Context) *cobra.Command {
 				})
 			}
 
-			msg, err := services.TXContractClient.BuildUpdateXRPLTokensTransaction(senderAddress, xrplTokens)
+			msg, err := services.TXContractClient.BuildAddXRPLTokensTransaction(senderAddress, xrplTokens)
 			if err != nil {
 				return err
 			}

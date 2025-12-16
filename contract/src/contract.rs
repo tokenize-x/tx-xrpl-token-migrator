@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env,
+    entry_point, to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Decimal, Deps, DepsMut, Env,
     MessageInfo, Order, Response, StdError, StdResult, Uint128,
 };
 use cw2::set_contract_version;
@@ -30,6 +30,34 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const DEFAULT_PAGE_LIMIT: u32 = 500;
 const MAX_PAGE_LIMIT: u32 = DEFAULT_PAGE_LIMIT;
 
+// XRPL validation constants
+// Reference: ripple/crypto/const.go
+const XRPL_BASE58_ALPHABET: &[u8; 58] =
+    b"rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
+
+// XRPL currency constants
+// Currency codes are 40-character hexadecimal strings (160 bits)
+// Reference: ripple/data/currency.go
+const XRPL_CURRENCY_HEX_LENGTH: usize = 40;
+
+// XRPL address validation constants
+// Reference: ripple/crypto/const.go
+const RIPPLE_ACCOUNT_ID_VERSION: u8 = 0;
+const RIPPLE_ACCOUNT_ID_PAYLOAD_LENGTH: usize = 20;
+const RIPPLE_ACCOUNT_ID_VERSION_BYTE_LENGTH: usize = 1;
+// Decoded address length after checksum is stripped: [version:1][payload:20] = 21 bytes
+const RIPPLE_ACCOUNT_ID_DECODED_LENGTH: usize =
+    RIPPLE_ACCOUNT_ID_VERSION_BYTE_LENGTH + RIPPLE_ACCOUNT_ID_PAYLOAD_LENGTH;
+
+// Multiplier validation constants
+const MIN_MULTIPLIER_NUMERATOR: u128 = 1;
+const MIN_MULTIPLIER_DENOMINATOR: u128 = 10; // 0.1 = 1/10
+const MAX_MULTIPLIER_NUMERATOR: u128 = 10;
+const MAX_MULTIPLIER_DENOMINATOR: u128 = 1; // 10.0 = 10/1
+
+// Token limit constant
+const MAX_XRPL_TOKENS: usize = 200;
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -50,6 +78,20 @@ pub fn instantiate(
         deps.api.addr_validate(addr.as_str())?;
         if !seen.insert(addr.clone()) {
             return Err(ContractError::DuplicatedTrustedAddress {});
+        }
+    }
+
+    // Validate XRPL tokens if provided
+    for token in &msg.xrpl_tokens {
+        validate_xrpl_token(token)?;
+    }
+
+    // Check for duplicates in initial tokens
+    let mut token_seen = std::collections::HashSet::new();
+    for token in &msg.xrpl_tokens {
+        let key = (token.issuer.clone(), token.currency.clone());
+        if !token_seen.insert(key) {
+            return Err(ContractError::DuplicatedXRPLToken {});
         }
     }
 
@@ -88,7 +130,7 @@ pub fn execute(
         ExecuteMsg::UpdateTrustedAddresses { trusted_addresses } => {
             update_trusted_addresses(deps, info, trusted_addresses)
         }
-        ExecuteMsg::UpdateXrplTokens { xrpl_tokens } => update_xrpl_tokens(deps, info, xrpl_tokens),
+        ExecuteMsg::AddXrplTokens { xrpl_tokens } => add_xrpl_tokens(deps, info, xrpl_tokens),
     }
 }
 
@@ -121,7 +163,7 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
                 .collect();
 
             // Create config from existing state
-            // xrpl_tokens starts empty - will be set via update_xrpl_tokens
+            // xrpl_tokens starts empty - will be set via add_xrpl_tokens
             let config = ContractConfig {
                 owner,
                 trusted_addresses,
@@ -329,10 +371,10 @@ pub fn update_trusted_addresses(
         .add_attribute("version", config.version.to_string()))
 }
 
-pub fn update_xrpl_tokens(
+pub fn add_xrpl_tokens(
     deps: DepsMut,
     info: MessageInfo,
-    xrpl_tokens: Vec<crate::msg::XRPLToken>,
+    new_tokens: Vec<crate::msg::XRPLToken>,
 ) -> Result<Response, ContractError> {
     let mut config = CONFIG.load(deps.storage)?;
 
@@ -340,14 +382,89 @@ pub fn update_xrpl_tokens(
         return Err(ContractError::Unauthorized {});
     }
 
-    // TODO: add validation for the xrpl tokens
-    config.xrpl_tokens = xrpl_tokens;
+    // Build unique keys from existing tokens to prevent duplicates
+    let mut seen_keys: std::collections::HashSet<(String, String)> = config
+        .xrpl_tokens
+        .iter()
+        .map(|t| (t.issuer.clone(), t.currency.clone()))
+        .collect();
+
+    for token in new_tokens {
+        // Run our new optimized validation
+        validate_xrpl_token(&token)?;
+
+        let key = (token.issuer.clone(), token.currency.clone());
+        if !seen_keys.insert(key) {
+            return Err(ContractError::DuplicatedXRPLToken {});
+        }
+
+        config.xrpl_tokens.push(token);
+    }
+
+    // Security Cap: Prevent vector bloat
+    // TODO: Discuss with team if we need this limit or alternatively store it in state separately.
+    // not in the config struct.
+    if config.xrpl_tokens.len() > MAX_XRPL_TOKENS {
+        return Err(StdError::generic_err("Maximum token limit reached").into());
+    }
+
     config.version += 1;
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new()
-        .add_attribute("action", "update_xrpl_tokens")
-        .add_attribute("version", config.version.to_string()))
+        .add_attribute("action", "add_xrpl_tokens")
+        .add_attribute("version", config.version.to_string())
+        .add_attribute("total_tokens", config.xrpl_tokens.len().to_string()))
+}
+
+fn validate_xrpl_token(token: &crate::msg::XRPLToken) -> Result<(), ContractError> {
+    // Validate Currency: 40-char Hex
+    if token.currency.len() != XRPL_CURRENCY_HEX_LENGTH
+        || !token.currency.chars().all(|c| c.is_ascii_hexdigit())
+    {
+        return Err(ContractError::InvalidXRPLCurrency {
+            reason: format!(
+                "Currency must be a {}-character hexadecimal string",
+                XRPL_CURRENCY_HEX_LENGTH
+            ),
+        });
+    }
+
+    // Validate Issuer: Use bs58 with built-in checksum (double-sha256) validation
+    let decoded = bs58::decode(&token.issuer)
+        .with_alphabet(&bs58::Alphabet::new(XRPL_BASE58_ALPHABET).unwrap())
+        .with_check(None) // Automatically verifies the 4-byte checksum
+        .into_vec()
+        .map_err(|_| ContractError::InvalidXRPLIssuer {
+            reason: "Invalid Base58 format or checksum mismatch".into(),
+        })?;
+
+    // Validate structure: [Version Byte (0x00)][AccountID (20 bytes)]
+    if decoded.len() != RIPPLE_ACCOUNT_ID_DECODED_LENGTH || decoded[0] != RIPPLE_ACCOUNT_ID_VERSION
+    {
+        return Err(ContractError::InvalidXRPLIssuer {
+            reason: "Invalid XRPL address version or payload length".into(),
+        });
+    }
+
+    // Validate Multiplier: Use Decimal for deterministic math
+    let val: Decimal = token
+        .multiplier
+        .parse()
+        .map_err(|_| ContractError::InvalidMultiplier {
+            reason: format!("Multiplier '{}' is not a valid decimal", token.multiplier),
+        })?;
+
+    let min_bound = Decimal::from_ratio(MIN_MULTIPLIER_NUMERATOR, MIN_MULTIPLIER_DENOMINATOR);
+    let max_bound = Decimal::from_ratio(MAX_MULTIPLIER_NUMERATOR, MAX_MULTIPLIER_DENOMINATOR);
+
+    if val < min_bound || val > max_bound {
+        return Err(ContractError::InvalidMultiplier {
+            reason: format!("Multiplier {} is out of allowed range [0.1, 10.0]", val),
+        });
+    }
+
+    Ok(())
 }
 
 fn normalize_id(id: String) -> String {
@@ -990,7 +1107,7 @@ mod tests {
     }
 
     #[test]
-    fn test_update_xrpl_tokens() {
+    fn test_add_xrpl_tokens() {
         let mut deps = mock_dependencies();
         let env = mock_env();
 
@@ -998,7 +1115,7 @@ mod tests {
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
         assert_eq!(true, res.is_ok());
 
-        let new_xrpl_tokens = vec![
+        let first_xrpl_tokens = vec![
             crate::msg::XRPLToken {
                 currency: TEST_XRPL_CORE_CURRENCY.to_string(),
                 issuer: TEST_XRPL_CORE_ISSUER.to_string(),
@@ -1015,21 +1132,51 @@ mod tests {
 
         // execute from non-owner should fail
         let info = mock_info(TEST_ANY_ADDRESS, &[]);
-        let res = update_xrpl_tokens(deps.as_mut(), info.clone(), new_xrpl_tokens.clone());
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), first_xrpl_tokens.clone());
         assert_eq!(ContractError::Unauthorized {}, res.unwrap_err());
 
         // execute from owner should succeed
         let info = mock_info(TEST_OWNER, &[]);
-        let res = update_xrpl_tokens(deps.as_mut(), info.clone(), new_xrpl_tokens.clone());
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), first_xrpl_tokens.clone());
         assert_eq!(true, res.is_ok());
 
-        // verify tokens were updated
+        // verify tokens were added
         let config = get_config(deps.as_ref()).unwrap();
-        assert_eq!(new_xrpl_tokens, config.xrpl_tokens);
+        assert_eq!(first_xrpl_tokens, config.xrpl_tokens);
 
-        // verify query returns correct tokens via config
-        let config_response = get_config(deps.as_ref()).unwrap();
-        assert_eq!(new_xrpl_tokens, config_response.xrpl_tokens);
+        // Add more tokens - should append, not replace
+        let second_xrpl_tokens = vec![crate::msg::XRPLToken {
+            currency: TEST_XRPL_SOLO_CURRENCY.to_string(),
+            issuer: TEST_XRPL_SOLO_ISSUER.to_string(),
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: TEST_MULTIPLIER_1_25.to_string(),
+        }];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), second_xrpl_tokens.clone());
+        assert_eq!(true, res.is_ok());
+
+        // verify tokens were appended (immutability - existing tokens remain)
+        let config = get_config(deps.as_ref()).unwrap();
+        let mut expected_tokens = first_xrpl_tokens.clone();
+        expected_tokens.extend(second_xrpl_tokens);
+        assert_eq!(expected_tokens, config.xrpl_tokens);
+
+        // Try to add duplicate token - should fail
+        let duplicate_token = vec![crate::msg::XRPLToken {
+            currency: TEST_XRPL_CORE_CURRENCY.to_string(),
+            issuer: TEST_XRPL_CORE_ISSUER.to_string(),
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: TEST_MULTIPLIER_1_0.to_string(),
+        }];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), duplicate_token);
+        assert_eq!(ContractError::DuplicatedXRPLToken {}, res.unwrap_err());
+
+        // Verify tokens remain unchanged after failed duplicate add
+        let config = get_config(deps.as_ref()).unwrap();
+        assert_eq!(expected_tokens, config.xrpl_tokens);
     }
 
     #[test]
@@ -1092,5 +1239,300 @@ mod tests {
         // verify config has correct values
         let config = get_config(deps.as_ref()).unwrap();
         assert_eq!(xrpl_tokens, config.xrpl_tokens);
+    }
+
+    #[test]
+    fn test_validate_xrpl_token_invalid_currency() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(TEST_OWNER, &[]);
+
+        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
+        assert_eq!(true, res.is_ok());
+
+        // Test invalid currency length
+        let invalid_tokens = vec![crate::msg::XRPLToken {
+            currency: "123".to_string(), // Too short
+            issuer: TEST_XRPL_CORE_ISSUER.to_string(),
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: TEST_MULTIPLIER_1_0.to_string(),
+        }];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), invalid_tokens);
+        assert!(matches!(
+            res.unwrap_err(),
+            ContractError::InvalidXRPLCurrency { .. }
+        ));
+
+        // Test invalid currency characters
+        let invalid_tokens = vec![crate::msg::XRPLToken {
+            currency: "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG".to_string(), // Invalid hex
+            issuer: TEST_XRPL_CORE_ISSUER.to_string(),
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: TEST_MULTIPLIER_1_0.to_string(),
+        }];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), invalid_tokens);
+        assert!(matches!(
+            res.unwrap_err(),
+            ContractError::InvalidXRPLCurrency { .. }
+        ));
+    }
+
+    #[test]
+    fn test_validate_xrpl_token_invalid_issuer() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(TEST_OWNER, &[]);
+
+        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
+        assert_eq!(true, res.is_ok());
+
+        // Test issuer that doesn't start with 'r'
+        let invalid_tokens = vec![crate::msg::XRPLToken {
+            currency: TEST_XRPL_CORE_CURRENCY.to_string(),
+            issuer: "aSEP47QAwU6jsZU493znUD2iGNHDQEyvA".to_string(), // Doesn't start with 'r'
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: TEST_MULTIPLIER_1_0.to_string(),
+        }];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), invalid_tokens);
+        assert!(matches!(
+            res.unwrap_err(),
+            ContractError::InvalidXRPLIssuer { .. }
+        ));
+
+        // Test issuer with invalid length
+        let invalid_tokens = vec![crate::msg::XRPLToken {
+            currency: TEST_XRPL_CORE_CURRENCY.to_string(),
+            issuer: "rShort".to_string(), // Too short
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: TEST_MULTIPLIER_1_0.to_string(),
+        }];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), invalid_tokens);
+        assert!(matches!(
+            res.unwrap_err(),
+            ContractError::InvalidXRPLIssuer { .. }
+        ));
+
+        // Test issuer with invalid characters (contains '0')
+        let invalid_tokens = vec![crate::msg::XRPLToken {
+            currency: TEST_XRPL_CORE_CURRENCY.to_string(),
+            issuer: "r000000000000000000000000000000".to_string(), // Contains '0'
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: TEST_MULTIPLIER_1_0.to_string(),
+        }];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), invalid_tokens);
+        assert!(matches!(
+            res.unwrap_err(),
+            ContractError::InvalidXRPLIssuer { .. }
+        ));
+    }
+
+    #[test]
+    fn test_validate_xrpl_token_invalid_multiplier() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(TEST_OWNER, &[]);
+
+        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
+        assert_eq!(true, res.is_ok());
+
+        // Test empty multiplier
+        let invalid_tokens = vec![crate::msg::XRPLToken {
+            currency: TEST_XRPL_CORE_CURRENCY.to_string(),
+            issuer: TEST_XRPL_CORE_ISSUER.to_string(),
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: "".to_string(),
+        }];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), invalid_tokens);
+        assert!(matches!(
+            res.unwrap_err(),
+            ContractError::InvalidMultiplier { .. }
+        ));
+
+        // Test negative multiplier
+        let invalid_tokens = vec![crate::msg::XRPLToken {
+            currency: TEST_XRPL_CORE_CURRENCY.to_string(),
+            issuer: TEST_XRPL_CORE_ISSUER.to_string(),
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: "-1.0".to_string(),
+        }];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), invalid_tokens);
+        assert!(matches!(
+            res.unwrap_err(),
+            ContractError::InvalidMultiplier { .. }
+        ));
+
+        // Test zero multiplier
+        let invalid_tokens = vec![crate::msg::XRPLToken {
+            currency: TEST_XRPL_CORE_CURRENCY.to_string(),
+            issuer: TEST_XRPL_CORE_ISSUER.to_string(),
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: "0".to_string(),
+        }];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), invalid_tokens);
+        assert!(matches!(
+            res.unwrap_err(),
+            ContractError::InvalidMultiplier { .. }
+        ));
+
+        // Test multiplier below minimum (0.1)
+        let invalid_tokens = vec![crate::msg::XRPLToken {
+            currency: TEST_XRPL_CORE_CURRENCY.to_string(),
+            issuer: TEST_XRPL_CORE_ISSUER.to_string(),
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: "0.05".to_string(), // Below 0.1
+        }];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), invalid_tokens);
+        assert!(matches!(
+            res.unwrap_err(),
+            ContractError::InvalidMultiplier { .. }
+        ));
+
+        // Test multiplier above maximum (10.0)
+        let invalid_tokens = vec![crate::msg::XRPLToken {
+            currency: TEST_XRPL_CORE_CURRENCY.to_string(),
+            issuer: TEST_XRPL_CORE_ISSUER.to_string(),
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: "10.1".to_string(), // Above 10.0
+        }];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), invalid_tokens);
+        assert!(matches!(
+            res.unwrap_err(),
+            ContractError::InvalidMultiplier { .. }
+        ));
+
+        // Test invalid characters in multiplier
+        let invalid_tokens = vec![crate::msg::XRPLToken {
+            currency: TEST_XRPL_CORE_CURRENCY.to_string(),
+            issuer: TEST_XRPL_CORE_ISSUER.to_string(),
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: "1.2.3".to_string(), // Multiple decimal points
+        }];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), invalid_tokens);
+        assert!(matches!(
+            res.unwrap_err(),
+            ContractError::InvalidMultiplier { .. }
+        ));
+    }
+
+    #[test]
+    fn test_validate_xrpl_token_valid_formats() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(TEST_OWNER, &[]);
+
+        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
+        assert_eq!(true, res.is_ok());
+
+        // Test valid tokens with various valid formats
+        let valid_tokens = vec![
+            crate::msg::XRPLToken {
+                currency: "434F524500000000000000000000000000000000".to_string(), // Uppercase hex
+                issuer: TEST_XRPL_CORE_ISSUER.to_string(),
+                activation_date: TEST_ACTIVATION_DATE,
+                multiplier: "1.0".to_string(),
+            },
+            crate::msg::XRPLToken {
+                currency: "434f524500000000000000000000000000000000".to_string(), // Lowercase hex
+                issuer: TEST_XRPL_XCORE_ISSUER.to_string(),
+                activation_date: TEST_ACTIVATION_DATE,
+                multiplier: "1.25".to_string(),
+            },
+            crate::msg::XRPLToken {
+                currency: "1234567890ABCDEFabcdef000000000000000000".to_string(), // Mixed case hex
+                issuer: TEST_XRPL_SOLO_ISSUER.to_string(),
+                activation_date: TEST_ACTIVATION_DATE,
+                multiplier: "2.5".to_string(),
+            },
+        ];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), valid_tokens);
+        assert_eq!(true, res.is_ok());
+    }
+
+    #[test]
+    fn test_validate_multiplier_range() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(TEST_OWNER, &[]);
+
+        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
+        assert_eq!(true, res.is_ok());
+
+        // Test minimum boundary (0.1) - should be valid
+        let valid_tokens = vec![crate::msg::XRPLToken {
+            currency: TEST_XRPL_CORE_CURRENCY.to_string(),
+            issuer: TEST_XRPL_CORE_ISSUER.to_string(),
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: "0.1".to_string(),
+        }];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), valid_tokens);
+        assert_eq!(true, res.is_ok());
+
+        // Test maximum boundary (10.0) - should be valid
+        let valid_tokens = vec![crate::msg::XRPLToken {
+            currency: TEST_XRPL_XCORE_CURRENCY.to_string(),
+            issuer: TEST_XRPL_XCORE_ISSUER.to_string(),
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: "10.0".to_string(),
+        }];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), valid_tokens);
+        assert_eq!(true, res.is_ok());
+
+        // Test value just below minimum (0.099) - should be invalid
+        let invalid_tokens = vec![crate::msg::XRPLToken {
+            currency: TEST_XRPL_SOLO_CURRENCY.to_string(),
+            issuer: TEST_XRPL_SOLO_ISSUER.to_string(),
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: "0.099".to_string(),
+        }];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), invalid_tokens);
+        assert!(matches!(
+            res.unwrap_err(),
+            ContractError::InvalidMultiplier { .. }
+        ));
+
+        // Test value just above maximum (10.01) - should be invalid
+        let invalid_tokens = vec![crate::msg::XRPLToken {
+            currency: "1234567890ABCDEFabcdef000000000000000000".to_string(),
+            issuer: TEST_XRPL_CORE_ISSUER.to_string(),
+            activation_date: TEST_ACTIVATION_DATE,
+            multiplier: "10.01".to_string(),
+        }];
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = add_xrpl_tokens(deps.as_mut(), info.clone(), invalid_tokens);
+        assert!(matches!(
+            res.unwrap_err(),
+            ContractError::InvalidMultiplier { .. }
+        ));
     }
 }
