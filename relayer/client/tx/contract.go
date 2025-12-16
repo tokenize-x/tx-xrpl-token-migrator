@@ -34,7 +34,7 @@ const (
 	ExecMethodUpdateMinAmount        ExecMethod = "update_min_amount"
 	ExecMethodUpdateMaxAmount        ExecMethod = "update_max_amount"
 	ExecMethodUpdateTrustedAddresses ExecMethod = "update_trusted_addresses"
-	ExecMethodUpdateXRPLTokens       ExecMethod = "update_xrpl_tokens"
+	ExecMethodAddXRPLTokens          ExecMethod = "add_xrpl_tokens"
 )
 
 // QueryMethod is contract query method.
@@ -121,8 +121,8 @@ type UpdateUpdateTrustedAddressesRequest struct {
 	TrustedAddresses []sdk.AccAddress `json:"trusted_addresses"` //nolint:tagliatelle //contract spec
 }
 
-// UpdateXRPLTokensRequest is the `update_xrpl_tokens` request payload.
-type UpdateXRPLTokensRequest struct {
+// AddXRPLTokensRequest is the `add_xrpl_tokens` request payload.
+type AddXRPLTokensRequest struct {
 	XRPLTokens []XRPLToken `json:"xrpl_tokens"` //nolint:tagliatelle //contract spec
 }
 
@@ -354,37 +354,37 @@ func (c *ContractClient) BuildUpdateTrustedAddressesTransaction(
 	return msg, nil
 }
 
-// UpdateXRPLTokens executes update_xrpl_tokens Method of the contract.
-func (c *ContractClient) UpdateXRPLTokens(
+// AddXRPLTokens executes add_xrpl_tokens Method of the contract.
+func (c *ContractClient) AddXRPLTokens(
 	ctx context.Context,
 	sender sdk.AccAddress,
 	xrplTokens []XRPLToken,
 ) (*sdk.TxResponse, error) {
-	msg, err := c.BuildUpdateXRPLTokensTransaction(sender, xrplTokens)
+	msg, err := c.BuildAddXRPLTokensTransaction(sender, xrplTokens)
 	if err != nil {
 		return nil, err
 	}
 
 	txRes, err := client.BroadcastTx(ctx, c.clientCtx.WithFromAddress(sender), c.txFactory(), msg)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to update XRPL tokens")
+		return nil, errors.Wrap(err, "failed to add XRPL tokens")
 	}
 
 	return txRes, nil
 }
 
-// BuildUpdateXRPLTokensTransaction build update_xrpl_tokens Method transaction.
-func (c *ContractClient) BuildUpdateXRPLTokensTransaction(
+// BuildAddXRPLTokensTransaction build add_xrpl_tokens Method transaction.
+func (c *ContractClient) BuildAddXRPLTokensTransaction(
 	sender sdk.AccAddress,
 	xrplTokens []XRPLToken,
 ) (sdk.Msg, error) {
-	msg, err := c.buildExecuteWithFunds(sender, sdk.NewCoins(), map[ExecMethod]UpdateXRPLTokensRequest{
-		ExecMethodUpdateXRPLTokens: {
+	msg, err := c.buildExecuteWithFunds(sender, sdk.NewCoins(), map[ExecMethod]AddXRPLTokensRequest{
+		ExecMethodAddXRPLTokens: {
 			XRPLTokens: xrplTokens,
 		},
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build tx for %s Method", ExecMethodUpdateXRPLTokens)
+		return nil, errors.Wrapf(err, "failed to build tx for %s Method", ExecMethodAddXRPLTokens)
 	}
 
 	return msg, nil

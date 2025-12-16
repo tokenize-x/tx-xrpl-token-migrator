@@ -19,6 +19,18 @@ pub enum ContractError {
     #[error("Duplicated trusted address")]
     DuplicatedTrustedAddress {},
 
+    #[error("Duplicated XRPL token")]
+    DuplicatedXRPLToken {},
+
+    #[error("Invalid XRPL currency format: {reason}")]
+    InvalidXRPLCurrency { reason: String },
+
+    #[error("Invalid XRPL issuer format: {reason}")]
+    InvalidXRPLIssuer { reason: String },
+
+    #[error("Invalid multiplier format: {reason}")]
+    InvalidMultiplier { reason: String },
+
     #[error("Transfer already sent")]
     TransferAlreadySent {},
 
