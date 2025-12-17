@@ -735,21 +735,20 @@ func BuildUpdateXRPLTokensTransactionCmd(ctx context.Context) *cobra.Command {
 			for _, tokenStr := range xrplTokensStr {
 				parts := strings.Split(tokenStr, "/")
 				if len(parts) != 4 {
-					// TODO: to be revised in the next PR
 					return errors.Errorf(
-						"invalid %s value: %s, expected format: issuer/currency/activation_date/multiplier",
+						"invalid %s value: %s, expected format: issuer/currency/activation_unix_timestamp/multiplier",
 						flagXRPLToken,
 						tokenStr,
 					)
 				}
-				activationDate, err := strconv.ParseUint(parts[2], 10, 64)
+				activationUnixTimestamp, err := strconv.ParseUint(parts[2], 10, 64)
 				if err != nil {
-					return errors.Wrapf(err, "failed to parse activation date: %s", parts[2])
+					return errors.Wrapf(err, "failed to parse activation_unix_timestamp: %s", parts[2])
 				}
 				xrplTokens = append(xrplTokens, tx.XRPLToken{
 					Issuer:         parts[0],
 					Currency:       parts[1],
-					ActivationDate: activationDate,
+					ActivationDate: activationUnixTimestamp,
 					Multiplier:     parts[3],
 				})
 			}
@@ -783,7 +782,7 @@ func BuildUpdateXRPLTokensTransactionCmd(ctx context.Context) *cobra.Command {
 	cmd.PersistentFlags().StringSlice(
 		flagXRPLToken,
 		nil,
-		"XRPL tokens in format: issuer/currency/activation_date/multiplier",
+		"XRPL tokens in format: issuer/currency/activation_unix_timestamp/multiplier",
 	)
 	addTXFlags(cmd)
 
