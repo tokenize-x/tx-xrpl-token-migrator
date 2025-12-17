@@ -260,10 +260,12 @@ func DeployAndInstantiateCmd(ctx context.Context) *cobra.Command { //nolint:funl
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
+
+			deployClient, log, err := service.NewDeployContractClient(cfg, clientCtx.Keyring, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
+
 			deployCfg := tx.DeployAndInstantiateConfig{
 				Owner:            ownerAddress,
 				Admin:            ownerAddress,
@@ -273,14 +275,14 @@ func DeployAndInstantiateCmd(ctx context.Context) *cobra.Command { //nolint:funl
 				MaxAmount:        maxAmount,
 				Label:            "bank_threshold_send",
 			}
-			services.Logger.Info("Deploying contract.", zap.Any("config", deployCfg))
+			log.Info("Deploying contract.", zap.Any("config", deployCfg))
 
 			senderAddress, err := sdk.AccAddressFromBech32(cfg.TXSenderAddress)
 			if err != nil {
 				return errors.Wrapf(err, "invalid sender address")
 			}
 
-			contractAddress, err := services.TXContractClient.DeployAndInstantiate(
+			contractAddress, err := deployClient.DeployAndInstantiate(
 				ctx,
 				senderAddress,
 				deployCfg,
@@ -288,7 +290,7 @@ func DeployAndInstantiateCmd(ctx context.Context) *cobra.Command { //nolint:funl
 			if err != nil {
 				return err
 			}
-			services.Logger.Info("Contract deployed", zap.String("address", contractAddress.String()))
+			log.Info("Contract deployed", zap.String("address", contractAddress.String()))
 
 			return nil
 		},
@@ -321,26 +323,27 @@ func DeployCmd(ctx context.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
+
+			deployClient, log, err := service.NewDeployContractClient(cfg, clientCtx.Keyring, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
 
-			services.Logger.Info("Deploying contract.")
+			log.Info("Deploying contract.")
 
 			senderAddress, err := sdk.AccAddressFromBech32(cfg.TXSenderAddress)
 			if err != nil {
 				return errors.Wrapf(err, "invalid sender address")
 			}
 
-			codeID, err := services.TXContractClient.Deploy(
+			codeID, err := deployClient.Deploy(
 				ctx,
 				senderAddress,
 			)
 			if err != nil {
 				return err
 			}
-			services.Logger.Info("Contract deployed", zap.Uint64("codeID", codeID))
+			log.Info("Contract deployed", zap.Uint64("codeID", codeID))
 
 			return nil
 		},
@@ -366,16 +369,16 @@ func GetContractConfigCmd(ctx context.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			contractClient, log, err := service.NewContractClient(ctx, cfg, clientCtx.Keyring, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
-			contractCfg, err := services.TXContractClient.GetContractConfig(ctx)
+			contractCfg, err := contractClient.GetContractConfig(ctx)
 			if err != nil {
 				return err
 			}
 
-			services.Logger.Info("Contract config:", zap.Any("config", contractCfg))
+			log.Info("Contract config:", zap.Any("config", contractCfg))
 
 			return nil
 		},
@@ -400,15 +403,15 @@ func GetPendingUnapprovedTransactionsCmd(ctx context.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			contractClient, log, err := service.NewContractClient(ctx, cfg, clientCtx.Keyring, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
-			unapprovedTransactions, _, err := services.TXContractClient.GetAllPendingTransactions(ctx)
+			unapprovedTransactions, _, err := contractClient.GetAllPendingTransactions(ctx)
 			if err != nil {
 				return err
 			}
-			services.Logger.Info("Unapproved pending transactions:",
+			log.Info("Unapproved pending transactions:",
 				zap.Int("total", len(unapprovedTransactions)),
 				zap.Any("txs", unapprovedTransactions),
 			)
@@ -436,18 +439,18 @@ func GetPendingApprovedTransactionsCmd(ctx context.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			contractClient, log, err := service.NewContractClient(ctx, cfg, clientCtx.Keyring, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
-			_, approvedTransactions, err := services.TXContractClient.GetAllPendingTransactions(ctx)
+			_, approvedTransactions, err := contractClient.GetAllPendingTransactions(ctx)
 			if err != nil {
 				return err
 			}
 			evidenceIDs := lo.Map(approvedTransactions, func(txn tx.PendingTransaction, _ int) string {
 				return txn.EvidenceID
 			})
-			services.Logger.Info("Approved pending transactions:",
+			log.Info("Approved pending transactions:",
 				zap.Int("total", len(evidenceIDs)),
 				zap.Any("evidenceIDs", evidenceIDs),
 			)
@@ -475,7 +478,7 @@ func BuildExecutePendingApprovedTransactionsCmd(ctx context.Context) *cobra.Comm
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			contractClient, _, err := service.NewContractClient(ctx, cfg, clientCtx.Keyring, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
@@ -489,12 +492,12 @@ func BuildExecutePendingApprovedTransactionsCmd(ctx context.Context) *cobra.Comm
 				return err
 			}
 
-			msgs, err := services.TXContractClient.BuildExecutePendingMessages(ctx, senderAddress, evidenceIDs)
+			msgs, err := contractClient.BuildExecutePendingMessages(ctx, senderAddress, evidenceIDs)
 			if err != nil {
 				return err
 			}
 
-			fees, gas, err := services.TXContractClient.EstimateExecuteMessages(ctx, senderAddress, msgs...)
+			fees, gas, err := contractClient.EstimateExecuteMessages(ctx, senderAddress, msgs...)
 			if err != nil {
 				return err
 			}
@@ -535,12 +538,12 @@ func AuditCmd(ctx context.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			auditor, log, err := service.NewAuditor(ctx, cfg, clientCtx.Keyring, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
 
-			discrepancies, err := services.Auditor.Audit(ctx)
+			discrepancies, err := auditor.Audit(ctx)
 			if err != nil {
 				return err
 			}
@@ -557,14 +560,14 @@ func AuditCmd(ctx context.Context) *cobra.Command {
 					if discrepancy.XRPLTx.Hash != "" {
 						fields = append(fields, zap.String("xrplTxHash", discrepancy.XRPLTx.Hash))
 					}
-					services.Logger.Info("Found discrepancy", fields...)
+					log.Info("Found discrepancy", fields...)
 				}
-				services.Logger.Warn("!!! The audit is failed !!!", zap.Int("discrepanciesCount", len(discrepancies)))
+				log.Warn("!!! The audit is failed !!!", zap.Int("discrepanciesCount", len(discrepancies)))
 
 				return nil
 			}
 
-			services.Logger.Info("The audit is succeed. No discrepancies found.")
+			log.Info("The audit is succeed. No discrepancies found.")
 
 			return nil
 		},
@@ -592,7 +595,7 @@ func BuildMigrateContractTransactionCmd(ctx context.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			contractClient, _, err := service.NewContractClient(ctx, cfg, clientCtx.Keyring, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
@@ -606,9 +609,9 @@ func BuildMigrateContractTransactionCmd(ctx context.Context) *cobra.Command {
 				return errors.Wrapf(err, "failed to parse codeID")
 			}
 
-			msg := services.TXContractClient.BuildMigrateContractMessage(senderAddress, codeID)
+			msg := contractClient.BuildMigrateContractMessage(senderAddress, codeID)
 
-			fees, gas, err := services.TXContractClient.EstimateExecuteMessages(ctx, senderAddress, msg)
+			fees, gas, err := contractClient.EstimateExecuteMessages(ctx, senderAddress, msg)
 			if err != nil {
 				return err
 			}
@@ -648,7 +651,7 @@ func BuildUpdateTrustedAddressesTransactionCmd(ctx context.Context) *cobra.Comma
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			contractClient, _, err := service.NewContractClient(ctx, cfg, clientCtx.Keyring, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
@@ -671,12 +674,12 @@ func BuildUpdateTrustedAddressesTransactionCmd(ctx context.Context) *cobra.Comma
 				trustedAddresses = append(trustedAddresses, addr)
 			}
 
-			msg, err := services.TXContractClient.BuildUpdateTrustedAddressesTransaction(senderAddress, trustedAddresses)
+			msg, err := contractClient.BuildUpdateTrustedAddressesTransaction(senderAddress, trustedAddresses)
 			if err != nil {
 				return err
 			}
 
-			fees, gas, err := services.TXContractClient.EstimateExecuteMessages(ctx, senderAddress, msg)
+			fees, gas, err := contractClient.EstimateExecuteMessages(ctx, senderAddress, msg)
 			if err != nil {
 				return err
 			}
@@ -717,7 +720,7 @@ func BuildUpdateXRPLTokensTransactionCmd(ctx context.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			services, err := service.NewServices(ctx, cfg, clientCtx.Keyring, false, logger.Get(ctx))
+			contractClient, _, err := service.NewContractClient(ctx, cfg, clientCtx.Keyring, logger.Get(ctx))
 			if err != nil {
 				return err
 			}
@@ -754,12 +757,12 @@ func BuildUpdateXRPLTokensTransactionCmd(ctx context.Context) *cobra.Command {
 				})
 			}
 
-			msg, err := services.TXContractClient.BuildUpdateXRPLTokensTransaction(senderAddress, xrplTokens)
+			msg, err := contractClient.BuildUpdateXRPLTokensTransaction(senderAddress, xrplTokens)
 			if err != nil {
 				return err
 			}
 
-			fees, gas, err := services.TXContractClient.EstimateExecuteMessages(ctx, senderAddress, msg)
+			fees, gas, err := contractClient.EstimateExecuteMessages(ctx, senderAddress, msg)
 			if err != nil {
 				return err
 			}
