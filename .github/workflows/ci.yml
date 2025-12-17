@@ -62,9 +62,9 @@ jobs:
             echo -e "Host tx-crust-private\n    HostName github.com\n    User git\n    IdentityFile ~/.ssh/tx-crust-deploy-key\n    IdentitiesOnly yes"
           } >> ~/.ssh/config
           {
-            echo -e "[url \"git@tx-chain-private:tokenize-x/tx-chain\"]\n        insteadOf = \"https://github.com/tokenize-x/tx-chain\""
-            echo -e "[url \"git@tx-tools-private:tokenize-x/tx-tools\"]\n        insteadOf = \"https://github.com/tokenize-x/tx-tools\""
-            echo -e "[url \"git@tx-crust-private:tokenize-x/tx-crust\"]\n        insteadOf = \"https://github.com/tokenize-x/tx-crust\""
+            echo -e "[url \"git@tx-chain-private:tokenize-x/tx-chain\"]\n        insteadOf = \"git@github.com:tokenize-x/tx-chain\""
+            echo -e "[url \"git@tx-tools-private:tokenize-x/tx-tools\"]\n        insteadOf = \"git@github.com:tokenize-x/tx-tools\""
+            echo -e "[url \"git@tx-crust-private:tokenize-x/tx-crust\"]\n        insteadOf = \"git@github.com:tokenize-x/tx-crust\""
           } > ~/.gitconfig
       - name: Install go
         uses: actions/setup-go@v5
