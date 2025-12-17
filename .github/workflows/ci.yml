@@ -39,6 +39,7 @@ jobs:
       - name: Checkout coreum
         uses: actions/checkout@v4
         with:
+          persist-credentials: false
           repository: CoreumFoundation/coreum
           path: coreum
           ref: v5.0.1
