@@ -86,6 +86,8 @@ func TestXRPLToTXBridgingMultiTokenSending(t *testing.T) {
 	recipient2Address := txChain.TXChain.GenAccount()
 	recipient3Address := txChain.TXChain.GenAccount()
 
+	instances := buildAndStartDevEnv(ctx, t, chains, tokens)
+
 	sendPayments(ctx, t, xrplChain, xrplSender, []payment{
 		{
 			address:  recipient1Address.String(),
@@ -124,8 +126,6 @@ func TestXRPLToTXBridgingMultiTokenSending(t *testing.T) {
 			currency: soloCurrency,
 		},
 	})
-
-	instances := buildAndStartDevEnv(ctx, t, chains, tokens)
 
 	awaitForBalance(
 		ctx, t, txChain.TXChain.ClientContext, recipient1Address.String(), txChain.TXChain.NewCoin(
@@ -275,6 +275,8 @@ func TestXRPLToTXBridgingTokenActivationDate(t *testing.T) {
 
 	recipientAddress := txChain.TXChain.GenAccount()
 
+	buildAndStartDevEnv(ctx, t, chains, tokens)
+
 	sendPayments(ctx, t, xrplChain, xrplSender, []payment{
 		{
 			address:  recipientAddress.String(),
@@ -420,6 +422,9 @@ func sendPayments(
 				},
 			}
 			requireT.NoError(xrplChain.AutoFillSignAndSubmitTx(ctx, t, &paymentTx, xrplSender))
+			// Insert a small delay to avoid submitting payments too quickly in tests.
+			// and cause intermittent test failures.
+			time.Sleep(2000 * time.Millisecond)
 		}
 	}
 }
