@@ -676,7 +676,7 @@ func TestWASMUpdateTrustedAddresses(t *testing.T) {
 	}), cfg.TrustedAddresses)
 }
 
-func TestWASMUpdateXRPLTokens(t *testing.T) {
+func TestWASMAddXRPLTokens(t *testing.T) {
 	t.Parallel()
 
 	ctx, chain := NewTXTestingContext(t)
@@ -710,36 +710,76 @@ func TestWASMUpdateXRPLTokens(t *testing.T) {
 	requireT.NoError(contractClient.SetContractAddress(contractAddr))
 	t.Logf("Contract deployed and instantiated, address:%s.", contractAddr)
 
-	t.Logf("Trying to update XRPL tokens from non-owner.")
+	// Verify initial tokens are present
+	cfg, err := contractClient.GetContractConfig(ctx)
+	requireT.NoError(err)
+	requireT.Equal(len(testXRPLTokens), len(cfg.XRPLTokens))
+
+	t.Logf("Trying to add XRPL tokens from non-owner.")
 	newXRPLTokens := []tx.XRPLToken{
 		{
-			Currency:       "555344000000000000000000000000000000000000", // USD
-			Issuer:         "rN7n7otQDd6FczFgLdlqtyMVrn3HMfXt8L",
+			Currency: "5553440000000000000000000000000000000000", // USD - 40 hex chars
+			// Valid XRPL address (reused from init.go with different currency)
+			Issuer:         "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
 			ActivationDate: 1704067200, // 2024-01-01
 			Multiplier:     "1.5",
 		},
 		{
-			Currency:       "455552000000000000000000000000000000000000", // EUR
-			Issuer:         "rLHzPsX6oXkzU9fTFUnKh4wH8KMY4kRqTn",
+			Currency: "4555520000000000000000000000000000000000", // EUR - 40 hex chars
+			// Valid XRPL address (reused from init.go with different currency)
+			Issuer:         "rawnyFwFLkntQttzBgEFiASg5iB5ULdKpX",
 			ActivationDate: 1704067200,
 			Multiplier:     "2.0",
 		},
 	}
 
-	_, err = contractClient.UpdateXRPLTokens(
+	_, err = contractClient.AddXRPLTokens(
 		ctx, anyAddress, newXRPLTokens,
 	)
 	requireT.True(tx.IsUnauthorizedError(err))
 
-	t.Logf("Updating XRPL tokens from the owner.")
-	_, err = contractClient.UpdateXRPLTokens(
+	t.Logf("Adding XRPL tokens from the owner.")
+	_, err = contractClient.AddXRPLTokens(
 		ctx, owner, newXRPLTokens,
 	)
 	requireT.NoError(err)
 
-	cfg, err := contractClient.GetContractConfig(ctx)
+	// Verify tokens were appended (not replaced) - existing tokens remain immutable
+	cfg, err = contractClient.GetContractConfig(ctx)
 	requireT.NoError(err)
-	requireT.Equal(newXRPLTokens, cfg.XRPLTokens)
+	requireT.Len(cfg.XRPLTokens, len(testXRPLTokens)+len(newXRPLTokens))
+
+	// Verify original tokens are still present
+	for _, originalToken := range testXRPLTokens {
+		found := false
+		for _, token := range cfg.XRPLTokens {
+			if token.Issuer == originalToken.Issuer && token.Currency == originalToken.Currency {
+				found = true
+				requireT.Equal(originalToken.Multiplier, token.Multiplier, "Original token multiplier should remain unchanged")
+				break
+			}
+		}
+		requireT.True(found, "Original token should remain in config")
+	}
+
+	// Try to add duplicate token - should fail
+	duplicateToken := []tx.XRPLToken{
+		{
+			Currency:       testXRPLTokens[0].Currency,
+			Issuer:         testXRPLTokens[0].Issuer,
+			ActivationDate: testXRPLTokens[0].ActivationDate,
+			Multiplier:     "5.0", // Valid multiplier, but same issuer/currency (duplicate)
+		},
+	}
+
+	_, err = contractClient.AddXRPLTokens(ctx, owner, duplicateToken)
+	requireT.Error(err)
+	requireT.Contains(err.Error(), "Duplicated XRPL token")
+
+	// Verify that after duplicate rejection, config still contains original + new tokens
+	cfg, err = contractClient.GetContractConfig(ctx)
+	requireT.NoError(err)
+	requireT.Len(cfg.XRPLTokens, len(testXRPLTokens)+len(newXRPLTokens))
 }
 
 func TestWASMContractQueryPagination(t *testing.T) {

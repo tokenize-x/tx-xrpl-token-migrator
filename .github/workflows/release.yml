@@ -6,7 +6,7 @@ on:
 
 jobs:
   release:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     steps:
       - name: Checkout xrpl bridge
         uses: actions/checkout@v4

@@ -86,6 +86,8 @@ func TestXRPLToTXBridgingMultiTokenSending(t *testing.T) {
 	recipient2Address := txChain.TXChain.GenAccount()
 	recipient3Address := txChain.TXChain.GenAccount()
 
+	instances := buildAndStartDevEnv(ctx, t, chains, tokens)
+
 	sendPayments(ctx, t, xrplChain, xrplSender, []payment{
 		{
 			address:  recipient1Address.String(),
@@ -124,8 +126,6 @@ func TestXRPLToTXBridgingMultiTokenSending(t *testing.T) {
 			currency: soloCurrency,
 		},
 	})
-
-	instances := buildAndStartDevEnv(ctx, t, chains, tokens)
 
 	awaitForBalance(
 		ctx, t, txChain.TXChain.ClientContext, recipient1Address.String(), txChain.TXChain.NewCoin(
@@ -275,6 +275,8 @@ func TestXRPLToTXBridgingTokenActivationDate(t *testing.T) {
 
 	recipientAddress := txChain.TXChain.GenAccount()
 
+	buildAndStartDevEnv(ctx, t, chains, tokens)
+
 	sendPayments(ctx, t, xrplChain, xrplSender, []payment{
 		{
 			address:  recipientAddress.String(),
@@ -420,6 +422,9 @@ func sendPayments(
 				},
 			}
 			requireT.NoError(xrplChain.AutoFillSignAndSubmitTx(ctx, t, &paymentTx, xrplSender))
+			// Insert a small delay to avoid submitting payments too quickly in tests.
+			// and cause intermittent test failures.
+			time.Sleep(2000 * time.Millisecond)
 		}
 	}
 }
@@ -752,7 +757,7 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 		},
 	}
 
-	// Note: Only the owner can update XRPL tokens. Get the contract owner from config
+	// Note: Only the owner can add XRPL tokens. Get the contract owner from config
 	config, err := contractClient.GetContractConfig(ctx)
 	requireT.NoError(err)
 	contractOwner := sdk.MustAccAddressFromBech32(config.Owner)
@@ -764,14 +769,15 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 		txChain.TXChain.ClientContext,
 	)
 
-	_, err = ownerContractClient.UpdateXRPLTokens(ctx, contractOwner, newTokens)
-	requireT.NoError(err)
-	t.Log("multiplier updated to 2.0")
+	// Tokens are now immutable - we cannot update multipliers
+	// Attempting to add a duplicate token (same issuer/currency) should fail
+	_, err = ownerContractClient.AddXRPLTokens(ctx, contractOwner, newTokens)
+	requireT.Error(err)
+	requireT.Contains(err.Error(), "Duplicated XRPL token")
+	t.Log("confirmed: cannot add duplicate token (tokens are immutable)")
 
-	// Try to submit the SAME transaction again with the new multiplier
-	// Even though the multiplier changed, the transaction hash is the same
-	// and should still be rejected
-	// 100.0 * 2.0 * 10^6 (what it WOULD be with new multiplier)
+	// Try to submit the SAME transaction again
+	// The original multiplier (1.0) will still be used
 	newExpectedAmount := txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(200_000000))
 
 	_, err = contractClient.ThresholdBankSend(
@@ -959,8 +965,9 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 	awaitForBalance(ctx, t, txChain.TXChain.ClientContext, recipientAddress.String(), expectedInitialBalance)
 	t.Log("First transaction processed with initial multiplier")
 
-	// Update contract config with new multiplier (2.0)
-	t.Log("Updating contract config with new multiplier (2.0)")
+	// Note: Tokens are now immutable - we cannot update multipliers
+	// Attempting to add a duplicate token (same issuer/currency) should fail
+	t.Log("Attempting to add duplicate token (should fail - tokens are immutable)")
 	newTokens := []tx.XRPLToken{
 		{
 			Currency:       xrplCORECurrency,
@@ -970,22 +977,19 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 		},
 	}
 
-	_, err = contractClient.UpdateXRPLTokens(ctx, owner, newTokens)
-	requireT.NoError(err)
+	_, err = contractClient.AddXRPLTokens(ctx, owner, newTokens)
+	requireT.Error(err)
+	requireT.Contains(err.Error(), "Duplicated XRPL token")
+	t.Log("Confirmed: cannot add duplicate token - tokens are immutable")
 
-	// Verify config was updated
+	// Verify config was NOT updated - original multiplier remains
 	cfg, err := contractClient.GetContractConfig(ctx)
 	requireT.NoError(err)
-	requireT.Equal("2.0", cfg.XRPLTokens[0].Multiplier)
-	t.Log("Contract config updated successfully")
+	requireT.Equal("1.0", cfg.XRPLTokens[0].Multiplier, "Original multiplier should remain unchanged")
+	t.Log("Contract config unchanged - tokens are immutable")
 
-	// Wait for relayer to detect config change and restart
-	// The watcher polls every 2 seconds in this test
-	// Wait a bit longer to ensure config change is detected and services are restarted
-	time.Sleep(5 * time.Second)
-
-	// Send second transaction - should use new multiplier (2.0)
-	t.Log("Sending second transaction - should use new multiplier (2.0)")
+	// Send second transaction - should still use original multiplier (1.0)
+	t.Log("Sending second transaction - will use original multiplier (1.0) since tokens are immutable")
 	sendAmount2 := "50.0"
 	sendPayments(ctx, t, xrplChain, xrplSender, []payment{
 		{
@@ -996,11 +1000,11 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 		},
 	})
 
-	// Wait for second transaction to be processed with new multiplier
-	// Expected: 100 * 1.0 + 50 * 2.0 = 100 + 100 = 200
-	expectedFinalBalance := txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(200_000000))
+	// Wait for second transaction to be processed with original multiplier (since tokens are immutable)
+	// Expected: 100 * 1.0 + 50 * 1.0 = 100 + 50 = 150
+	expectedFinalBalance := txChain.TXChain.NewCoin(sdkmath.NewIntFromUint64(150_000000))
 	awaitForBalance(ctx, t, txChain.TXChain.ClientContext, recipientAddress.String(), expectedFinalBalance)
-	t.Log("Second transaction processed with new multiplier (2.0)")
+	t.Log("Second transaction processed with original multiplier (1.0) - tokens are immutable")
 
 	// Verify the balance is correct
 	bankClient := banktypes.NewQueryClient(txChain.TXChain.ClientContext)
