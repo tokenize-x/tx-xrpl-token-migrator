@@ -84,6 +84,204 @@ type Services struct {
 	Auditor           *audit.Auditor
 }
 
+// buildTXClientContext builds and returns a TX client context with RPC and gRPC connections.
+func buildTXClientContext(
+	cfg Config,
+	kr keyring.Keyring,
+) (client.Context, error) {
+	network, err := config.NetworkConfigByChainID(constant.ChainID(cfg.TXChainID))
+	if err != nil {
+		return client.Context{}, err
+	}
+
+	txClientCtx := client.NewContext(client.DefaultContextConfig(), auth.AppModuleBasic{}, wasm.AppModuleBasic{}).
+		WithChainID(string(network.ChainID())).
+		WithKeyring(kr)
+
+	if cfg.TXRPCURL != "" {
+		txRPCClient, err := cosmosclient.NewClientFromNode(cfg.TXRPCURL)
+		if err != nil {
+			return client.Context{}, errors.Wrapf(err, "faild to create TX RPC client")
+		}
+		txClientCtx = txClientCtx.WithClient(txRPCClient)
+	}
+
+	if cfg.TXGRPCURL != "" {
+		txGRPCClient, err := getGRPCClientConn(cfg.TXGRPCURL)
+		if err != nil {
+			return client.Context{}, err
+		}
+		txClientCtx = txClientCtx.WithGRPCClient(txGRPCClient)
+	}
+
+	return txClientCtx, nil
+}
+
+// NewDeployContractClient creates a contract client and logger for deploy operations.
+// This function does not require a contract address since it's used to deploy new contracts.
+func NewDeployContractClient(
+	cfg Config,
+	kr keyring.Keyring,
+	zapLogger *zap.Logger,
+) (*tx.ContractClient, logger.Logger, error) {
+	metricRecorder, err := metric.NewRecorder()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	log := logger.NewZapLogger(zapLogger, metricRecorder)
+
+	network, err := config.NetworkConfigByChainID(constant.ChainID(cfg.TXChainID))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	txClientCtx, err := buildTXClientContext(cfg, kr)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// For deploy operations, contract address is nil
+	deployClient := tx.NewContractClient(
+		tx.DefaultContractClientConfig(
+			nil,
+			network.Denom(),
+		),
+		txClientCtx,
+	)
+
+	return deployClient, log, nil
+}
+
+// NewContractClient creates a contract client and logger for contract operations.
+// Contract address is required for operations on existing contracts.
+func NewContractClient(
+	ctx context.Context,
+	cfg Config,
+	kr keyring.Keyring,
+	zapLogger *zap.Logger,
+) (*tx.ContractClient, logger.Logger, error) {
+	metricRecorder, err := metric.NewRecorder()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	log := logger.NewZapLogger(zapLogger, metricRecorder)
+
+	network, err := config.NetworkConfigByChainID(constant.ChainID(cfg.TXChainID))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if cfg.TXContractAddress == "" {
+		return nil, nil, errors.New("contract address is required")
+	}
+
+	contractAddress, err := sdk.AccAddressFromBech32(cfg.TXContractAddress)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "invalid contract address")
+	}
+
+	txClientCtx, err := buildTXClientContext(cfg, kr)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	txContractClient := tx.NewContractClient(
+		tx.DefaultContractClientConfig(
+			contractAddress,
+			network.Denom(),
+		),
+		txClientCtx,
+	)
+
+	return txContractClient, log, nil
+}
+
+// NewAuditor creates an auditor and logger for audit operations.
+func NewAuditor(
+	ctx context.Context,
+	cfg Config,
+	kr keyring.Keyring,
+	zapLogger *zap.Logger,
+) (*audit.Auditor, logger.Logger, error) {
+	metricRecorder, err := metric.NewRecorder()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	log := logger.NewZapLogger(zapLogger, metricRecorder)
+	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
+	xrplRPCClient := xrpl.NewRPCClient(xrpl.DefaultRPCClientConfig(cfg.XRPLRPCURL), log, httpClient)
+
+	network, err := config.NetworkConfigByChainID(constant.ChainID(cfg.TXChainID))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var contractAddress sdk.AccAddress
+	if cfg.TXContractAddress != "" {
+		contractAddress, err = sdk.AccAddressFromBech32(cfg.TXContractAddress)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "invalid contract address")
+		}
+	} else {
+		return nil, nil, errors.New("contract address is required")
+	}
+
+	txClientCtx, err := buildTXClientContext(cfg, kr)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	txContractClient := tx.NewContractClient(
+		tx.DefaultContractClientConfig(
+			contractAddress,
+			network.Denom(),
+		),
+		txClientCtx,
+	)
+
+	// Query contract for token configuration
+	contractCfg, err := txContractClient.GetContractConfig(ctx)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to query contract config")
+	}
+
+	// Create audit config from token configuration
+	auditTokensCfg := make([]audit.XRPLTokenConfig, 0, len(contractCfg.XRPLTokens))
+	for _, token := range contractCfg.XRPLTokens {
+		xrplIssuer, err := rippledata.NewAccountFromAddress(token.Issuer)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to convert XRPLIssuer string to type, value:%s", token.Issuer)
+		}
+
+		xrplCurrency, err := rippledata.NewCurrency(token.Currency)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to convert XRPLCurrency string to type, value:%s", token.Currency)
+		}
+
+		auditTokensCfg = append(auditTokensCfg, audit.XRPLTokenConfig{
+			XRPLIssuer:   *xrplIssuer,
+			XRPLCurrency: xrplCurrency,
+			Multiplier:   token.Multiplier,
+		})
+	}
+
+	txChainClient := tx.NewChainClient(tx.DefaultChainClientConfig(), log, txClientCtx)
+
+	auditor := audit.NewAuditor(audit.AuditorConfig{
+		ContractAddress: contractAddress.String(),
+		XRPLMemoSuffix:  cfg.XRPLMemoSuffix,
+		TXDenom:         network.Denom(),
+		TXDecimals:      6,
+		XRPLTokens:      auditTokensCfg,
+		StartDate:       cfg.AuditStartDate,
+	}, log, txChainClient, xrplRPCClient)
+
+	return auditor, log, nil
+}
+
 // NewServices returns new instance on the services.
 //
 //nolint:funlen // step-by step initialization
@@ -139,27 +337,12 @@ func NewServices(
 			return nil, errors.Wrapf(err, "invalid contract address")
 		}
 	} else {
-		// TODO: to be revised in the next PR
 		return nil, errors.New("contract address is required")
 	}
-	txClientCtx := client.NewContext(client.DefaultContextConfig(), auth.AppModuleBasic{}, wasm.AppModuleBasic{}).
-		WithChainID(string(network.ChainID())).
-		WithKeyring(kr)
 
-	if cfg.TXRPCURL != "" {
-		txRPCClient, err := cosmosclient.NewClientFromNode(cfg.TXRPCURL)
-		if err != nil {
-			return nil, errors.Wrapf(err, "faild to create TX RPC client")
-		}
-		txClientCtx = txClientCtx.WithClient(txRPCClient)
-	}
-
-	if cfg.TXGRPCURL != "" {
-		txGRPCClient, err := getGRPCClientConn(cfg.TXGRPCURL)
-		if err != nil {
-			return nil, err
-		}
-		txClientCtx = txClientCtx.WithGRPCClient(txGRPCClient)
+	txClientCtx, err := buildTXClientContext(cfg, kr)
+	if err != nil {
+		return nil, err
 	}
 
 	txContractClient := tx.NewContractClient(
@@ -171,14 +354,14 @@ func NewServices(
 	)
 
 	// Query contract for initial configuration
-	config, err := txContractClient.GetContractConfig(ctx)
+	contractCfg, err := txContractClient.GetContractConfig(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to query initial contract config")
 	}
 
-	// Create finders and audit config from token configuration
-	txFinders, auditTokensCfg, err := createFindersAndAuditConfig(
-		config.XRPLTokens,
+	// Create finders from token configuration
+	txFinders, _, err := createFindersAndAuditConfig(
+		contractCfg.XRPLTokens,
 		cfg.XRPLHistoryScanStartLedger,
 		cfg.XRPLRecentScanIndexesBack,
 		cfg.XRPLMemoSuffix,
@@ -188,7 +371,7 @@ func NewServices(
 		xrplTxScanner,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create finders and audit config")
+		return nil, errors.Wrap(err, "failed to create finders")
 	}
 
 	// Create executor with the initial finders
@@ -245,16 +428,11 @@ func NewServices(
 		txContractClient,
 	)
 
-	txChainClient := tx.NewChainClient(tx.DefaultChainClientConfig(), log, txClientCtx)
-
-	auditor := audit.NewAuditor(audit.AuditorConfig{
-		ContractAddress: contractAddress.String(),
-		XRPLMemoSuffix:  cfg.XRPLMemoSuffix,
-		TXDenom:         network.Denom(),
-		TXDecimals:      6,
-		XRPLTokens:      auditTokensCfg,
-		StartDate:       cfg.AuditStartDate,
-	}, log, txChainClient, xrplRPCClient)
+	// Create auditor using NewAuditor function
+	auditor, _, err := NewAuditor(ctx, cfg, kr, zapLogger)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create auditor")
+	}
 
 	return &Services{
 		Config:            cfg,
