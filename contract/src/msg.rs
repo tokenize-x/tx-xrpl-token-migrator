@@ -38,7 +38,7 @@ pub enum ExecuteMsg {
     UpdateTrustedAddresses {
         trusted_addresses: Vec<Addr>,
     },
-    UpdateXrplTokens {
+    AddXrplTokens {
         xrpl_tokens: Vec<XRPLToken>,
     },
 }
