@@ -137,7 +137,7 @@ func RootCmd(ctx context.Context) (*cobra.Command, error) {
 	cmd.AddCommand(BuildExecutePendingApprovedTransactionsCmd(ctx))
 	cmd.AddCommand(BuildMigrateContractTransactionCmd(ctx))
 	cmd.AddCommand(BuildUpdateTrustedAddressesTransactionCmd(ctx))
-	cmd.AddCommand(BuildUpdateXRPLTokensTransactionCmd(ctx))
+	cmd.AddCommand(BuildAddXRPLTokensTransactionCmd(ctx))
 	cmd.AddCommand(AuditCmd(ctx))
 
 	cmd.AddCommand(keys.Commands())
@@ -706,11 +706,11 @@ func BuildUpdateTrustedAddressesTransactionCmd(ctx context.Context) *cobra.Comma
 	return cmd
 }
 
-// BuildUpdateXRPLTokensTransactionCmd builds transaction for the update_xrpl_tokens contract method.
-func BuildUpdateXRPLTokensTransactionCmd(ctx context.Context) *cobra.Command {
+// BuildAddXRPLTokensTransactionCmd builds transaction for the add_xrpl_tokens contract method.
+func BuildAddXRPLTokensTransactionCmd(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "build-update-xrpl-tokens",
-		Short: "Builds transaction for the update_xrpl_tokens method",
+		Use:   "build-add-xrpl-tokens",
+		Short: "Builds transaction for the add_xrpl_tokens method",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := readServicesConfig(cmd)
 			if err != nil {
@@ -738,26 +738,25 @@ func BuildUpdateXRPLTokensTransactionCmd(ctx context.Context) *cobra.Command {
 			for _, tokenStr := range xrplTokensStr {
 				parts := strings.Split(tokenStr, "/")
 				if len(parts) != 4 {
-					// TODO: to be revised in the next PR
 					return errors.Errorf(
-						"invalid %s value: %s, expected format: issuer/currency/activation_date/multiplier",
+						"invalid %s value: %s, expected format: issuer/currency/activation_unix_timestamp/multiplier",
 						flagXRPLToken,
 						tokenStr,
 					)
 				}
-				activationDate, err := strconv.ParseUint(parts[2], 10, 64)
+				activationUnixTimestamp, err := strconv.ParseUint(parts[2], 10, 64)
 				if err != nil {
-					return errors.Wrapf(err, "failed to parse activation date: %s", parts[2])
+					return errors.Wrapf(err, "failed to parse activation_unix_timestamp: %s", parts[2])
 				}
 				xrplTokens = append(xrplTokens, tx.XRPLToken{
 					Issuer:         parts[0],
 					Currency:       parts[1],
-					ActivationDate: activationDate,
+					ActivationDate: activationUnixTimestamp,
 					Multiplier:     parts[3],
 				})
 			}
 
-			msg, err := contractClient.BuildUpdateXRPLTokensTransaction(senderAddress, xrplTokens)
+			msg, err := contractClient.BuildAddXRPLTokensTransaction(senderAddress, xrplTokens)
 			if err != nil {
 				return err
 			}
@@ -786,7 +785,7 @@ func BuildUpdateXRPLTokensTransactionCmd(ctx context.Context) *cobra.Command {
 	cmd.PersistentFlags().StringSlice(
 		flagXRPLToken,
 		nil,
-		"XRPL tokens in format: issuer/currency/activation_date/multiplier",
+		"XRPL tokens in format: issuer/currency/activation_unix_timestamp/multiplier",
 	)
 	addTXFlags(cmd)
 
