@@ -30,6 +30,11 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const DEFAULT_PAGE_LIMIT: u32 = 500;
 const MAX_PAGE_LIMIT: u32 = DEFAULT_PAGE_LIMIT;
 
+// Migration default values
+const DEFAULT_THRESHOLD: u32 = 2;
+const DEFAULT_MIN_AMOUNT: Uint128 = Uint128::new(100);
+const DEFAULT_MAX_AMOUNT: Uint128 = Uint128::new(200_000_000);
+
 // XRPL validation constants
 // Reference: ripple/crypto/const.go
 const XRPL_BASE58_ALPHABET: &[u8; 58] =
@@ -140,7 +145,6 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     if storage_version.contract != CONTRACT_NAME {
         return Err(StdError::generic_err("Can only upgrade from same contract name").into());
     }
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     // Check if migration is needed (config doesn't exist yet)
     if CONFIG.may_load(deps.storage)?.is_none() {
@@ -152,35 +156,53 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
         let min_amount = MIN_AMOUNT.may_load(deps.storage)?;
         let max_amount = MAX_AMOUNT.may_load(deps.storage)?;
 
-        // Only migrate if existing state exists
-        if let (Some(owner), Some(threshold), Some(min_amount), Some(max_amount)) =
-            (owner, threshold, min_amount, max_amount)
+        // Collect trusted addresses from existing map
+        let trusted_addresses: Vec<Addr> = TRUSTED_ADDRESSES
+            .keys(deps.storage, None, None, Order::Ascending)
+            .filter_map(|r| r.ok())
+            .collect();
+
+        // Use defaults for missing values
+        let owner = owner.unwrap_or_else(|| _env.contract.address.clone());
+        let mut threshold = threshold.unwrap_or(DEFAULT_THRESHOLD);
+        let min_amount = min_amount.unwrap_or(DEFAULT_MIN_AMOUNT);
+        let max_amount = max_amount.unwrap_or(DEFAULT_MAX_AMOUNT);
+
+        // Ensure threshold is valid (must be > 0 and <= trusted_addresses.len())
+        // If threshold is invalid, use appropriate default
+        if threshold == 0
+            || (!trusted_addresses.is_empty() && threshold > trusted_addresses.len() as u32)
         {
-            // Collect trusted addresses from existing map
-            let trusted_addresses: Vec<Addr> = TRUSTED_ADDRESSES
-                .keys(deps.storage, None, None, Order::Ascending)
-                .filter_map(|r| r.ok())
-                .collect();
-
-            // Create config from existing state
-            // xrpl_tokens starts empty - will be set via add_xrpl_tokens
-            let config = ContractConfig {
-                owner,
-                trusted_addresses,
-                threshold,
-                min_amount,
-                max_amount,
-                xrpl_tokens: vec![],
-                version: 1,
+            // If no trusted addresses, default to 1; otherwise use DEFAULT_THRESHOLD
+            threshold = if trusted_addresses.is_empty() {
+                1
+            } else {
+                // Ensure default doesn't exceed trusted_addresses length
+                DEFAULT_THRESHOLD.min(trusted_addresses.len() as u32)
             };
-
-            // Save config
-            CONFIG.save(deps.storage, &config)?;
-
-            // Note: Existing state items are NOT removed here for safety
-            // They will be removed in a future contract version after migration is verified
         }
+
+        // Create config from existing state with defaults applied
+        // xrpl_tokens starts empty - will be set via add_xrpl_tokens
+        let config = ContractConfig {
+            owner,
+            trusted_addresses,
+            threshold,
+            min_amount,
+            max_amount,
+            xrpl_tokens: vec![],
+            version: 1,
+        };
+
+        // Save config
+        CONFIG.save(deps.storage, &config)?;
+
+        // Note: Existing state items are NOT removed here for safety
+        // They will be removed in a future contract version after migration is verified
     }
+
+    // Upgrade contract version
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     Ok(Response::default())
 }
@@ -677,7 +699,7 @@ mod tests {
             let env = mock_env();
             let info = mock_info(TEST_OWNER, &[]);
 
-            let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone().into());
+            let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone());
             if !expected_err.is_empty() {
                 assert_eq!(expected_err.to_string(), res.err().unwrap().to_string());
                 continue;
@@ -707,13 +729,13 @@ mod tests {
         let info = mock_info(TEST_OWNER, &[]);
 
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
 
         let id: String = "tx_hash1".to_string();
         let denom: String = "ucore".to_string();
-        let low_amount: Coin = coin(9 as u128, denom.clone());
-        let amount: Coin = coin(999 as u128, denom.clone());
-        let malicious_amount: Coin = coin(777 as u128, denom.clone());
+        let low_amount: Coin = coin(9_u128, denom.clone());
+        let amount: Coin = coin(999_u128, denom.clone());
+        let malicious_amount: Coin = coin(777_u128, denom.clone());
 
         let recipient: Addr = Addr::unchecked("devcore1y9cnpjxwa7xc5nuhvzzsu23d04jfc6vkrgx4k5");
         let evidence_id = build_evidence_id(id.clone(), amount.clone(), recipient.clone());
@@ -889,11 +911,11 @@ mod tests {
         let info = mock_info(TEST_OWNER, &[]);
 
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
 
         let id: String = "tx_hash1".to_string();
         let denom: String = "ucore".to_string();
-        let amount: Coin = coin(20_000 as u128, denom.clone());
+        let amount: Coin = coin(20_000_u128, denom.clone());
 
         let recipient: Addr = Addr::unchecked("devcore1y9cnpjxwa7xc5nuhvzzsu23d04jfc6vkrgx4k5");
         let evidence_id = build_evidence_id(id.clone(), amount.clone(), recipient.clone());
@@ -1034,7 +1056,7 @@ mod tests {
 
         let info = mock_info(TEST_OWNER, &[]);
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
 
         let config = get_config(deps.as_ref()).unwrap();
         assert_eq!(TEST_MIN_AMOUNT, config.min_amount);
@@ -1048,7 +1070,7 @@ mod tests {
         // execute from owner
         let info = mock_info(TEST_OWNER, &[]);
         let res = update_min_amount(deps.as_mut(), info.clone(), new_min_amount);
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
         let config = get_config(deps.as_ref()).unwrap();
         assert_eq!(new_min_amount, config.min_amount);
 
@@ -1060,7 +1082,7 @@ mod tests {
         // execute from owner
         let info = mock_info(TEST_OWNER, &[]);
         let res = update_max_amount(deps.as_mut(), info, new_max_amount);
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
         let config = get_config(deps.as_ref()).unwrap();
         assert_eq!(new_max_amount, config.max_amount);
     }
@@ -1072,7 +1094,7 @@ mod tests {
 
         let info = mock_info(TEST_OWNER, &[]);
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
 
         let new_trusted_addresses = vec![
             Addr::unchecked(TEST_TRUSTED_ADDRESS1),
@@ -1087,7 +1109,7 @@ mod tests {
         let info = mock_info(TEST_OWNER, &[]);
         let res =
             update_trusted_addresses(deps.as_mut(), info.clone(), new_trusted_addresses.clone());
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
         let config = get_config(deps.as_ref()).unwrap();
         assert_eq!(new_trusted_addresses, config.trusted_addresses);
     }
@@ -1099,7 +1121,7 @@ mod tests {
 
         let info = mock_info(TEST_OWNER, &[]);
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
 
         // check that config includes xrpl_tokens
         let config = get_config(deps.as_ref()).unwrap();
@@ -1113,7 +1135,7 @@ mod tests {
 
         let info = mock_info(TEST_OWNER, &[]);
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
 
         let first_xrpl_tokens = vec![
             crate::msg::XRPLToken {
@@ -1138,7 +1160,7 @@ mod tests {
         // execute from owner should succeed
         let info = mock_info(TEST_OWNER, &[]);
         let res = add_xrpl_tokens(deps.as_mut(), info.clone(), first_xrpl_tokens.clone());
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
 
         // verify tokens were added
         let config = get_config(deps.as_ref()).unwrap();
@@ -1154,7 +1176,7 @@ mod tests {
 
         let info = mock_info(TEST_OWNER, &[]);
         let res = add_xrpl_tokens(deps.as_mut(), info.clone(), second_xrpl_tokens.clone());
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
 
         // verify tokens were appended (immutability - existing tokens remain)
         let config = get_config(deps.as_ref()).unwrap();
@@ -1196,7 +1218,7 @@ mod tests {
 
         let info = mock_info(TEST_OWNER, &[]);
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg);
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
 
         // query tokens via config
         let config_response = get_config(deps.as_ref()).unwrap();
@@ -1234,7 +1256,7 @@ mod tests {
 
         let info = mock_info(TEST_OWNER, &[]);
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg);
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
 
         // verify config has correct values
         let config = get_config(deps.as_ref()).unwrap();
@@ -1248,7 +1270,7 @@ mod tests {
         let info = mock_info(TEST_OWNER, &[]);
 
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
 
         // Test invalid currency length
         let invalid_tokens = vec![crate::msg::XRPLToken {
@@ -1288,7 +1310,7 @@ mod tests {
         let info = mock_info(TEST_OWNER, &[]);
 
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
 
         // Test issuer that doesn't start with 'r'
         let invalid_tokens = vec![crate::msg::XRPLToken {
@@ -1343,7 +1365,7 @@ mod tests {
         let info = mock_info(TEST_OWNER, &[]);
 
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
 
         // Test empty multiplier
         let invalid_tokens = vec![crate::msg::XRPLToken {
@@ -1443,7 +1465,7 @@ mod tests {
         let info = mock_info(TEST_OWNER, &[]);
 
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
 
         // Test valid tokens with various valid formats
         let valid_tokens = vec![
@@ -1469,7 +1491,7 @@ mod tests {
 
         let info = mock_info(TEST_OWNER, &[]);
         let res = add_xrpl_tokens(deps.as_mut(), info.clone(), valid_tokens);
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
     }
 
     #[test]
@@ -1479,7 +1501,7 @@ mod tests {
         let info = mock_info(TEST_OWNER, &[]);
 
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
 
         // Test minimum boundary (0.1) - should be valid
         let valid_tokens = vec![crate::msg::XRPLToken {
@@ -1491,7 +1513,7 @@ mod tests {
 
         let info = mock_info(TEST_OWNER, &[]);
         let res = add_xrpl_tokens(deps.as_mut(), info.clone(), valid_tokens);
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
 
         // Test maximum boundary (10.0) - should be valid
         let valid_tokens = vec![crate::msg::XRPLToken {
@@ -1503,7 +1525,7 @@ mod tests {
 
         let info = mock_info(TEST_OWNER, &[]);
         let res = add_xrpl_tokens(deps.as_mut(), info.clone(), valid_tokens);
-        assert_eq!(true, res.is_ok());
+        assert!(res.is_ok());
 
         // Test value just below minimum (0.099) - should be invalid
         let invalid_tokens = vec![crate::msg::XRPLToken {
