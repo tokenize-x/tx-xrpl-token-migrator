@@ -30,6 +30,11 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const DEFAULT_PAGE_LIMIT: u32 = 500;
 const MAX_PAGE_LIMIT: u32 = DEFAULT_PAGE_LIMIT;
 
+// Migration default values
+const DEFAULT_THRESHOLD: u32 = 2;
+const DEFAULT_MIN_AMOUNT: Uint128 = Uint128::new(100);
+const DEFAULT_MAX_AMOUNT: Uint128 = Uint128::new(200_000_000);
+
 // XRPL validation constants
 // Reference: ripple/crypto/const.go
 const XRPL_BASE58_ALPHABET: &[u8; 58] =
@@ -140,7 +145,6 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     if storage_version.contract != CONTRACT_NAME {
         return Err(StdError::generic_err("Can only upgrade from same contract name").into());
     }
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     // Check if migration is needed (config doesn't exist yet)
     if CONFIG.may_load(deps.storage)?.is_none() {
@@ -152,35 +156,53 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
         let min_amount = MIN_AMOUNT.may_load(deps.storage)?;
         let max_amount = MAX_AMOUNT.may_load(deps.storage)?;
 
-        // Only migrate if existing state exists
-        if let (Some(owner), Some(threshold), Some(min_amount), Some(max_amount)) =
-            (owner, threshold, min_amount, max_amount)
+        // Collect trusted addresses from existing map
+        let trusted_addresses: Vec<Addr> = TRUSTED_ADDRESSES
+            .keys(deps.storage, None, None, Order::Ascending)
+            .filter_map(|r| r.ok())
+            .collect();
+
+        // Use defaults for missing values
+        let owner = owner.unwrap_or_else(|| _env.contract.address.clone());
+        let mut threshold = threshold.unwrap_or(DEFAULT_THRESHOLD);
+        let min_amount = min_amount.unwrap_or(DEFAULT_MIN_AMOUNT);
+        let max_amount = max_amount.unwrap_or(DEFAULT_MAX_AMOUNT);
+
+        // Ensure threshold is valid (must be > 0 and <= trusted_addresses.len())
+        // If threshold is invalid, use appropriate default
+        if threshold == 0
+            || (!trusted_addresses.is_empty() && threshold > trusted_addresses.len() as u32)
         {
-            // Collect trusted addresses from existing map
-            let trusted_addresses: Vec<Addr> = TRUSTED_ADDRESSES
-                .keys(deps.storage, None, None, Order::Ascending)
-                .filter_map(|r| r.ok())
-                .collect();
-
-            // Create config from existing state
-            // xrpl_tokens starts empty - will be set via add_xrpl_tokens
-            let config = ContractConfig {
-                owner,
-                trusted_addresses,
-                threshold,
-                min_amount,
-                max_amount,
-                xrpl_tokens: vec![],
-                version: 1,
+            // If no trusted addresses, default to 1; otherwise use DEFAULT_THRESHOLD
+            threshold = if trusted_addresses.is_empty() {
+                1
+            } else {
+                // Ensure default doesn't exceed trusted_addresses length
+                DEFAULT_THRESHOLD.min(trusted_addresses.len() as u32)
             };
-
-            // Save config
-            CONFIG.save(deps.storage, &config)?;
-
-            // Note: Existing state items are NOT removed here for safety
-            // They will be removed in a future contract version after migration is verified
         }
+
+        // Create config from existing state with defaults applied
+        // xrpl_tokens starts empty - will be set via add_xrpl_tokens
+        let config = ContractConfig {
+            owner,
+            trusted_addresses,
+            threshold,
+            min_amount,
+            max_amount,
+            xrpl_tokens: vec![],
+            version: 1,
+        };
+
+        // Save config
+        CONFIG.save(deps.storage, &config)?;
+
+        // Note: Existing state items are NOT removed here for safety
+        // They will be removed in a future contract version after migration is verified
     }
+
+    // Upgrade contract version
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     Ok(Response::default())
 }
