@@ -25,7 +25,8 @@ build:
 
 .PHONY: build-in-docker
 build-in-docker:
-	docker build --build-arg BUILD_VERSION=$(BUILD_VERSION) . -t tx-xrpl-token-migrator-builder
+	# Enable BuildKit and forward SSH agent so private modules can be fetched during docker build
+	DOCKER_BUILDKIT=1 docker build --ssh default --build-arg BUILD_VERSION=$(BUILD_VERSION) . -t tx-xrpl-token-migrator-builder
 	mkdir -p artifacts
 	docker run --rm --entrypoint cat tx-xrpl-token-migrator-builder /code/artifacts/relayer > artifacts/relayer
 
