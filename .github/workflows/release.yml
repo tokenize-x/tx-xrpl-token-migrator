@@ -9,14 +9,49 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Checkout xrpl bridge
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: false
           path: xrpl-bridge
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.TX_CHAIN_PRIVATE_KEY }}
+            ${{ secrets.TX_TOOLS_PRIVATE_KEY }}
+            ${{ secrets.TX_CRUST_PRIVATE_KEY }}
+      - name: Setup tx-chain access
+        run: |
+          export GOPRIVATE=github.com/tokenize-x GONOSUMDB=github.com/tokenize-x
+          echo -e "${{ secrets.TX_CHAIN_PRIVATE_KEY }}" > ~/.ssh/tx-chain-deploy-key
+          echo -e "${{ secrets.TX_TOOLS_PRIVATE_KEY }}" > ~/.ssh/tx-tools-deploy-key
+          echo -e "${{ secrets.TX_CRUST_PRIVATE_KEY }}" > ~/.ssh/tx-crust-deploy-key
+          chmod 600 ~/.ssh/tx-chain-deploy-key ~/.ssh/tx-tools-deploy-key ~/.ssh/tx-crust-deploy-key
+          {
+            echo -e "Host tx-chain-private\n    HostName github.com\n    User git\n    IdentityFile ~/.ssh/tx-chain-deploy-key\n    IdentitiesOnly yes"
+            echo -e "Host tx-tools-private\n    HostName github.com\n    User git\n    IdentityFile ~/.ssh/tx-tools-deploy-key\n    IdentitiesOnly yes"
+            echo -e "Host tx-crust-private\n    HostName github.com\n    User git\n    IdentityFile ~/.ssh/tx-crust-deploy-key\n    IdentitiesOnly yes"
+          } >> ~/.ssh/config
+          {
+            echo -e "[url \"git@tx-chain-private:tokenize-x/tx-chain\"]\n        insteadOf = \"git@github.com:tokenize-x/tx-chain\""
+            echo -e "[url \"git@tx-chain-private:tokenize-x/tx-chain\"]\n        insteadOf = \"https://github.com/tokenize-x/tx-chain\""
+            echo -e "[url \"git@tx-tools-private:tokenize-x/tx-tools\"]\n        insteadOf = \"git@github.com:tokenize-x/tx-tools\""
+            echo -e "[url \"git@tx-tools-private:tokenize-x/tx-tools\"]\n        insteadOf = \"https://github.com/tokenize-x/tx-tools\""
+            echo -e "[url \"git@tx-crust-private:tokenize-x/tx-crust\"]\n        insteadOf = \"git@github.com:tokenize-x/tx-crust\""
+            echo -e "[url \"git@tx-crust-private:tokenize-x/tx-crust\"]\n        insteadOf = \"https://github.com/tokenize-x/tx-crust\""
+          } > ~/.gitconfig
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.81.0
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
       - name: Install go
         uses: actions/setup-go@v5
         with:
           go-version: '1.23.3'
+      - name: Build contract
+        working-directory: ./xrpl-bridge
+        run: make build-contract
       - name: Build linux amd64
         working-directory: ./xrpl-bridge
         run: GOOS=linux GOARCH=amd64 make build-in-docker
@@ -29,9 +64,21 @@ jobs:
           if [[ ${{ github.event.ref }} =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]+$ ]]; then
               echo ::set-output name=release_candidate::true
           fi
-      - name: Link released binaries under right names
+      - name: Link released binaries and contract under right names
         run: |
           ln xrpl-bridge/artifacts/relayer relayer-linux-amd64
+          if [ -f xrpl-bridge/contract/artifacts/threshold_bank_send.wasm ]; then
+            ln xrpl-bridge/contract/artifacts/threshold_bank_send.wasm threshold_bank_send.wasm
+          fi
+      - name: Generate checksums
+        run: |
+          # checksum for the relayer binary
+          sha256sum relayer-linux-amd64 > checksums.txt
+          # checksum for the contract wasm if present
+          if [ -f threshold_bank_send.wasm ]; then
+            sha256sum threshold_bank_send.wasm >> checksums.txt
+          fi
+          cat checksums.txt
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
@@ -39,3 +86,5 @@ jobs:
           generate_release_notes: true
           files: |
             relayer-linux-amd64
+            threshold_bank_send.wasm
+            checksums.txt
