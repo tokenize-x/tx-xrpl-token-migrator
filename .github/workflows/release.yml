@@ -54,6 +54,14 @@ jobs:
       - name: Build contract
         working-directory: ./xrpl-bridge
         run: make build-contract
+      - name: Vendor Go modules
+        working-directory: ./xrpl-bridge
+        env:
+          GOPRIVATE: github.com/tokenize-x
+        run: |
+          git config --global url."git@github.com:".insteadOf "https://github.com/"
+          go mod vendor -v
+          ls -d vendor/github.com/tokenize-x/* || true
       - name: Build linux amd64
         working-directory: ./xrpl-bridge
         run: GOOS=linux GOARCH=amd64 make build-in-docker
