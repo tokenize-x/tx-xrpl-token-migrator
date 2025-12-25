@@ -22,6 +22,8 @@ ENV GOPRIVATE=github.com/tokenize-x/*
 RUN git config --global url."git@github.com:".insteadOf "https://github.com/"
 
 # 3. Ensure your SSH keys are available (using BuildKit) and download modules via SSH
+# Add github.com to known_hosts so SSH connections don't prompt for verification
+RUN mkdir -p /root/.ssh && ssh-keyscan -H github.com >> /root/.ssh/known_hosts || true
 RUN --mount=type=ssh go mod download
 
 # Build using SSH mount so private modules can be fetched during the build
