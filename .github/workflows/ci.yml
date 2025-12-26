@@ -16,17 +16,17 @@ jobs:
         ci_step: [
           "lint",
           "test",
-          "integration tests",
-          "contract lint and test"
+          "integration-tests",
+          "contract-lint-and-test"
         ]
         include:
           - ci_step: "lint"
             command: "make build-contract && make lint"
           - ci_step: "test"
             command: "make build-contract && make test"
-          - ci_step: "integration tests"
+          - ci_step: "integration-tests"
             command: "make build-contract && make rebuild-dev-env && make restart-dev-env && make test-integration"
-          - ci_step: "contract lint and test"
+          - ci_step: "contract-lint-and-test"
             command: "make test-contract"
 
     runs-on: self-hosted
