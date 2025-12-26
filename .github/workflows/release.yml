@@ -52,11 +52,11 @@ jobs:
           if [[ ${{ github.event.ref }} =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]+$ ]]; then
               echo ::set-output name=release_candidate::true
           fi
-      - name: Link released binaries and contract under right names
+      - name: Copy released binaries and contract under right names
         run: |
-          ln xrpl-bridge/artifacts/relayer relayer-linux-amd64
+          cp xrpl-bridge/artifacts/relayer relayer-linux-amd64
           if [ -f xrpl-bridge/contract/artifacts/threshold_bank_send.wasm ]; then
-            ln xrpl-bridge/contract/artifacts/threshold_bank_send.wasm threshold_bank_send.wasm
+            cp xrpl-bridge/contract/artifacts/threshold_bank_send.wasm threshold_bank_send.wasm
           fi
       - name: Generate checksums
         run: |
