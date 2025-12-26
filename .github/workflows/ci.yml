@@ -31,6 +31,13 @@ jobs:
 
     runs-on: self-hosted
     steps:
+      - name: Hard Cleanup Workspace
+          run: |
+            # Use sudo if your runner user doesn't have permission to delete root-owned docker files
+            sudo rm -rf "${{ github.workspace }}/xrpl-bridge"
+            sudo rm -rf "${{ github.workspace }}/coreum"
+            # Kill any dangling docker containers that might be locking volumes
+            docker rm -f $(docker ps -aq) || true
       - name: Checkout xrpl bridge
         uses: actions/checkout@v4
         with:

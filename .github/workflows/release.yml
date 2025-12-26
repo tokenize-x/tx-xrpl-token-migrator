@@ -47,6 +47,13 @@ jobs:
 
           git config --global --replace-all url."git@tx-crust-private:tokenize-x/tx-crust".insteadOf "git@github.com:tokenize-x/tx-crust"
           git config --global --add url."git@tx-crust-private:tokenize-x/tx-crust".insteadOf "https://github.com/tokenize-x/tx-crust"
+      - name: Hard Cleanup Workspace
+          run: |
+            # Use sudo if your runner user doesn't have permission to delete root-owned docker files
+            sudo rm -rf "${{ github.workspace }}/xrpl-bridge"
+            sudo rm -rf "${{ github.workspace }}/coreum"
+            # Kill any dangling docker containers that might be locking volumes
+            docker rm -f $(docker ps -aq) || true
       - name: Checkout xrpl bridge
         uses: actions/checkout@v4
         with:
