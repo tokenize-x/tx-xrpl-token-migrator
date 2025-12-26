@@ -25,8 +25,14 @@ build:
 
 .PHONY: build-in-docker
 build-in-docker:
-	# Enable BuildKit and forward SSH agent so private modules can be fetched during docker build
-	DOCKER_BUILDKIT=1 docker build --ssh default --build-arg BUILD_VERSION=$(BUILD_VERSION) . -t tx-xrpl-token-migrator-builder
+	# Enable BuildKit and pass SSH keys as secrets so private modules can be fetched during docker build
+	# SSH keys should be at ~/.ssh/tx-{chain,tools,crust}-deploy-key
+	DOCKER_BUILDKIT=1 docker build \
+		--secret id=tx-chain-key,src=$(HOME)/.ssh/tx-chain-deploy-key \
+		--secret id=tx-tools-key,src=$(HOME)/.ssh/tx-tools-deploy-key \
+		--secret id=tx-crust-key,src=$(HOME)/.ssh/tx-crust-deploy-key \
+		--build-arg BUILD_VERSION=$(BUILD_VERSION) \
+		. -t tx-xrpl-token-migrator-builder
 	mkdir -p artifacts
 	docker run --rm --entrypoint cat tx-xrpl-token-migrator-builder /code/artifacts/relayer > artifacts/relayer
 
