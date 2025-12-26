@@ -47,13 +47,9 @@ jobs:
         run: |
           export GOPRIVATE=github.com/tokenize-x
           mkdir -p ~/.ssh
-          echo "${{ secrets.TX_CHAIN_PRIVATE_KEY }}" > ~/.ssh/tx-chain-deploy-key
-          echo "${{ secrets.TX_TOOLS_PRIVATE_KEY }}" > ~/.ssh/tx-tools-deploy-key
-          echo "${{ secrets.TX_CRUST_PRIVATE_KEY }}" > ~/.ssh/tx-crust-deploy-key
-          chmod 600 ~/.ssh/tx-*-deploy-key
           
-          # Use a block redirection to append to SSH config
-          cat <<EOF >> ~/.ssh/config
+          # Use > instead of >> to prevent the SSH config from growing infinitely
+          cat <<EOF > ~/.ssh/config
           Host tx-chain-private
               HostName github.com
               User git
@@ -71,13 +67,15 @@ jobs:
               IdentitiesOnly yes
           EOF
 
-          # Use git config --global to add insteadOf rules without destroying the file
-          git config --global url."git@tx-chain-private:tokenize-x/tx-chain".insteadOf "git@github.com:tokenize-x/tx-chain"
-          git config --global url."git@tx-chain-private:tokenize-x/tx-chain".insteadOf "https://github.com/tokenize-x/tx-chain"
-          git config --global url."git@tx-tools-private:tokenize-x/tx-tools".insteadOf "git@github.com:tokenize-x/tx-tools"
-          git config --global url."git@tx-tools-private:tokenize-x/tx-tools".insteadOf "https://github.com/tokenize-x/tx-tools"
-          git config --global url."git@tx-crust-private:tokenize-x/tx-crust".insteadOf "git@github.com:tokenize-x/tx-crust"
-          git config --global url."git@tx-crust-private:tokenize-x/tx-crust".insteadOf "https://github.com/tokenize-x/tx-crust"
+          # Use --replace-all to handle existing entries in the persistent .gitconfig
+          git config --global --replace-all url."git@tx-chain-private:tokenize-x/tx-chain".insteadOf "git@github.com:tokenize-x/tx-chain"
+          git config --global --add url."git@tx-chain-private:tokenize-x/tx-chain".insteadOf "https://github.com/tokenize-x/tx-chain"
+          
+          git config --global --replace-all url."git@tx-tools-private:tokenize-x/tx-tools".insteadOf "git@github.com:tokenize-x/tx-tools"
+          git config --global --add url."git@tx-tools-private:tokenize-x/tx-tools".insteadOf "https://github.com/tokenize-x/tx-tools"
+          
+          git config --global --replace-all url."git@tx-crust-private:tokenize-x/tx-crust".insteadOf "git@github.com:tokenize-x/tx-crust"
+          git config --global --add url."git@tx-crust-private:tokenize-x/tx-crust".insteadOf "https://github.com/tokenize-x/tx-crust"
       - name: Checkout xrpl bridge
         uses: actions/checkout@v4
         with:

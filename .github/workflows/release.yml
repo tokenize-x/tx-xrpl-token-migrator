@@ -16,24 +16,37 @@ jobs:
             ${{ secrets.TX_CRUST_PRIVATE_KEY }}
       - name: Setup tx-chain access
         run: |
-          export GOPRIVATE=github.com/tokenize-x GONOSUMDB=github.com:tokenize-x
-          echo -e "${{ secrets.TX_CHAIN_PRIVATE_KEY }}" > ~/.ssh/tx-chain-deploy-key
-          echo -e "${{ secrets.TX_TOOLS_PRIVATE_KEY }}" > ~/.ssh/tx-tools-deploy-key
-          echo -e "${{ secrets.TX_CRUST_PRIVATE_KEY }}" > ~/.ssh/tx-crust-deploy-key
-          chmod 600 ~/.ssh/tx-chain-deploy-key ~/.ssh/tx-tools-deploy-key ~/.ssh/tx-crust-deploy-key
-          {
-            echo -e "Host tx-chain-private\n    HostName github.com\n    User git\n    IdentityFile ~/.ssh/tx-chain-deploy-key\n    IdentitiesOnly yes"
-            echo -e "Host tx-tools-private\n    HostName github.com\n    User git\n    IdentityFile ~/.ssh/tx-tools-deploy-key\n    IdentitiesOnly yes"
-            echo -e "Host tx-crust-private\n    HostName github.com\n    User git\n    IdentityFile ~/.ssh/tx-crust-deploy-key\n    IdentitiesOnly yes"
-          } >> ~/.ssh/config
-          {
-            echo -e "[url \"git@tx-chain-private:tokenize-x/tx-chain\"]\n        insteadOf = \"git@github.com:tokenize-x/tx-chain\""
-            echo -e "[url \"git@tx-chain-private:tokenize-x/tx-chain\"]\n        insteadOf = \"https://github.com/tokenize-x/tx-chain\""
-            echo -e "[url \"git@tx-tools-private:tokenize-x/tx-tools\"]\n        insteadOf = \"git@github.com:tokenize-x/tx-tools\""
-            echo -e "[url \"git@tx-tools-private:tokenize-x/tx-tools\"]\n        insteadOf = \"https://github.com/tokenize-x/tx-tools\""
-            echo -e "[url \"git@tx-crust-private:tokenize-x/tx-crust\"]\n        insteadOf = \"git@github.com:tokenize-x/tx-crust\""
-            echo -e "[url \"git@tx-crust-private:tokenize-x/tx-crust\"]\n        insteadOf = \"https://github.com/tokenize-x/tx-crust\""
-          } > ~/.gitconfig
+          export GOPRIVATE=github.com/tokenize-x
+          mkdir -p ~/.ssh
+
+          # Use > instead of >> to prevent the SSH config from growing infinitely
+          cat <<EOF > ~/.ssh/config
+          Host tx-chain-private
+              HostName github.com
+              User git
+              IdentityFile ~/.ssh/tx-chain-deploy-key
+              IdentitiesOnly yes
+          Host tx-tools-private
+              HostName github.com
+              User git
+              IdentityFile ~/.ssh/tx-tools-deploy-key
+              IdentitiesOnly yes
+          Host tx-crust-private
+              HostName github.com
+              User git
+              IdentityFile ~/.ssh/tx-crust-deploy-key
+              IdentitiesOnly yes
+          EOF
+
+          # Use --replace-all to handle existing entries in the persistent .gitconfig
+          git config --global --replace-all url."git@tx-chain-private:tokenize-x/tx-chain".insteadOf "git@github.com:tokenize-x/tx-chain"
+          git config --global --add url."git@tx-chain-private:tokenize-x/tx-chain".insteadOf "https://github.com/tokenize-x/tx-chain"
+
+          git config --global --replace-all url."git@tx-tools-private:tokenize-x/tx-tools".insteadOf "git@github.com:tokenize-x/tx-tools"
+          git config --global --add url."git@tx-tools-private:tokenize-x/tx-tools".insteadOf "https://github.com/tokenize-x/tx-tools"
+
+          git config --global --replace-all url."git@tx-crust-private:tokenize-x/tx-crust".insteadOf "git@github.com:tokenize-x/tx-crust"
+          git config --global --add url."git@tx-crust-private:tokenize-x/tx-crust".insteadOf "https://github.com/tokenize-x/tx-crust"
       - name: Checkout xrpl bridge
         uses: actions/checkout@v4
         with:
@@ -50,7 +63,7 @@ jobs:
       - name: Install go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.3'
+          go-version: "1.23.3"
       - name: Build contract
         working-directory: ./xrpl-bridge
         run: make build-contract
