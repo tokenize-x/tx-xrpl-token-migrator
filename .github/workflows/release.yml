@@ -56,7 +56,9 @@ jobs:
         run: make build-contract
       - name: Build linux amd64
         working-directory: ./xrpl-bridge
-        run: GOOS=linux GOARCH=amd64 make build-in-docker
+        run: |
+          export DOCKER_BUILDKIT=1
+          GOOS=linux GOARCH=amd64 make build-in-docker
       - name: Check Tag
         id: check-tag
         run: |
