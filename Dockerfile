@@ -3,7 +3,7 @@ FROM cosmwasm/rust-optimizer:0.13.0 AS contract-builder
 COPY contract /code
 RUN /usr/local/bin/optimize.sh /code
 
-FROM golang:1.23.3-alpine3.17
+FROM golang:1.23.3-alpine3.20
 
 RUN apk add --no-cache gcc libc-dev linux-headers make
 
