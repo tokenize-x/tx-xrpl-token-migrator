@@ -45,7 +45,7 @@ jobs:
           go-version: '1.23.3'
       - name: Build linux amd64
         working-directory: ./xrpl-bridge
-        run: GOOS=linux GOARCH=amd64 make build-in-docker
+        run: GOOS=linux GOARCH=amd64 make build
       - name: Check Tag
         id: check-tag
         run: |
