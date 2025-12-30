@@ -21,6 +21,7 @@ endif
 
 .PHONY: build
 build:
+	/usr/local/bin/optimize.sh /contract
 	CGO_ENABLED=0 go build --trimpath -mod=readonly -ldflags '-X main.BuildVersion="${BUILD_VERSION} -extldflags=-static' -o artifacts/relayer ./relayer/cmd
 
 .PHONY: build-in-docker
