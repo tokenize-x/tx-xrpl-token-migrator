@@ -43,11 +43,11 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.23.3'
-      - name: Install optimize.sh script
-        run: sudo curl -L https://raw.githubusercontent.com/CosmWasm/cosmwasm/main/scripts/optimize.sh -o /usr/local/bin/optimize.sh && sudo chmod +x /usr/local/bin/optimize.sh
       - name: Build linux amd64
         working-directory: ./xrpl-bridge
-        run: GOOS=linux GOARCH=amd64 make build
+        run: |
+          sudo curl -L https://raw.githubusercontent.com/CosmWasm/cosmwasm/main/scripts/optimize.sh -o /usr/local/bin/optimize.sh && sudo chmod +x /usr/local/bin/optimize.sh
+          GOOS=linux GOARCH=amd64 make build
       - name: Check Tag
         id: check-tag
         run: |
