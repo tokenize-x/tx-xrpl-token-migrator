@@ -47,6 +47,7 @@ jobs:
         working-directory: ./xrpl-bridge
         run: |
           sudo curl -L https://raw.githubusercontent.com/CosmWasm/optimizer/refs/heads/main/optimize.sh -o /usr/local/bin/optimize.sh && sudo chmod +x /usr/local/bin/optimize.sh
+          cat /usr/local/bin/optimize.sh
           GOOS=linux GOARCH=amd64 make build
       - name: Check Tag
         id: check-tag
