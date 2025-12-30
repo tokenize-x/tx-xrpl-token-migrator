@@ -5,7 +5,7 @@ RUN /usr/local/bin/optimize.sh /code
 
 FROM golang:1.23.3-alpine3.20
 
-RUN apk add --no-cache gcc libc-dev linux-headers make
+RUN apk add --no-cache gcc libc-dev linux-headers make git
 
 WORKDIR /code
 
