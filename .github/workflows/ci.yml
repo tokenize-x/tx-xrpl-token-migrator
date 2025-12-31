@@ -5,7 +5,7 @@ on:
   pull_request:
     branches: [ master ]
   schedule:
-    - cron: '0 1 * * 1' # At 01:00 on Monday
+    - cron: '0 1 * * 1'
   workflow_dispatch:
 
 jobs:
@@ -16,42 +16,30 @@ jobs:
         ci_step: [
           "lint",
           "test",
-          "integration tests",
-          "contract lint and test"
+          "integration-tests",
+          "contract-lint-and-test"
         ]
         include:
           - ci_step: "lint"
             command: "make build-contract && make lint"
           - ci_step: "test"
             command: "make build-contract && make test"
-          - ci_step: "integration tests"
+          - ci_step: "integration-tests"
             command: "make build-contract && make rebuild-dev-env && make restart-dev-env && make test-integration"
-          - ci_step: "contract lint and test"
+          - ci_step: "contract-lint-and-test"
             command: "make test-contract"
 
     runs-on: self-hosted
     steps:
-      - name: Checkout xrpl bridge
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-          path: xrpl-bridge
-      - name: Checkout coreum
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-          repository: CoreumFoundation/coreum
-          path: coreum
-          ref: v5.0.1
       - uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: |
             ${{ secrets.TX_CHAIN_PRIVATE_KEY }}
             ${{ secrets.TX_TOOLS_PRIVATE_KEY }}
             ${{ secrets.TX_CRUST_PRIVATE_KEY }}
-      - name: Setup tx-chain acccess
+      - name: Setup tx-chain access
         run: |
-          export GOPRIVATE=github.com/tokenize-x GONOSUMDB=github.com/tokenize-x
+          export GOPRIVATE=github.com/tokenize-x GONOSUMDB=github.com:tokenize-x
           echo -e "${{ secrets.TX_CHAIN_PRIVATE_KEY }}" > ~/.ssh/tx-chain-deploy-key
           echo -e "${{ secrets.TX_TOOLS_PRIVATE_KEY }}" > ~/.ssh/tx-tools-deploy-key
           echo -e "${{ secrets.TX_CRUST_PRIVATE_KEY }}" > ~/.ssh/tx-crust-deploy-key
@@ -69,12 +57,28 @@ jobs:
             echo -e "[url \"git@tx-crust-private:tokenize-x/tx-crust\"]\n        insteadOf = \"git@github.com:tokenize-x/tx-crust\""
             echo -e "[url \"git@tx-crust-private:tokenize-x/tx-crust\"]\n        insteadOf = \"https://github.com/tokenize-x/tx-crust\""
           } > ~/.gitconfig
+      - name: Checkout xrpl bridge
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: ${{ matrix.ci_step }}/xrpl-bridge
+          fetch-depth: 0
+          submodules: recursive
+      - name: Checkout coreum
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          repository: CoreumFoundation/coreum
+          path: ${{ matrix.ci_step }}/coreum
+          ref: v5.0.1
+          submodules: recursive
+          fetch-depth: 0
       - name: Install go
         uses: actions/setup-go@v5
         with:
           go-version: '1.23.3'
       - name: Run ${{ matrix.ci_step }}
-        working-directory: ./xrpl-bridge
+        working-directory: ${{ matrix.ci_step }}/xrpl-bridge
         run: ${{ matrix.command }}
       - name: Dump docker logs on failure
         if: failure()
