@@ -621,7 +621,7 @@ cored tx broadcast signed-migrate.json \
 **For Testnet:**
 - **CORE**: Currency `434F524500000000000000000000000000000000`, Issuer `raSEP47QAwU6jsZU493znUD2iGNHDQEyvA`, Activation `2000-01-01 00:00:00 UTC` (946684800), Multiplier `1.0`
 - **XCORE**: Currency `58434F5245000000000000000000000000000000`, Issuer `rawnyFwFLkntQttzBgEFiASg5iB5ULdKpX`, Activation `2000-01-01 00:00:00 UTC` (946684800), Multiplier `1.0`
-- **SOLO**: Currency `534F4C4F00000000000000000000000000000000`, Issuer `rHZwvHEs56GCmHupwjA4RY7oPA3EoAJWuN`, Activation `2000-01-01 00:00:00 UTC` (946684800), Multiplier `1.25`
+- **SOLO**: Currency `534F4C4F00000000000000000000000000000000`, Issuer `rHZwvHEs56GCmHupwjA4RY7oPA3EoAJWuN`, Activation `2100-01-01 12:00:00 UTC` (4102488000), Multiplier `1.25`
 
 ```bash
 ./relayer build-add-xrpl-tokens \
@@ -631,13 +631,13 @@ cored tx broadcast signed-migrate.json \
     --tx-contract-address $TX_CONTRACT_ADDRESS \
     --xrpl-token "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA/434F524500000000000000000000000000000000/946684800/1.0" \
     --xrpl-token "rawnyFwFLkntQttzBgEFiASg5iB5ULdKpX/58434F5245000000000000000000000000000000/946684800/1.0" \
-    --xrpl-token "rHZwvHEs56GCmHupwjA4RY7oPA3EoAJWuN/534F4C4F00000000000000000000000000000000/946684800/1.25" > unsigned-add-tokens.json
+    --xrpl-token "rHZwvHEs56GCmHupwjA4RY7oPA3EoAJWuN/534F4C4F00000000000000000000000000000000/4102488000/1.25" > unsigned-add-tokens.json
 ```
 
 **For Mainnet:**
 - **CORE**: Currency `434F524500000000000000000000000000000000`, Issuer `rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D`, Activation `2000-01-01 00:00:00 UTC` (946684800), Multiplier `1.0`
 - **XCORE**: Currency `58434F5245000000000000000000000000000000`, Issuer `r3dVizzUAS3U29WKaaSALqkieytA2LCoRe`, Activation `2025-03-24 04:00:00 UTC` (1742788800), Multiplier `1.0`
-- **SOLO**: Currency `534F4C4F00000000000000000000000000000000`, Issuer `rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz`, Activation `2025-06-25 04:00:00 UTC` (1750824000), Multiplier `1.25`
+- **SOLO**: Currency `534F4C4F00000000000000000000000000000000`, Issuer `rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz`, Activation `2100-01-01 12:00:00 UTC` (4102488000), Multiplier `1.25`
 
 ```bash
 ./relayer build-add-xrpl-tokens \
@@ -647,7 +647,7 @@ cored tx broadcast signed-migrate.json \
     --tx-contract-address $TX_CONTRACT_ADDRESS \
     --xrpl-token "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D/434F524500000000000000000000000000000000/946684800/1.0" \
     --xrpl-token "r3dVizzUAS3U29WKaaSALqkieytA2LCoRe/58434F5245000000000000000000000000000000/1742788800/1.0" \
-    --xrpl-token "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz/534F4C4F00000000000000000000000000000000/1750824000/1.25" > unsigned-add-tokens.json
+    --xrpl-token "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz/534F4C4F00000000000000000000000000000000/4102488000/1.25" > unsigned-add-tokens.json
 ```
 
 * Sign and broadcast (see [Sign and broadcast with cored](#Sign-and-broadcast-with-cored))
@@ -781,7 +781,7 @@ rm -f unsigned-migrate.json signed-migrate.json unsigned-add-tokens.json signed-
 #### Relayer fails to start after upgrade
 
 * Check the relayer version matches the expected version
-* Verify all environment variables are set correctly with new field names (`TX_CHAIN_ID` instead of `CoreumChainID`, etc.)
+* Verify all environment variables are set correctly with new field names (`TX_CHAIN_ID` instead of `COREUM_CHAIN_ID`, etc.)
 * Check logs for specific error messages: `journalctl -u xrpl-bridge-relayer -n 100 --no-pager`
 * Verify the startup script uses the new field names (see Step 6)
 
