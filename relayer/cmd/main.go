@@ -17,9 +17,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bnb"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/finder"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/service"
 	"go.uber.org/zap"
 
@@ -41,6 +44,13 @@ const (
 	flagXRPLRecentScanSkipLastIndexes = "xrpl-recent-scan-skip-last-indexes"
 	flagXRPLToken                     = "xrpl-token"
 	flagXRPLMemoSuffix                = "xrpl-memo-suffix"
+
+	flagBNBRPCURL        = "bnb-rpc-url"
+	flagBNBBridgeAddress = "bnb-bridge-address"
+	flagBNBStartBlock    = "bnb-start-block"
+	flagBNBChainSuffix   = "bnb-chain-suffix"
+	flagBNBPollInterval  = "bnb-poll-interval"
+	flagBNBConfirmations = "bnb-confirmations"
 
 	flagTXChainID             = "tx-chain-id"
 	flagTXRPCURL              = "tx-rpc-url"
@@ -128,6 +138,7 @@ func RootCmd(ctx context.Context) (*cobra.Command, error) {
 	cmd.SetContext(ctx)
 
 	cmd.AddCommand(VersionCmd(ctx))
+	cmd.AddCommand(TestBNBCmd(ctx))
 	cmd.AddCommand(StartCmd(ctx))
 	cmd.AddCommand(DeployAndInstantiateCmd(ctx))
 	cmd.AddCommand(DeployCmd(ctx))
@@ -161,6 +172,108 @@ func VersionCmd(ctx context.Context) *cobra.Command {
 	return cmd
 }
 
+// TestBNBCmd returns a test command for BNB scanner/finder only.
+// This is for development/debugging - it doesn't require prometheus or TX chain.
+func TestBNBCmd(ctx context.Context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "test-bnb",
+		Short: "Test BNB scanner and finder (development only).",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			log := logger.Get(ctx)
+
+			rpcURL, _ := cmd.Flags().GetString(flagBNBRPCURL)
+			if rpcURL == "" {
+				return errors.Errorf("flag %s is required", flagBNBRPCURL)
+			}
+
+			bridgeAddrStr, _ := cmd.Flags().GetString(flagBNBBridgeAddress)
+			if bridgeAddrStr == "" {
+				return errors.Errorf("flag %s is required", flagBNBBridgeAddress)
+			}
+			if !common.IsHexAddress(bridgeAddrStr) {
+				return errors.Errorf("invalid bridge address: %s", bridgeAddrStr)
+			}
+
+			startBlock, _ := cmd.Flags().GetUint64(flagBNBStartBlock)
+			chainSuffix, _ := cmd.Flags().GetString(flagBNBChainSuffix)
+			if chainSuffix == "" {
+				return errors.Errorf("flag %s is required", flagBNBChainSuffix)
+			}
+			pollInterval, _ := cmd.Flags().GetDuration(flagBNBPollInterval)
+			confirmations, _ := cmd.Flags().GetUint64(flagBNBConfirmations)
+
+			txDenom, _ := cmd.Flags().GetString("tx-denom")
+			if txDenom == "" {
+				txDenom = "ucore" // default
+			}
+			txDecimals, _ := cmd.Flags().GetInt("tx-decimals")
+			if txDecimals == 0 {
+				txDecimals = 6 // default
+			}
+
+			log.Info("Starting BNB scanner test",
+				zap.String("rpcURL", rpcURL),
+				zap.String("bridgeAddress", bridgeAddrStr),
+				zap.Uint64("startBlock", startBlock),
+				zap.String("chainSuffix", chainSuffix),
+				zap.Duration("pollInterval", pollInterval),
+				zap.Uint64("confirmations", confirmations),
+			)
+
+			// Create scanner
+			scannerCfg := bnb.ScannerConfig{
+				RPCURL:        rpcURL,
+				BridgeAddress: common.HexToAddress(bridgeAddrStr),
+				StartBlock:    startBlock,
+				PollInterval:  pollInterval,
+				Confirmations: confirmations,
+				ChainSuffix:   chainSuffix,
+			}
+
+			scanner, err := bnb.NewScanner(scannerCfg, log)
+			if err != nil {
+				return errors.Wrap(err, "failed to create BNB scanner")
+			}
+
+			// Create finder
+			finderCfg := finder.BNBFinderConfig{
+				ChainSuffix: chainSuffix,
+				TXDenom:     txDenom,
+				TXDecimals:  txDecimals,
+			}
+			bnbFinder := finder.NewBNBFinder(finderCfg, log, scanner)
+
+			// Subscribe and log events
+			pendingTxCh := make(chan finder.PendingTXSendTransaction)
+			if err := bnbFinder.SubscribeTXSendTransactions(ctx, pendingTxCh); err != nil {
+				return errors.Wrap(err, "failed to subscribe to BNB events")
+			}
+
+			log.Info("BNB scanner started, waiting for events...")
+
+			for {
+				select {
+				case <-ctx.Done():
+					log.Info("Context cancelled, stopping test")
+					return nil
+				case pendingTx := <-pendingTxCh:
+					log.Info("Received PendingTXSendTransaction",
+						zap.String("destination", pendingTx.TXDestination.String()),
+						zap.String("amount", pendingTx.TXAmount.String()),
+						zap.String("txHash", pendingTx.XRPLTxHash),
+					)
+				}
+			}
+		},
+	}
+
+	addBNBFlags(cmd)
+	cmd.PersistentFlags().String("tx-denom", "ucore", "TX chain denom for converted amounts")
+	cmd.PersistentFlags().Int("tx-decimals", 6, "TX chain decimals")
+
+	return cmd
+}
+
 // StartCmd returns the start cmd.
 func StartCmd(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
@@ -186,6 +299,7 @@ func StartCmd(ctx context.Context) *cobra.Command {
 	}
 
 	addXRPLFlags(cmd)
+	addBNBFlags(cmd)
 	addTXFlags(cmd)
 	addKeyringFlags(cmd)
 	addPrometheusFlags(cmd)
@@ -843,6 +957,15 @@ func addXRPLFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().String(flagXRPLMemoSuffix, "", "")
 }
 
+func addBNBFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().String(flagBNBRPCURL, "", "BNB/EVM RPC URL for bridge event scanning")
+	cmd.PersistentFlags().String(flagBNBBridgeAddress, "", "BNB bridge contract address")
+	cmd.PersistentFlags().Uint64(flagBNBStartBlock, 0, "BNB block number to start scanning from")
+	cmd.PersistentFlags().String(flagBNBChainSuffix, "", "Chain suffix to strip from txchainAddress (e.g., /coreum-testnet-1/v1)")
+	cmd.PersistentFlags().Duration(flagBNBPollInterval, 3*time.Second, "BNB block polling interval (e.g., 3s, 5s)")
+	cmd.PersistentFlags().Uint64(flagBNBConfirmations, 5, "BNB block confirmations before processing (reorg protection)")
+}
+
 func addPrometheusFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().String(flagPrometheusURL, "", "Prometheus URL for metrics publishing")
 	cmd.PersistentFlags().String(flagPrometheusInstanceName, "", "Instance name label for prometheus")
@@ -927,6 +1050,11 @@ func readServicesConfig(cmd *cobra.Command) (service.Config, error) {
 		}
 	}
 
+	// Read BNB config (handled separately due to address parsing)
+	if err := readBNBConfig(cmd, &cfg.BNBScanner); err != nil {
+		return service.Config{}, err
+	}
+
 	return cfg, nil
 }
 
@@ -973,6 +1101,63 @@ func setDateIfNotEmpty(flag string, cmd *cobra.Command, v *time.Time) error {
 		return err
 	}
 	*v = val
+
+	return nil
+}
+
+func readBNBConfig(cmd *cobra.Command, cfg *bnb.ScannerConfig) error {
+	if cmd.Flags().Lookup(flagBNBRPCURL) == nil {
+		return nil
+	}
+
+	rpcURL, err := cmd.Flags().GetString(flagBNBRPCURL)
+	if err != nil {
+		return err
+	}
+	if rpcURL == "" {
+		return nil // BNB not configured
+	}
+
+	bridgeAddrStr, err := cmd.Flags().GetString(flagBNBBridgeAddress)
+	if err != nil {
+		return err
+	}
+	if bridgeAddrStr == "" {
+		return errors.Errorf("flag %s is required when %s is set", flagBNBBridgeAddress, flagBNBRPCURL)
+	}
+	if !common.IsHexAddress(bridgeAddrStr) {
+		return errors.Errorf("invalid bridge address: %s", bridgeAddrStr)
+	}
+
+	startBlock, err := cmd.Flags().GetUint64(flagBNBStartBlock)
+	if err != nil {
+		return err
+	}
+
+	chainSuffix, err := cmd.Flags().GetString(flagBNBChainSuffix)
+	if err != nil {
+		return err
+	}
+	if chainSuffix == "" {
+		return errors.Errorf("flag %s is required when %s is set", flagBNBChainSuffix, flagBNBRPCURL)
+	}
+
+	pollInterval, err := cmd.Flags().GetDuration(flagBNBPollInterval)
+	if err != nil {
+		return err
+	}
+
+	confirmations, err := cmd.Flags().GetUint64(flagBNBConfirmations)
+	if err != nil {
+		return err
+	}
+
+	cfg.RPCURL = rpcURL
+	cfg.BridgeAddress = common.HexToAddress(bridgeAddrStr)
+	cfg.StartBlock = startBlock
+	cfg.ChainSuffix = chainSuffix
+	cfg.PollInterval = pollInterval
+	cfg.Confirmations = confirmations
 
 	return nil
 }
