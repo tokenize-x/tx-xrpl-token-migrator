@@ -487,33 +487,335 @@ cored tx sign unsigned.json --from $TX_EXECUTOR_ADDRESS --output-document signed
 cored tx broadcast signed.json -y -b block --chain-id $TX_CHAIN_ID --node $TX_NODE
 ```
 
-## Upgrade relayer to V2.2.x
+## Migration and Upgrade Guide v2.3.0
 
-* Export relayer key (optional but recommended) and save it in safe place
+This guide covers the process of migrating and upgrading both the relayer binary and the smart contract.
+
+### Overview
+
+The migration process involves:
+1. **Contract Migration**: Deploy new contract code and migrate the existing contract instance
+2. **Add XRPL Tokens**: Add XRPL tokens to the contract (recommended before starting relayer)
+3. **Relayer Upgrade**: Update relayer configuration and upgrade the relayer binary
+
+### Important Configuration Changes
+
+#### Relayer Configuration Field Name Changes
+
+The following configuration fields have been renamed:
+- `--coreum-chain-id` → `--tx-chain-id`
+- `--coreum-rpc-url` → `--tx-rpc-url`
+- `--coreum-grpc-url` → `--tx-grpc-url`
+- `--coreum-sender-address` → `--tx-sender-address`
+- `--coreum-contract-address` → `--tx-contract-address`
+
+#### XRPL Tokens Configuration
+
+XRPL tokens are now stored in the contract. The relayer reads them automatically from the contract.
+
+### Prerequisites
+
+Before starting the migration:
+
+* Ensure you have access to:
+  - Contract deployer key (for deploying new contract code)
+  - Contract owner key (for executing migration transaction)
+  - Relayer key (for relayer binary upgrade)
+* Backup all keys and save them in a safe place
+* Verify current contract address and configuration
+* Ensure sufficient balance in owner account for transaction fees
+
+### Step 1: Backup Current State
+
+* Export relayer key (recommended)
 
 ```bash
-./relayer keys export relayer
+./relayer keys export relayer \
+    --tx-chain-id $TX_CHAIN_ID \
+    --keyring-backend os \
+    --home $HOME/.xrpl-bridge
 ```
 
-The guide contains the instructions on how to update the relayer from `v2.1.x` version to `v2.2.x` version.
+Save the exported key in a secure location.
 
-* Stop service
+* Get current contract configuration
+
+```bash
+export TX_CHAIN_ID="{TX chain ID}"
+export TX_CONTRACT_ADDRESS="{Contract address}"
+export TX_GRPC_URL="{GRPC URL of TX node}"
+
+./relayer get-contract-config \
+    --tx-chain-id $TX_CHAIN_ID \
+    --tx-grpc-url $TX_GRPC_URL \
+    --tx-contract-address $TX_CONTRACT_ADDRESS
+```
+
+Save the output for reference.
+
+### Step 2: Deploy New Contract Code
+
+* Set variables and ensure deployer key is in keyring
+
+```bash
+# If not already added, recover the deployer key
+./relayer keys add --recover contract-deployer \
+    --tx-chain-id $TX_CHAIN_ID \
+    --keyring-backend os \
+    --home $HOME/.xrpl-bridge
+```
+
+* Deploy new contract code
+
+```bash
+./relayer deploy \
+    --tx-chain-id $TX_CHAIN_ID \
+    --tx-grpc-url $TX_GRPC_URL \
+    --tx-sender-address $TX_CONTRACT_DEPLOYER_ADDRESS \
+    --keyring-backend os \
+    --home $HOME/.xrpl-bridge
+```
+
+**Important**: Save the generated `codeID` from the output. You will need it for the migration step.
+
+Example output:
+```
+2024-01-15T10:30:45.123456+00:00        info    relayer cmd/main.go:346 Contract deployed {"codeID": 123}
+```
+
+### Step 3: Migrate Contract
+
+* Build the migration transaction (set `TX_NEW_CONTRACT_CODE_ID` from Step 2 output)
+
+```bash
+./relayer build-migrate-contract-transaction $TX_NEW_CONTRACT_CODE_ID \
+    --tx-chain-id $TX_CHAIN_ID \
+    --tx-grpc-url $TX_GRPC_URL \
+    --tx-sender-address $TX_CONTRACT_OWNER \
+    --tx-contract-address $TX_CONTRACT_ADDRESS > unsigned-migrate.json
+```
+
+* Review `unsigned-migrate.json`, then sign and broadcast
+
+```bash
+export TX_NODE="{Node RPC URL}"
+
+cored tx sign unsigned-migrate.json \
+    --from $TX_CONTRACT_OWNER \
+    --output-document signed-migrate.json \
+    --chain-id $TX_CHAIN_ID \
+    --node $TX_NODE
+
+cored tx broadcast signed-migrate.json \
+    -y -b block \
+    --chain-id $TX_CHAIN_ID \
+    --node $TX_NODE
+```
+
+* Verify: `./relayer get-contract-config` should show new code ID and `version: 1` or higher
+
+### Step 5: Add XRPL Tokens to Contract
+
+**Important**: Add XRPL tokens before starting the relayer.
+
+**For Testnet:**
+- **CORE**: Currency `434F524500000000000000000000000000000000`, Issuer `raSEP47QAwU6jsZU493znUD2iGNHDQEyvA`, Activation `2000-01-01 00:00:00 UTC` (946684800), Multiplier `1.0`
+- **XCORE**: Currency `58434F5245000000000000000000000000000000`, Issuer `rawnyFwFLkntQttzBgEFiASg5iB5ULdKpX`, Activation `2000-01-01 00:00:00 UTC` (946684800), Multiplier `1.0`
+- **SOLO**: Currency `534F4C4F00000000000000000000000000000000`, Issuer `rHZwvHEs56GCmHupwjA4RY7oPA3EoAJWuN`, Activation `2100-01-01 12:00:00 UTC` (4102488000), Multiplier `1.25`
+
+```bash
+./relayer build-add-xrpl-tokens \
+    --tx-chain-id $TX_CHAIN_ID \
+    --tx-grpc-url $TX_GRPC_URL \
+    --tx-sender-address $TX_CONTRACT_OWNER \
+    --tx-contract-address $TX_CONTRACT_ADDRESS \
+    --xrpl-token "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA/434F524500000000000000000000000000000000/946684800/1.0" \
+    --xrpl-token "rawnyFwFLkntQttzBgEFiASg5iB5ULdKpX/58434F5245000000000000000000000000000000/946684800/1.0" \
+    --xrpl-token "rHZwvHEs56GCmHupwjA4RY7oPA3EoAJWuN/534F4C4F00000000000000000000000000000000/4102488000/1.25" > unsigned-add-tokens.json
+```
+
+**For Mainnet:**
+- **CORE**: Currency `434F524500000000000000000000000000000000`, Issuer `rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D`, Activation `2000-01-01 00:00:00 UTC` (946684800), Multiplier `1.0`
+- **XCORE**: Currency `58434F5245000000000000000000000000000000`, Issuer `r3dVizzUAS3U29WKaaSALqkieytA2LCoRe`, Activation `2025-03-24 04:00:00 UTC` (1742788800), Multiplier `1.0`
+- **SOLO**: Currency `534F4C4F00000000000000000000000000000000`, Issuer `rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz`, Activation `2100-01-01 12:00:00 UTC` (4102488000), Multiplier `1.25`
+
+```bash
+./relayer build-add-xrpl-tokens \
+    --tx-chain-id $TX_CHAIN_ID \
+    --tx-grpc-url $TX_GRPC_URL \
+    --tx-sender-address $TX_CONTRACT_OWNER \
+    --tx-contract-address $TX_CONTRACT_ADDRESS \
+    --xrpl-token "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D/434F524500000000000000000000000000000000/946684800/1.0" \
+    --xrpl-token "r3dVizzUAS3U29WKaaSALqkieytA2LCoRe/58434F5245000000000000000000000000000000/1742788800/1.0" \
+    --xrpl-token "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz/534F4C4F00000000000000000000000000000000/4102488000/1.25" > unsigned-add-tokens.json
+```
+
+* Sign and broadcast (see [Sign and broadcast with cored](#Sign-and-broadcast-with-cored))
+
+* Verify: `./relayer get-contract-config` should show tokens in `xrpl_tokens` field
+
+### Step 6: Update Relayer Configuration
+
+After contract migration, you need to update the relayer startup script with the new configuration field names.
+
+* Update the relayer startup script with new field names
+
+The relayer configuration field names have changed. Update your `run-xrpl-bridge-relayer.sh` script:
+
+**Old field names (before migration):**
+- `--coreum-chain-id` → `--tx-chain-id`
+- `--coreum-rpc-url` → `--tx-rpc-url` (if used)
+- `--coreum-grpc-url` → `--tx-grpc-url`
+- `--coreum-sender-address` → `--tx-sender-address`
+- `--coreum-contract-address` → `--tx-contract-address`
+
+**Example updated script:**
+
+```bash
+echo "
+echo \$(systemd-ask-password \"Enter keyring password:\") | $PWD/relayer start \\
+    --xrpl-rpc-url $XRPL_RPC_URL \\
+    --tx-chain-id $TX_CHAIN_ID \\
+    --tx-contract-address $TX_CONTRACT_ADDRESS \\
+    --tx-grpc-url $TX_GRPC_URL \\
+    --tx-sender-address $(./relayer keys show relayer -a --tx-chain-id $TX_CHAIN_ID --keyring-backend os --home $HOME/.xrpl-bridge) \\
+    --prometheus-instance-name $PROMETHEUS_INSTANCE_NAME \\
+    --prometheus-username $PROMETHEUS_USERNAME \\
+    --prometheus-password $PROMETHEUS_PASSWORD \\
+    --prometheus-url $PROMETHEUS_URL \\
+    --keyring-backend os \\
+    --home $HOME/.xrpl-bridge
+    " > "run-xrpl-bridge-relayer.sh"
+chmod +x run-xrpl-bridge-relayer.sh
+```
+
+
+### Step 7: Upgrade Relayer Binary
+
+* Stop the relayer service (if it's still running)
 
 ```bash
 systemctl stop xrpl-bridge-relayer
 ```
 
-* Download new `v2.2.x` version of the relayer and replace current binary
+* Download the latest relayer binary from the [releases](https://github.com/tokenize-x/tx-xrpl-token-migrator/releases) page
 
-* Check the version
+```bash
+# Replace VERSION with the actual version number (e.g., v2.3.0)
+wget https://github.com/tokenize-x/tx-xrpl-token-migrator/releases/download/VERSION/relayer
+chmod +x relayer
+```
+
+* Verify the binary version
 
 ```bash
 ./relayer version
 ```
 
-* Start service and check logs
+### Step 8: Start Relayer and Verify
+
+* Start the relayer service
 
 ```bash
 systemctl start xrpl-bridge-relayer
+```
+
+* Enter the keyring password
+
+```bash
+systemd-tty-ask-password-agent
+```
+
+* Monitor the relayer logs
+
+```bash
 journalctl -u xrpl-bridge-relayer -f
 ```
+
+Look for successful connection, contract config loaded, and XRPL tokens loaded from contract.
+
+* Verify relayer is functioning correctly
+
+```bash
+# Check for pending transactions (should work normally)
+./relayer get-pending-approved-transactions \
+    --tx-contract-address $TX_CONTRACT_ADDRESS \
+    --tx-grpc-url $TX_GRPC_URL \
+    --tx-chain-id $TX_CHAIN_ID
+```
+
+* Run audit to verify data integrity
+
+```bash
+export XRPL_RPC_URL="{RPC URL of XRPL node}"
+export TX_RPC_URL="{RPC URL of TX node}"
+
+./relayer audit \
+    --tx-contract-address $TX_CONTRACT_ADDRESS \
+    --tx-rpc-url $TX_RPC_URL \
+    --tx-chain-id $TX_CHAIN_ID \
+    --xrpl-rpc-url $XRPL_RPC_URL
+```
+
+The audit should complete without discrepancies.
+
+### Step 9: Post-Migration Tasks
+
+* Monitor the relayer for at least 24 hours to ensure stable operation
+
+```bash
+journalctl -u xrpl-bridge-relayer -f
+```
+
+* Verify that new transactions are being processed correctly
+
+
+* Clean up temporary files
+
+```bash
+rm -f unsigned-migrate.json signed-migrate.json unsigned-add-tokens.json signed-add-tokens.json
+```
+
+### Troubleshooting
+
+#### Relayer fails to start after upgrade
+
+* Check the relayer version matches the expected version
+* Verify all environment variables are set correctly with new field names (`TX_CHAIN_ID` instead of `COREUM_CHAIN_ID`, etc.)
+* Check logs for specific error messages: `journalctl -u xrpl-bridge-relayer -n 100 --no-pager`
+* Verify the startup script uses the new field names (see Step 6)
+
+#### Configuration field name errors
+
+If you see errors about unknown flags or missing configuration:
+
+* Ensure you're using the new field names:
+  - `--tx-chain-id` (not `--coreum-chain-id`)
+  - `--tx-grpc-url` (not `--coreum-grpc-url`)
+  - `--tx-sender-address` (not `--coreum-sender-address`)
+  - `--tx-contract-address` (not `--coreum-contract-address`)
+* Update your startup script and environment variables
+
+#### Contract migration fails
+
+* Verify the contract owner address has sufficient balance for fees
+* Ensure the new code ID is correct
+* Check that the contract address is correct
+* Verify the transaction was signed and broadcast correctly
+* Check transaction status: `cored query tx <tx_hash> --chain-id $TX_CHAIN_ID --node $TX_NODE`
+
+#### Contract state issues after migration
+
+* If issues persist, verify the contract configuration: `./relayer get-contract-config`
+* Check that the contract version was updated: the config should show `version: 1` or higher
+* Run the audit command to check for data discrepancies
+
+#### XRPL tokens not found after migration
+
+* Add tokens using `build-add-xrpl-tokens` (see Step 5)
+* Verify: `./relayer get-contract-config` should show tokens in `xrpl_tokens` field
+
+### Notes
+
+* Contract migration preserves all existing state
+* XRPL tokens must be added after migration (see Step 5)
