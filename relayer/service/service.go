@@ -18,6 +18,7 @@ import (
 	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/samber/lo"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/audit"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bnb"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/xrpl"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/executor"
@@ -53,6 +54,8 @@ type Config struct {
 	XRPLRecentScanSkipLastIndexes int64
 
 	XRPLMemoSuffix string
+
+	BNBScanner bnb.ScannerConfig
 
 	TXChainID         string
 	TXRPCURL          string
@@ -374,14 +377,40 @@ func NewServices(
 		return nil, errors.Wrap(err, "failed to create finders")
 	}
 
-	// Create executor with the initial finders
+	// collect all finders (XRPL + optional BNB)
+	allFinders := lo.Map(txFinders, func(f *finder.Finder, _ int) executor.Finder {
+		return f
+	})
+
+	// init BNB finder if configured
+	if cfg.BNBScanner.RPCURL != "" {
+		bnbScanner, err := bnb.NewScanner(cfg.BNBScanner, log)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create BNB scanner")
+		}
+
+		bnbFinder := finder.NewBNBFinder(
+			finder.BNBFinderConfig{
+				ChainSuffix: cfg.BNBScanner.ChainSuffix,
+				TXDenom:     network.Denom(),
+				TXDecimals:  6,
+			},
+			log,
+			bnbScanner,
+		)
+		allFinders = append(allFinders, bnbFinder)
+		log.Info("BNB bridge enabled",
+			zap.String("rpcURL", cfg.BNBScanner.RPCURL),
+			zap.String("bridgeAddress", cfg.BNBScanner.BridgeAddress.Hex()),
+		)
+	}
+
+	// Create executor with all finders
 	txExecutor := executor.NewExecutor(
 		executor.DefaultConfig(senderAddress),
 		log,
 		txContractClient,
-		lo.Map(txFinders, func(f *finder.Finder, _ int) executor.Finder {
-			return f
-		}),
+		allFinders,
 	)
 
 	// Create ConfigWatcher for dynamic token configuration management
