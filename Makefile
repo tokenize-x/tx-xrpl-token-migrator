@@ -50,6 +50,10 @@ test:
 .PHONY: test-integration
 test-integration: test-integration-xrpl
 
+.PHONY: test-integration-xrpl
+test-integration-xrpl:
+	@go test -v --tags=integrationtests -mod=readonly -parallel=4 -run 'Test(XRPL|Contract|Migration|Config)' ./integration-tests -timeout 300s
+
 .PHONY: test-integration-bnb
 test-integration-bnb:
 	@go test -v --tags=integrationtests -mod=readonly -run 'TestBNB' ./integration-tests -timeout 300s
