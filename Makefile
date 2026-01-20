@@ -48,8 +48,15 @@ test:
 	@go test -v -mod=readonly -parallel=4 ./...
 
 .PHONY: test-integration
-test-integration:
-	@go test -v --tags=integrationtests -mod=readonly -parallel=4 ./integration-tests
+test-integration: test-integration-xrpl test-integration-bnb
+
+.PHONY: test-integration-xrpl
+test-integration-xrpl:
+	@go test -v --tags=integrationtests -mod=readonly -parallel=4 -run 'Test(XRPL|Contract|Migration|Config)' ./integration-tests -timeout 300s
+
+.PHONY: test-integration-bnb
+test-integration-bnb:
+	@go test -v --tags=integrationtests -mod=readonly -run 'TestBNB' ./integration-tests -timeout 300s
 
 .PHONY: lint
 lint:
@@ -79,6 +86,9 @@ test-contract:
 restart-dev-env:
 	${TX_BUILDER} znet remove && ${TX_BUILDER} znet start --profiles=1cored,xrpl
 
+stop-dev-env:
+	${TX_BUILDER} znet remove 
+	
 .PHONY: rebuild-dev-env
 rebuild-dev-env:
 	${TX_BUILDER} build images
