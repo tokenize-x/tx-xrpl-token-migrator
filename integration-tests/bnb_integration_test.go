@@ -112,7 +112,7 @@ func TestBNBLiveScanner(t *testing.T) {
 		StartBlock:    0,
 		PollInterval:  500 * time.Millisecond,
 		Confirmations: 0,
-		ChainSuffix:   bridgeCfg.ChainID,
+		ChainID:   bridgeCfg.ChainID,
 	}
 
 	scanner, err := bnb.NewScanner(scannerCfg, logger)
@@ -248,7 +248,7 @@ func TestBNBLiveEndToEnd(t *testing.T) {
 		StartBlock:    0,
 		PollInterval:  500 * time.Millisecond,
 		Confirmations: 0,
-		ChainSuffix:   bridgeCfg.ChainID,
+		ChainID:   bridgeCfg.ChainID,
 	}, logger)
 	requireT.NoError(err)
 
@@ -367,7 +367,7 @@ func TestBNBLiveMultipleTransactions(t *testing.T) {
 		StartBlock:    0,
 		PollInterval:  500 * time.Millisecond,
 		Confirmations: 0,
-		ChainSuffix:   bridgeCfg.ChainID,
+		ChainID:   bridgeCfg.ChainID,
 	}, logger)
 	requireT.NoError(err)
 
@@ -435,7 +435,7 @@ func buildAndStartBNBLiveExecutors(
 	contractAddr sdk.AccAddress,
 	trustedAddresses []sdk.AccAddress,
 	scanner *bnb.Scanner,
-	chainSuffix string,
+	chainID string,
 ) []*executorInstance {
 	t.Helper()
 
@@ -450,9 +450,9 @@ func buildAndStartBNBLiveExecutors(
 		// Create BNB finder with scanner
 		bnbFinder := finder.NewBNBFinder(
 			finder.BNBFinderConfig{
-				ChainSuffix: chainSuffix,
-				TXDenom:     txChain.TXChain.ChainSettings.Denom,
-				TXDecimals:  6,
+				ChainID:    chainID,
+				TXDenom:    txChain.TXChain.ChainSettings.Denom,
+				TXDecimals: 6,
 			},
 			logger,
 			scanner,

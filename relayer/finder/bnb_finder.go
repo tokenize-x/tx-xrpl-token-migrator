@@ -18,9 +18,9 @@ type BNBScanner interface {
 }
 
 type BNBFinderConfig struct {
-	ChainSuffix string
-	TXDenom     string
-	TXDecimals  int
+	ChainID    string
+	TXDenom    string
+	TXDecimals int
 }
 
 // finds valid BNB bridge transactions and converts them to PendingTXSendTransaction.
@@ -67,9 +67,9 @@ func (f *BNBFinder) SubscribeTXSendTransactions(ctx context.Context, ch chan<- P
 func (f *BNBFinder) buildPendingTransaction(event *abi.TxBridgeBridgeInitiated) (PendingTXSendTransaction, bool) {
 	txHash := event.Raw.TxHash.Hex()
 
-	// extract address by stripping the chain suffix from destinationPayload
+	// extract address by stripping the chainID from destinationPayload
 	// format: {bech32Address}{chainID} e.g., "devcore1abc.../coreum-devnet-1"
-	address := extractAddressFromDestinationPayload(event.DestinationPayload, f.cfg.ChainSuffix)
+	address := extractAddressFromDestinationPayload(event.DestinationPayload, f.cfg.ChainID)
 
 	destAddr, err := sdk.AccAddressFromBech32(address)
 	if err != nil {

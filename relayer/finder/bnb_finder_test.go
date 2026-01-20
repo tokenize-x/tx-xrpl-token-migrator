@@ -94,7 +94,7 @@ func TestBNBFinderBuildPendingTransaction(t *testing.T) {
 	setSDKConfig()
 
 	cfg := BNBFinderConfig{
-		ChainSuffix: "/coreum-mainnet-1/v1",
+		ChainID: "/coreum-mainnet-1/v1",
 		TXDenom:     "ucore",
 		TXDecimals:  6,
 	}
@@ -103,7 +103,7 @@ func TestBNBFinderBuildPendingTransaction(t *testing.T) {
 
 	validEvent := &abi.TxBridgeBridgeInitiated{
 		From:               common.HexToAddress("0x1234567890123456789012345678901234567890"),
-		DestinationPayload: txAddress.String() + cfg.ChainSuffix,
+		DestinationPayload: txAddress.String() + cfg.ChainID,
 		Amount:             big.NewInt(1500000000000000000), // 1.5 tokens
 		Timestamp:          big.NewInt(1234567890),
 		Raw: types.Log{
@@ -132,7 +132,7 @@ func TestBNBFinderBuildPendingTransaction(t *testing.T) {
 		{
 			name: "negative_invalid_bech32_address",
 			eventFunc: func(e *abi.TxBridgeBridgeInitiated) *abi.TxBridgeBridgeInitiated {
-				e.DestinationPayload = "invalid_address" + cfg.ChainSuffix
+				e.DestinationPayload = "invalid_address" + cfg.ChainID
 				return e
 			},
 			wantMatches: false,
@@ -142,7 +142,7 @@ func TestBNBFinderBuildPendingTransaction(t *testing.T) {
 			name: "negative_wrong_prefix_address",
 			eventFunc: func(e *abi.TxBridgeBridgeInitiated) *abi.TxBridgeBridgeInitiated {
 				// devcore prefix instead of core
-				e.DestinationPayload = "devcore17l2fxde2662s2p8pgmzu04jcvflnnlq4l30hff" + cfg.ChainSuffix
+				e.DestinationPayload = "devcore17l2fxde2662s2p8pgmzu04jcvflnnlq4l30hff" + cfg.ChainID
 				return e
 			},
 			wantMatches: false,
@@ -192,7 +192,7 @@ func TestBNBFinderBuildPendingTransaction(t *testing.T) {
 			name: "negative_invalid_checksum",
 			eventFunc: func(e *abi.TxBridgeBridgeInitiated) *abi.TxBridgeBridgeInitiated {
 				// Valid format but wrong checksum (changed last char)
-				e.DestinationPayload = "core1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqm9l4xz" + cfg.ChainSuffix
+				e.DestinationPayload = "core1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqm9l4xz" + cfg.ChainID
 				return e
 			},
 			wantMatches: false,

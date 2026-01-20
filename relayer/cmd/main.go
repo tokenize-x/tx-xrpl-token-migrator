@@ -48,7 +48,7 @@ const (
 	flagBNBRPCURL        = "bnb-rpc-url"
 	flagBNBBridgeAddress = "bnb-bridge-address"
 	flagBNBStartBlock    = "bnb-start-block"
-	flagBNBChainSuffix   = "bnb-chain-suffix"
+	flagBNBChainID       = "bnb-chain-id"
 	flagBNBPollInterval  = "bnb-poll-interval"
 	flagBNBConfirmations = "bnb-confirmations"
 
@@ -195,9 +195,9 @@ func TestBNBCmd(ctx context.Context) *cobra.Command {
 			}
 
 			startBlock, _ := cmd.Flags().GetUint64(flagBNBStartBlock)
-			chainSuffix, _ := cmd.Flags().GetString(flagBNBChainSuffix)
-			if chainSuffix == "" {
-				return errors.Errorf("flag %s is required", flagBNBChainSuffix)
+			chainID, _ := cmd.Flags().GetString(flagBNBChainID)
+			if chainID == "" {
+				return errors.Errorf("flag %s is required", flagBNBChainID)
 			}
 			pollInterval, _ := cmd.Flags().GetDuration(flagBNBPollInterval)
 			confirmations, _ := cmd.Flags().GetUint64(flagBNBConfirmations)
@@ -215,7 +215,7 @@ func TestBNBCmd(ctx context.Context) *cobra.Command {
 				zap.String("rpcURL", rpcURL),
 				zap.String("bridgeAddress", bridgeAddrStr),
 				zap.Uint64("startBlock", startBlock),
-				zap.String("chainSuffix", chainSuffix),
+				zap.String("chainID", chainID),
 				zap.Duration("pollInterval", pollInterval),
 				zap.Uint64("confirmations", confirmations),
 			)
@@ -227,7 +227,7 @@ func TestBNBCmd(ctx context.Context) *cobra.Command {
 				StartBlock:    startBlock,
 				PollInterval:  pollInterval,
 				Confirmations: confirmations,
-				ChainSuffix:   chainSuffix,
+				ChainID:       chainID,
 			}
 
 			scanner, err := bnb.NewScanner(scannerCfg, log)
@@ -237,9 +237,9 @@ func TestBNBCmd(ctx context.Context) *cobra.Command {
 
 			// Create finder
 			finderCfg := finder.BNBFinderConfig{
-				ChainSuffix: chainSuffix,
-				TXDenom:     txDenom,
-				TXDecimals:  txDecimals,
+				ChainID:    chainID,
+				TXDenom:    txDenom,
+				TXDecimals: txDecimals,
 			}
 			bnbFinder := finder.NewBNBFinder(finderCfg, log, scanner)
 
@@ -961,7 +961,7 @@ func addBNBFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().String(flagBNBRPCURL, "", "BNB/EVM RPC URL for bridge event scanning")
 	cmd.PersistentFlags().String(flagBNBBridgeAddress, "", "BNB bridge contract address")
 	cmd.PersistentFlags().Uint64(flagBNBStartBlock, 0, "BNB block number to start scanning from")
-	cmd.PersistentFlags().String(flagBNBChainSuffix, "", "Chain suffix to strip from txchainAddress (e.g., /coreum-testnet-1/v1)")
+	cmd.PersistentFlags().String(flagBNBChainID, "", "ChainID suffix to strip from destinationPayload (e.g., /coreum-testnet-1/v1)")
 	cmd.PersistentFlags().Duration(flagBNBPollInterval, 3*time.Second, "BNB block polling interval (e.g., 3s, 5s)")
 	cmd.PersistentFlags().Uint64(flagBNBConfirmations, 5, "BNB block confirmations before processing (reorg protection)")
 }
@@ -1134,12 +1134,12 @@ func readBNBConfig(cmd *cobra.Command, cfg *bnb.ScannerConfig) error {
 		return err
 	}
 
-	chainSuffix, err := cmd.Flags().GetString(flagBNBChainSuffix)
+	chainID, err := cmd.Flags().GetString(flagBNBChainID)
 	if err != nil {
 		return err
 	}
-	if chainSuffix == "" {
-		return errors.Errorf("flag %s is required when %s is set", flagBNBChainSuffix, flagBNBRPCURL)
+	if chainID == "" {
+		return errors.Errorf("flag %s is required when %s is set", flagBNBChainID, flagBNBRPCURL)
 	}
 
 	pollInterval, err := cmd.Flags().GetDuration(flagBNBPollInterval)
@@ -1155,7 +1155,7 @@ func readBNBConfig(cmd *cobra.Command, cfg *bnb.ScannerConfig) error {
 	cfg.RPCURL = rpcURL
 	cfg.BridgeAddress = common.HexToAddress(bridgeAddrStr)
 	cfg.StartBlock = startBlock
-	cfg.ChainSuffix = chainSuffix
+	cfg.ChainID = chainID
 	cfg.PollInterval = pollInterval
 	cfg.Confirmations = confirmations
 

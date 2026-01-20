@@ -20,7 +20,7 @@ type ScannerConfig struct {
 	StartBlock    uint64
 	PollInterval  time.Duration
 	Confirmations uint64
-	ChainSuffix   string // chain suffix to strip from txchainAddress (e.g., "/coreum-testnet-1/v1")
+	ChainID       string // chainID suffix to strip from destinationPayload (e.g., "/coreum-testnet-1/v1")
 }
 
 // Scanner is the BNB bridge event scanner.

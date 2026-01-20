@@ -391,9 +391,9 @@ func NewServices(
 
 		bnbFinder := finder.NewBNBFinder(
 			finder.BNBFinderConfig{
-				ChainSuffix: cfg.BNBScanner.ChainSuffix,
-				TXDenom:     network.Denom(),
-				TXDecimals:  6,
+				ChainID:    cfg.BNBScanner.ChainID,
+				TXDenom:    network.Denom(),
+				TXDecimals: 6,
 			},
 			log,
 			bnbScanner,
