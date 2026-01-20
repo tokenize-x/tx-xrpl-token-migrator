@@ -67,14 +67,15 @@ func (f *BNBFinder) SubscribeTXSendTransactions(ctx context.Context, ch chan<- P
 func (f *BNBFinder) buildPendingTransaction(event *abi.TxBridgeBridgeInitiated) (PendingTXSendTransaction, bool) {
 	txHash := event.Raw.TxHash.Hex()
 
-	// extract address by stripping the chain suffix
-	address := extractAddressFromTxchainAddress(event.TxchainAddress, f.cfg.ChainSuffix)
+	// extract address by stripping the chain suffix from destinationPayload
+	// format: {bech32Address}{chainID} e.g., "devcore1abc.../coreum-devnet-1"
+	address := extractAddressFromDestinationPayload(event.DestinationPayload, f.cfg.ChainSuffix)
 
 	destAddr, err := sdk.AccAddressFromBech32(address)
 	if err != nil {
 		f.log.Error("invalid BNB bridge destination address",
 			zap.String("txHash", txHash),
-			zap.String("txchainAddress", event.TxchainAddress),
+			zap.String("destinationPayload", event.DestinationPayload),
 			zap.String("extractedAddress", address),
 			zap.Error(err),
 		)
@@ -90,7 +91,7 @@ func (f *BNBFinder) buildPendingTransaction(event *abi.TxBridgeBridgeInitiated) 
 
 	f.log.Debug("BNB bridge event converted to PendingTXSendTransaction",
 		zap.String("txHash", txHash),
-		zap.String("originalTxchainAddress", event.TxchainAddress),
+		zap.String("destinationPayload", event.DestinationPayload),
 		zap.String("extractedAddress", address),
 		zap.String("destination", destAddr.String()),
 		zap.String("originalAmountWei", event.Amount.String()),
@@ -104,10 +105,10 @@ func (f *BNBFinder) buildPendingTransaction(event *abi.TxBridgeBridgeInitiated) 
 	}, true
 }
 
-// extracts the bech32 address by removing the chain suffix.
-// Input format: "testcore1abc.../coreum-testnet-1/v1" -> "testcore1abc..."
-func extractAddressFromTxchainAddress(txchainAddress, suffix string) string {
-	return strings.TrimSuffix(txchainAddress, suffix)
+// extractAddressFromDestinationPayload extracts the bech32 address by removing the chainID suffix.
+// Input format: "devcore1abc.../coreum-devnet-1" -> "devcore1abc..."
+func extractAddressFromDestinationPayload(destinationPayload, chainIDSuffix string) string {
+	return strings.TrimSuffix(destinationPayload, chainIDSuffix)
 }
 
 // converts BNB amount (18 decimals) to TX coin (6 decimals).

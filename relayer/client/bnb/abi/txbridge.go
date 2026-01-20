@@ -31,7 +31,7 @@ var (
 
 // TxBridgeMetaData contains all meta data concerning the TxBridge contract.
 var TxBridgeMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AccessControlBadConfirmation\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"neededRole\",\"type\":\"bytes32\"}],\"name\":\"AccessControlUnauthorizedAccount\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maximum\",\"type\":\"uint256\"}],\"name\":\"AmountAboveMaximum\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minimum\",\"type\":\"uint256\"}],\"name\":\"AmountBelowMinimum\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"EmptyString\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"EnforcedPause\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ExpectedPause\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidAddressDataLength\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidAddressPrefix\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidAmount\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidChainSuffix\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidInitialization\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotInitializing\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ReentrancyGuardReentrantCall\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ZeroAddress\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"txchainAddress\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"BridgeInitiated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"version\",\"type\":\"uint64\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Paused\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"previousAdminRole\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"newAdminRole\",\"type\":\"bytes32\"}],\"name\":\"RoleAdminChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleGranted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleRevoked\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"oldToken\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"newToken\",\"type\":\"address\"}],\"name\":\"TokenUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Unpaused\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"DEFAULT_ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"OPERATOR_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"addressDataLength\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"addressPrefix\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"txchainAddress\",\"type\":\"string\"}],\"name\":\"bridge\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"chainSuffix\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleAdmin\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"grantRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"hasRole\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_admin\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_minAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_maxAmount\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"_chainSuffix\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_addressPrefix\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"_addressDataLength\",\"type\":\"uint256\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"txchainAddress\",\"type\":\"string\"}],\"name\":\"isValidAddress\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"maxAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"callerConfirmation\",\"type\":\"address\"}],\"name\":\"renounceRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"revokeRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_addressDataLength\",\"type\":\"uint256\"}],\"name\":\"setAddressDataLength\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_addressPrefix\",\"type\":\"string\"}],\"name\":\"setAddressPrefix\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_chainSuffix\",\"type\":\"string\"}],\"name\":\"setChainSuffix\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_maxAmount\",\"type\":\"uint256\"}],\"name\":\"setMaxAmount\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_minAmount\",\"type\":\"uint256\"}],\"name\":\"setMinAmount\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_token\",\"type\":\"address\"}],\"name\":\"setToken\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"token\",\"outputs\":[{\"internalType\":\"contractITxToken\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AccessControlBadConfirmation\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"neededRole\",\"type\":\"bytes32\"}],\"name\":\"AccessControlUnauthorizedAccount\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maximum\",\"type\":\"uint256\"}],\"name\":\"AmountAboveMaximum\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minimum\",\"type\":\"uint256\"}],\"name\":\"AmountBelowMinimum\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"EmptyString\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"EnforcedPause\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ExpectedPause\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidAddressDataLength\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidAddressPrefix\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidAmount\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidBech32Character\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidChainId\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidInitialization\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotInitializing\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ReentrancyGuardReentrantCall\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ZeroAddress\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"destinationPayload\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"BridgeInitiated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"version\",\"type\":\"uint64\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Paused\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"previousAdminRole\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"newAdminRole\",\"type\":\"bytes32\"}],\"name\":\"RoleAdminChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleGranted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleRevoked\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"oldToken\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"newToken\",\"type\":\"address\"}],\"name\":\"TokenUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Unpaused\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"DEFAULT_ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"OPERATOR_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"addressDataLength\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"addressPrefix\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"destinationPayload\",\"type\":\"string\"}],\"name\":\"bridge\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"chainID\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleAdmin\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"grantRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"hasRole\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_admin\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_minAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_maxAmount\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"_chainID\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_addressPrefix\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"_addressDataLength\",\"type\":\"uint256\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"destinationPayload\",\"type\":\"string\"}],\"name\":\"isValidDestinationPayload\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"maxAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"callerConfirmation\",\"type\":\"address\"}],\"name\":\"renounceRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"revokeRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_addressDataLength\",\"type\":\"uint256\"}],\"name\":\"setAddressDataLength\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_addressPrefix\",\"type\":\"string\"}],\"name\":\"setAddressPrefix\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_chainID\",\"type\":\"string\"}],\"name\":\"setChainId\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_maxAmount\",\"type\":\"uint256\"}],\"name\":\"setMaxAmount\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_minAmount\",\"type\":\"uint256\"}],\"name\":\"setMinAmount\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_token\",\"type\":\"address\"}],\"name\":\"setToken\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"token\",\"outputs\":[{\"internalType\":\"contractITXToken\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // TxBridgeABI is the input ABI used to generate the binding from.
@@ -304,12 +304,12 @@ func (_TxBridge *TxBridgeCallerSession) AddressPrefix() (string, error) {
 	return _TxBridge.Contract.AddressPrefix(&_TxBridge.CallOpts)
 }
 
-// ChainSuffix is a free data retrieval call binding the contract method 0xbb76bc0a.
+// ChainID is a free data retrieval call binding the contract method 0xadc879e9.
 //
-// Solidity: function chainSuffix() view returns(string)
-func (_TxBridge *TxBridgeCaller) ChainSuffix(opts *bind.CallOpts) (string, error) {
+// Solidity: function chainID() view returns(string)
+func (_TxBridge *TxBridgeCaller) ChainID(opts *bind.CallOpts) (string, error) {
 	var out []interface{}
-	err := _TxBridge.contract.Call(opts, &out, "chainSuffix")
+	err := _TxBridge.contract.Call(opts, &out, "chainID")
 
 	if err != nil {
 		return *new(string), err
@@ -321,18 +321,18 @@ func (_TxBridge *TxBridgeCaller) ChainSuffix(opts *bind.CallOpts) (string, error
 
 }
 
-// ChainSuffix is a free data retrieval call binding the contract method 0xbb76bc0a.
+// ChainID is a free data retrieval call binding the contract method 0xadc879e9.
 //
-// Solidity: function chainSuffix() view returns(string)
-func (_TxBridge *TxBridgeSession) ChainSuffix() (string, error) {
-	return _TxBridge.Contract.ChainSuffix(&_TxBridge.CallOpts)
+// Solidity: function chainID() view returns(string)
+func (_TxBridge *TxBridgeSession) ChainID() (string, error) {
+	return _TxBridge.Contract.ChainID(&_TxBridge.CallOpts)
 }
 
-// ChainSuffix is a free data retrieval call binding the contract method 0xbb76bc0a.
+// ChainID is a free data retrieval call binding the contract method 0xadc879e9.
 //
-// Solidity: function chainSuffix() view returns(string)
-func (_TxBridge *TxBridgeCallerSession) ChainSuffix() (string, error) {
-	return _TxBridge.Contract.ChainSuffix(&_TxBridge.CallOpts)
+// Solidity: function chainID() view returns(string)
+func (_TxBridge *TxBridgeCallerSession) ChainID() (string, error) {
+	return _TxBridge.Contract.ChainID(&_TxBridge.CallOpts)
 }
 
 // GetRoleAdmin is a free data retrieval call binding the contract method 0x248a9ca3.
@@ -397,12 +397,12 @@ func (_TxBridge *TxBridgeCallerSession) HasRole(role [32]byte, account common.Ad
 	return _TxBridge.Contract.HasRole(&_TxBridge.CallOpts, role, account)
 }
 
-// IsValidAddress is a free data retrieval call binding the contract method 0x335b08ba.
+// IsValidDestinationPayload is a free data retrieval call binding the contract method 0x854c78a1.
 //
-// Solidity: function isValidAddress(string txchainAddress) view returns(bool)
-func (_TxBridge *TxBridgeCaller) IsValidAddress(opts *bind.CallOpts, txchainAddress string) (bool, error) {
+// Solidity: function isValidDestinationPayload(string destinationPayload) view returns(bool)
+func (_TxBridge *TxBridgeCaller) IsValidDestinationPayload(opts *bind.CallOpts, destinationPayload string) (bool, error) {
 	var out []interface{}
-	err := _TxBridge.contract.Call(opts, &out, "isValidAddress", txchainAddress)
+	err := _TxBridge.contract.Call(opts, &out, "isValidDestinationPayload", destinationPayload)
 
 	if err != nil {
 		return *new(bool), err
@@ -414,18 +414,18 @@ func (_TxBridge *TxBridgeCaller) IsValidAddress(opts *bind.CallOpts, txchainAddr
 
 }
 
-// IsValidAddress is a free data retrieval call binding the contract method 0x335b08ba.
+// IsValidDestinationPayload is a free data retrieval call binding the contract method 0x854c78a1.
 //
-// Solidity: function isValidAddress(string txchainAddress) view returns(bool)
-func (_TxBridge *TxBridgeSession) IsValidAddress(txchainAddress string) (bool, error) {
-	return _TxBridge.Contract.IsValidAddress(&_TxBridge.CallOpts, txchainAddress)
+// Solidity: function isValidDestinationPayload(string destinationPayload) view returns(bool)
+func (_TxBridge *TxBridgeSession) IsValidDestinationPayload(destinationPayload string) (bool, error) {
+	return _TxBridge.Contract.IsValidDestinationPayload(&_TxBridge.CallOpts, destinationPayload)
 }
 
-// IsValidAddress is a free data retrieval call binding the contract method 0x335b08ba.
+// IsValidDestinationPayload is a free data retrieval call binding the contract method 0x854c78a1.
 //
-// Solidity: function isValidAddress(string txchainAddress) view returns(bool)
-func (_TxBridge *TxBridgeCallerSession) IsValidAddress(txchainAddress string) (bool, error) {
-	return _TxBridge.Contract.IsValidAddress(&_TxBridge.CallOpts, txchainAddress)
+// Solidity: function isValidDestinationPayload(string destinationPayload) view returns(bool)
+func (_TxBridge *TxBridgeCallerSession) IsValidDestinationPayload(destinationPayload string) (bool, error) {
+	return _TxBridge.Contract.IsValidDestinationPayload(&_TxBridge.CallOpts, destinationPayload)
 }
 
 // MaxAmount is a free data retrieval call binding the contract method 0x5f48f393.
@@ -585,23 +585,23 @@ func (_TxBridge *TxBridgeCallerSession) Token() (common.Address, error) {
 
 // Bridge is a paid mutator transaction binding the contract method 0xaaf4ce4a.
 //
-// Solidity: function bridge(uint256 amount, string txchainAddress) returns()
-func (_TxBridge *TxBridgeTransactor) Bridge(opts *bind.TransactOpts, amount *big.Int, txchainAddress string) (*types.Transaction, error) {
-	return _TxBridge.contract.Transact(opts, "bridge", amount, txchainAddress)
+// Solidity: function bridge(uint256 amount, string destinationPayload) returns()
+func (_TxBridge *TxBridgeTransactor) Bridge(opts *bind.TransactOpts, amount *big.Int, destinationPayload string) (*types.Transaction, error) {
+	return _TxBridge.contract.Transact(opts, "bridge", amount, destinationPayload)
 }
 
 // Bridge is a paid mutator transaction binding the contract method 0xaaf4ce4a.
 //
-// Solidity: function bridge(uint256 amount, string txchainAddress) returns()
-func (_TxBridge *TxBridgeSession) Bridge(amount *big.Int, txchainAddress string) (*types.Transaction, error) {
-	return _TxBridge.Contract.Bridge(&_TxBridge.TransactOpts, amount, txchainAddress)
+// Solidity: function bridge(uint256 amount, string destinationPayload) returns()
+func (_TxBridge *TxBridgeSession) Bridge(amount *big.Int, destinationPayload string) (*types.Transaction, error) {
+	return _TxBridge.Contract.Bridge(&_TxBridge.TransactOpts, amount, destinationPayload)
 }
 
 // Bridge is a paid mutator transaction binding the contract method 0xaaf4ce4a.
 //
-// Solidity: function bridge(uint256 amount, string txchainAddress) returns()
-func (_TxBridge *TxBridgeTransactorSession) Bridge(amount *big.Int, txchainAddress string) (*types.Transaction, error) {
-	return _TxBridge.Contract.Bridge(&_TxBridge.TransactOpts, amount, txchainAddress)
+// Solidity: function bridge(uint256 amount, string destinationPayload) returns()
+func (_TxBridge *TxBridgeTransactorSession) Bridge(amount *big.Int, destinationPayload string) (*types.Transaction, error) {
+	return _TxBridge.Contract.Bridge(&_TxBridge.TransactOpts, amount, destinationPayload)
 }
 
 // GrantRole is a paid mutator transaction binding the contract method 0x2f2ff15d.
@@ -627,23 +627,23 @@ func (_TxBridge *TxBridgeTransactorSession) GrantRole(role [32]byte, account com
 
 // Initialize is a paid mutator transaction binding the contract method 0x983e49b3.
 //
-// Solidity: function initialize(address _token, address _admin, uint256 _minAmount, uint256 _maxAmount, string _chainSuffix, string _addressPrefix, uint256 _addressDataLength) returns()
-func (_TxBridge *TxBridgeTransactor) Initialize(opts *bind.TransactOpts, _token common.Address, _admin common.Address, _minAmount *big.Int, _maxAmount *big.Int, _chainSuffix string, _addressPrefix string, _addressDataLength *big.Int) (*types.Transaction, error) {
-	return _TxBridge.contract.Transact(opts, "initialize", _token, _admin, _minAmount, _maxAmount, _chainSuffix, _addressPrefix, _addressDataLength)
+// Solidity: function initialize(address _token, address _admin, uint256 _minAmount, uint256 _maxAmount, string _chainID, string _addressPrefix, uint256 _addressDataLength) returns()
+func (_TxBridge *TxBridgeTransactor) Initialize(opts *bind.TransactOpts, _token common.Address, _admin common.Address, _minAmount *big.Int, _maxAmount *big.Int, _chainID string, _addressPrefix string, _addressDataLength *big.Int) (*types.Transaction, error) {
+	return _TxBridge.contract.Transact(opts, "initialize", _token, _admin, _minAmount, _maxAmount, _chainID, _addressPrefix, _addressDataLength)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0x983e49b3.
 //
-// Solidity: function initialize(address _token, address _admin, uint256 _minAmount, uint256 _maxAmount, string _chainSuffix, string _addressPrefix, uint256 _addressDataLength) returns()
-func (_TxBridge *TxBridgeSession) Initialize(_token common.Address, _admin common.Address, _minAmount *big.Int, _maxAmount *big.Int, _chainSuffix string, _addressPrefix string, _addressDataLength *big.Int) (*types.Transaction, error) {
-	return _TxBridge.Contract.Initialize(&_TxBridge.TransactOpts, _token, _admin, _minAmount, _maxAmount, _chainSuffix, _addressPrefix, _addressDataLength)
+// Solidity: function initialize(address _token, address _admin, uint256 _minAmount, uint256 _maxAmount, string _chainID, string _addressPrefix, uint256 _addressDataLength) returns()
+func (_TxBridge *TxBridgeSession) Initialize(_token common.Address, _admin common.Address, _minAmount *big.Int, _maxAmount *big.Int, _chainID string, _addressPrefix string, _addressDataLength *big.Int) (*types.Transaction, error) {
+	return _TxBridge.Contract.Initialize(&_TxBridge.TransactOpts, _token, _admin, _minAmount, _maxAmount, _chainID, _addressPrefix, _addressDataLength)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0x983e49b3.
 //
-// Solidity: function initialize(address _token, address _admin, uint256 _minAmount, uint256 _maxAmount, string _chainSuffix, string _addressPrefix, uint256 _addressDataLength) returns()
-func (_TxBridge *TxBridgeTransactorSession) Initialize(_token common.Address, _admin common.Address, _minAmount *big.Int, _maxAmount *big.Int, _chainSuffix string, _addressPrefix string, _addressDataLength *big.Int) (*types.Transaction, error) {
-	return _TxBridge.Contract.Initialize(&_TxBridge.TransactOpts, _token, _admin, _minAmount, _maxAmount, _chainSuffix, _addressPrefix, _addressDataLength)
+// Solidity: function initialize(address _token, address _admin, uint256 _minAmount, uint256 _maxAmount, string _chainID, string _addressPrefix, uint256 _addressDataLength) returns()
+func (_TxBridge *TxBridgeTransactorSession) Initialize(_token common.Address, _admin common.Address, _minAmount *big.Int, _maxAmount *big.Int, _chainID string, _addressPrefix string, _addressDataLength *big.Int) (*types.Transaction, error) {
+	return _TxBridge.Contract.Initialize(&_TxBridge.TransactOpts, _token, _admin, _minAmount, _maxAmount, _chainID, _addressPrefix, _addressDataLength)
 }
 
 // Pause is a paid mutator transaction binding the contract method 0x8456cb59.
@@ -751,25 +751,25 @@ func (_TxBridge *TxBridgeTransactorSession) SetAddressPrefix(_addressPrefix stri
 	return _TxBridge.Contract.SetAddressPrefix(&_TxBridge.TransactOpts, _addressPrefix)
 }
 
-// SetChainSuffix is a paid mutator transaction binding the contract method 0x2f880fe4.
+// SetChainId is a paid mutator transaction binding the contract method 0x7973be07.
 //
-// Solidity: function setChainSuffix(string _chainSuffix) returns()
-func (_TxBridge *TxBridgeTransactor) SetChainSuffix(opts *bind.TransactOpts, _chainSuffix string) (*types.Transaction, error) {
-	return _TxBridge.contract.Transact(opts, "setChainSuffix", _chainSuffix)
+// Solidity: function setChainId(string _chainID) returns()
+func (_TxBridge *TxBridgeTransactor) SetChainId(opts *bind.TransactOpts, _chainID string) (*types.Transaction, error) {
+	return _TxBridge.contract.Transact(opts, "setChainId", _chainID)
 }
 
-// SetChainSuffix is a paid mutator transaction binding the contract method 0x2f880fe4.
+// SetChainId is a paid mutator transaction binding the contract method 0x7973be07.
 //
-// Solidity: function setChainSuffix(string _chainSuffix) returns()
-func (_TxBridge *TxBridgeSession) SetChainSuffix(_chainSuffix string) (*types.Transaction, error) {
-	return _TxBridge.Contract.SetChainSuffix(&_TxBridge.TransactOpts, _chainSuffix)
+// Solidity: function setChainId(string _chainID) returns()
+func (_TxBridge *TxBridgeSession) SetChainId(_chainID string) (*types.Transaction, error) {
+	return _TxBridge.Contract.SetChainId(&_TxBridge.TransactOpts, _chainID)
 }
 
-// SetChainSuffix is a paid mutator transaction binding the contract method 0x2f880fe4.
+// SetChainId is a paid mutator transaction binding the contract method 0x7973be07.
 //
-// Solidity: function setChainSuffix(string _chainSuffix) returns()
-func (_TxBridge *TxBridgeTransactorSession) SetChainSuffix(_chainSuffix string) (*types.Transaction, error) {
-	return _TxBridge.Contract.SetChainSuffix(&_TxBridge.TransactOpts, _chainSuffix)
+// Solidity: function setChainId(string _chainID) returns()
+func (_TxBridge *TxBridgeTransactorSession) SetChainId(_chainID string) (*types.Transaction, error) {
+	return _TxBridge.Contract.SetChainId(&_TxBridge.TransactOpts, _chainID)
 }
 
 // SetMaxAmount is a paid mutator transaction binding the contract method 0x4fe47f70.
@@ -925,16 +925,16 @@ func (it *TxBridgeBridgeInitiatedIterator) Close() error {
 
 // TxBridgeBridgeInitiated represents a BridgeInitiated event raised by the TxBridge contract.
 type TxBridgeBridgeInitiated struct {
-	From           common.Address
-	TxchainAddress string
-	Amount         *big.Int
-	Timestamp      *big.Int
-	Raw            types.Log // Blockchain specific contextual infos
+	From               common.Address
+	DestinationPayload string
+	Amount             *big.Int
+	Timestamp          *big.Int
+	Raw                types.Log // Blockchain specific contextual infos
 }
 
 // FilterBridgeInitiated is a free log retrieval operation binding the contract event 0xc8fc702ef75cbf37407ffc9dd8b13a87c16d721286a50b10789508f9ed97482f.
 //
-// Solidity: event BridgeInitiated(address indexed from, string txchainAddress, uint256 amount, uint256 timestamp)
+// Solidity: event BridgeInitiated(address indexed from, string destinationPayload, uint256 amount, uint256 timestamp)
 func (_TxBridge *TxBridgeFilterer) FilterBridgeInitiated(opts *bind.FilterOpts, from []common.Address) (*TxBridgeBridgeInitiatedIterator, error) {
 
 	var fromRule []interface{}
@@ -951,7 +951,7 @@ func (_TxBridge *TxBridgeFilterer) FilterBridgeInitiated(opts *bind.FilterOpts, 
 
 // WatchBridgeInitiated is a free log subscription operation binding the contract event 0xc8fc702ef75cbf37407ffc9dd8b13a87c16d721286a50b10789508f9ed97482f.
 //
-// Solidity: event BridgeInitiated(address indexed from, string txchainAddress, uint256 amount, uint256 timestamp)
+// Solidity: event BridgeInitiated(address indexed from, string destinationPayload, uint256 amount, uint256 timestamp)
 func (_TxBridge *TxBridgeFilterer) WatchBridgeInitiated(opts *bind.WatchOpts, sink chan<- *TxBridgeBridgeInitiated, from []common.Address) (event.Subscription, error) {
 
 	var fromRule []interface{}
@@ -993,7 +993,7 @@ func (_TxBridge *TxBridgeFilterer) WatchBridgeInitiated(opts *bind.WatchOpts, si
 
 // ParseBridgeInitiated is a log parse operation binding the contract event 0xc8fc702ef75cbf37407ffc9dd8b13a87c16d721286a50b10789508f9ed97482f.
 //
-// Solidity: event BridgeInitiated(address indexed from, string txchainAddress, uint256 amount, uint256 timestamp)
+// Solidity: event BridgeInitiated(address indexed from, string destinationPayload, uint256 amount, uint256 timestamp)
 func (_TxBridge *TxBridgeFilterer) ParseBridgeInitiated(log types.Log) (*TxBridgeBridgeInitiated, error) {
 	event := new(TxBridgeBridgeInitiated)
 	if err := _TxBridge.contract.UnpackLog(event, "BridgeInitiated", log); err != nil {
