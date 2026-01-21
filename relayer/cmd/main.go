@@ -15,14 +15,13 @@ import (
 	txclient "github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bnb"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
-	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/finder"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/service"
 	"go.uber.org/zap"
 
@@ -138,7 +137,6 @@ func RootCmd(ctx context.Context) (*cobra.Command, error) {
 	cmd.SetContext(ctx)
 
 	cmd.AddCommand(VersionCmd(ctx))
-	cmd.AddCommand(TestBNBCmd(ctx))
 	cmd.AddCommand(StartCmd(ctx))
 	cmd.AddCommand(DeployAndInstantiateCmd(ctx))
 	cmd.AddCommand(DeployCmd(ctx))
@@ -168,108 +166,6 @@ func VersionCmd(ctx context.Context) *cobra.Command {
 			return nil
 		},
 	}
-
-	return cmd
-}
-
-// TestBNBCmd returns a test command for BNB scanner/finder only.
-// This is for development/debugging - it doesn't require prometheus or TX chain.
-func TestBNBCmd(ctx context.Context) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "test-bnb",
-		Short: "Test BNB scanner and finder (development only).",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			log := logger.Get(ctx)
-
-			rpcURL, _ := cmd.Flags().GetString(flagBNBRPCURL)
-			if rpcURL == "" {
-				return errors.Errorf("flag %s is required", flagBNBRPCURL)
-			}
-
-			bridgeAddrStr, _ := cmd.Flags().GetString(flagBNBBridgeAddress)
-			if bridgeAddrStr == "" {
-				return errors.Errorf("flag %s is required", flagBNBBridgeAddress)
-			}
-			if !common.IsHexAddress(bridgeAddrStr) {
-				return errors.Errorf("invalid bridge address: %s", bridgeAddrStr)
-			}
-
-			startBlock, _ := cmd.Flags().GetUint64(flagBNBStartBlock)
-			chainID, _ := cmd.Flags().GetString(flagBNBChainID)
-			if chainID == "" {
-				return errors.Errorf("flag %s is required", flagBNBChainID)
-			}
-			pollInterval, _ := cmd.Flags().GetDuration(flagBNBPollInterval)
-			confirmations, _ := cmd.Flags().GetUint64(flagBNBConfirmations)
-
-			txDenom, _ := cmd.Flags().GetString("tx-denom")
-			if txDenom == "" {
-				txDenom = "ucore" // default
-			}
-			txDecimals, _ := cmd.Flags().GetInt("tx-decimals")
-			if txDecimals == 0 {
-				txDecimals = 6 // default
-			}
-
-			log.Info("Starting BNB scanner test",
-				zap.String("rpcURL", rpcURL),
-				zap.String("bridgeAddress", bridgeAddrStr),
-				zap.Uint64("startBlock", startBlock),
-				zap.String("chainID", chainID),
-				zap.Duration("pollInterval", pollInterval),
-				zap.Uint64("confirmations", confirmations),
-			)
-
-			// Create scanner
-			scannerCfg := bnb.ScannerConfig{
-				RPCURL:        rpcURL,
-				BridgeAddress: common.HexToAddress(bridgeAddrStr),
-				StartBlock:    startBlock,
-				PollInterval:  pollInterval,
-				Confirmations: confirmations,
-				ChainID:       chainID,
-			}
-
-			scanner, err := bnb.NewScanner(scannerCfg, log)
-			if err != nil {
-				return errors.Wrap(err, "failed to create BNB scanner")
-			}
-
-			// Create finder
-			finderCfg := finder.BNBFinderConfig{
-				ChainID:    chainID,
-				TXDenom:    txDenom,
-				TXDecimals: txDecimals,
-			}
-			bnbFinder := finder.NewBNBFinder(finderCfg, log, scanner)
-
-			// Subscribe and log events
-			pendingTxCh := make(chan finder.PendingTXSendTransaction)
-			if err := bnbFinder.SubscribeTXSendTransactions(ctx, pendingTxCh); err != nil {
-				return errors.Wrap(err, "failed to subscribe to BNB events")
-			}
-
-			log.Info("BNB scanner started, waiting for events...")
-
-			for {
-				select {
-				case <-ctx.Done():
-					log.Info("Context cancelled, stopping test")
-					return nil
-				case pendingTx := <-pendingTxCh:
-					log.Info("Received PendingTXSendTransaction",
-						zap.String("destination", pendingTx.TXDestination.String()),
-						zap.String("amount", pendingTx.TXAmount.String()),
-						zap.String("txHash", pendingTx.XRPLTxHash),
-					)
-				}
-			}
-		},
-	}
-
-	addBNBFlags(cmd)
-	cmd.PersistentFlags().String("tx-denom", "ucore", "TX chain denom for converted amounts")
-	cmd.PersistentFlags().Int("tx-decimals", 6, "TX chain decimals")
 
 	return cmd
 }
