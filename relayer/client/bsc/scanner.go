@@ -1,4 +1,4 @@
-package bnb
+package bsc
 
 import (
 	"context"
@@ -8,12 +8,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
-	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bnb/abi"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc/abi"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 	"go.uber.org/zap"
 )
 
-// configuration for the BNB event scanner.
+// configuration for the BSC event scanner.
 type ScannerConfig struct {
 	RPCURL        string
 	BridgeAddress common.Address
@@ -23,7 +23,7 @@ type ScannerConfig struct {
 	ChainID       string // chainID suffix to strip from destinationPayload (e.g., "/coreum-testnet-1/v1")
 }
 
-// Scanner is the BNB bridge event scanner.
+// Scanner is the BSC bridge event scanner.
 type Scanner struct {
 	cfg      ScannerConfig
 	log      logger.Logger
@@ -34,7 +34,7 @@ type Scanner struct {
 func NewScanner(cfg ScannerConfig, log logger.Logger) (*Scanner, error) {
 	client, err := ethclient.Dial(cfg.RPCURL)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect to BNB RPC")
+		return nil, errors.Wrap(err, "failed to connect to BSC RPC")
 	}
 
 	filterer, err := abi.NewTxBridgeFilterer(cfg.BridgeAddress, client)
@@ -71,7 +71,7 @@ func (s *Scanner) scanHistorical(ctx context.Context, from, to uint64, ch chan<-
 		return
 	}
 
-	s.log.Info("starting BNB historical scan", zap.Uint64("from", from), zap.Uint64("to", to))
+	s.log.Info("starting BSC historical scan", zap.Uint64("from", from), zap.Uint64("to", to))
 
 	batchSize := uint64(10000)
 	for start := from; start < to; start += batchSize {
@@ -87,19 +87,19 @@ func (s *Scanner) scanHistorical(ctx context.Context, from, to uint64, ch chan<-
 		}
 
 		if err := s.scanRange(ctx, start, end, ch); err != nil {
-			s.log.Error("BNB historical scan error", zap.Error(err))
+			s.log.Error("BSC historical scan error", zap.Error(err))
 			time.Sleep(s.cfg.PollInterval)
 			start -= batchSize // retry the same batch
 			continue
 		}
 	}
 
-	s.log.Info("BNB historical scan completed")
+	s.log.Info("BSC historical scan completed")
 }
 
 func (s *Scanner) scanRecent(ctx context.Context, from uint64, ch chan<- *abi.TxBridgeBridgeInitiated) {
 	lastBlock := from
-	s.log.Info("starting BNB recent block polling", zap.Uint64("from", from))
+	s.log.Info("starting BSC recent block polling", zap.Uint64("from", from))
 
 	for {
 		select {
@@ -110,7 +110,7 @@ func (s *Scanner) scanRecent(ctx context.Context, from uint64, ch chan<- *abi.Tx
 
 		currentBlock, err := s.client.BlockNumber(ctx)
 		if err != nil {
-			s.log.Error("failed to get BNB block number", zap.Error(err))
+			s.log.Error("failed to get BSC block number", zap.Error(err))
 			continue
 		}
 
@@ -121,11 +121,11 @@ func (s *Scanner) scanRecent(ctx context.Context, from uint64, ch chan<- *abi.Tx
 
 		count, err := s.scanRangeWithCount(ctx, lastBlock+1, safeBlock, ch)
 		if err != nil {
-			s.log.Error("BNB recent scan error", zap.Error(err))
+			s.log.Error("BSC recent scan error", zap.Error(err))
 			continue
 		}
 
-		s.log.Info("polled BNB blocks", zap.Uint64("from", lastBlock+1), zap.Uint64("to", safeBlock), zap.Int("events", count))
+		s.log.Info("polled BSC blocks", zap.Uint64("from", lastBlock+1), zap.Uint64("to", safeBlock), zap.Int("events", count))
 		lastBlock = safeBlock
 	}
 }

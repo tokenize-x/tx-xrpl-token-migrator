@@ -20,7 +20,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 
-	bnbabi "github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bnb/abi"
+	bscabi "github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc/abi"
 )
 
 // ERC1967Proxy bytecode (OpenZeppelin v5, compiled with Solidity 0.8.24)
@@ -38,8 +38,8 @@ type ContractArtifact struct {
 type DeployedContracts struct {
 	TokenAddress  common.Address
 	BridgeAddress common.Address
-	Token         *bnbabi.TxToken
-	Bridge        *bnbabi.TxBridge
+	Token         *bscabi.TxToken
+	Bridge        *bscabi.TxBridge
 }
 
 // holds configuration for the bridge contract.
@@ -70,7 +70,7 @@ func DefaultBridgeConfig() BridgeConfig {
 func getABIDir() string {
 	_, currentFile, _, _ := runtime.Caller(0)
 	projectRoot := filepath.Dir(filepath.Dir(filepath.Dir(currentFile)))
-	return filepath.Join(projectRoot, "relayer", "client", "bnb", "abi")
+	return filepath.Join(projectRoot, "relayer", "client", "bsc", "abi")
 }
 
 // loads a contract artifact from a JSON file.
@@ -173,7 +173,7 @@ func encodeProxyConstructor(implementation common.Address, initData []byte) ([]b
 }
 
 // deploys the TXToken contract through a proxy.
-func DeployTXToken(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, name, symbol string) (common.Address, *bnbabi.TxToken, error) {
+func DeployTXToken(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, name, symbol string) (common.Address, *bscabi.TxToken, error) {
 	auth, err := getTransactOpts(client, privateKey, chainID)
 	if err != nil {
 		return common.Address{}, nil, err
@@ -195,7 +195,7 @@ func DeployTXToken(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chain
 	owner := crypto.PubkeyToAddress(privateKey.PublicKey)
 
 	// encode initialize call
-	tokenABI, err := bnbabi.TxTokenMetaData.GetAbi()
+	tokenABI, err := bscabi.TxTokenMetaData.GetAbi()
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to get token ABI")
 	}
@@ -223,7 +223,7 @@ func DeployTXToken(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chain
 	}
 
 	// create binding to proxy
-	token, err := bnbabi.NewTxToken(proxyAddress, client)
+	token, err := bscabi.NewTxToken(proxyAddress, client)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to create token binding")
 	}
@@ -232,7 +232,7 @@ func DeployTXToken(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chain
 }
 
 // deploys the TXBridge contract through a proxy.
-func DeployTXBridge(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, tokenAddress common.Address, cfg BridgeConfig) (common.Address, *bnbabi.TxBridge, error) {
+func DeployTXBridge(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, tokenAddress common.Address, cfg BridgeConfig) (common.Address, *bscabi.TxBridge, error) {
 	auth, err := getTransactOpts(client, privateKey, chainID)
 	if err != nil {
 		return common.Address{}, nil, err
@@ -250,7 +250,7 @@ func DeployTXBridge(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chai
 
 	admin := crypto.PubkeyToAddress(privateKey.PublicKey)
 
-	bridgeABI, err := bnbabi.TxBridgeMetaData.GetAbi()
+	bridgeABI, err := bscabi.TxBridgeMetaData.GetAbi()
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to get bridge ABI")
 	}
@@ -283,7 +283,7 @@ func DeployTXBridge(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chai
 		return common.Address{}, nil, errors.Wrap(err, "failed to deploy bridge proxy")
 	}
 
-	bridge, err := bnbabi.NewTxBridge(proxyAddress, client)
+	bridge, err := bscabi.NewTxBridge(proxyAddress, client)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to create bridge binding")
 	}
@@ -341,7 +341,7 @@ func SetupBridgeEnvironment(client *ethclient.Client, privateKey *ecdsa.PrivateK
 }
 
 // mints tokens to a specified address.
-func MintTokens(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, token *bnbabi.TxToken, to common.Address, amount *big.Int) error {
+func MintTokens(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, token *bscabi.TxToken, to common.Address, amount *big.Int) error {
 	auth, err := getTransactOpts(client, privateKey, chainID)
 	if err != nil {
 		return err

@@ -20,8 +20,8 @@ import (
 	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 
 	"github.com/tokenize-x/tx-xrpl-token-migrator/integration-tests/evm"
-	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bnb"
-	bnbabi "github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bnb/abi"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc"
+	bscabi "github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc/abi"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/executor"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/finder"
@@ -40,8 +40,8 @@ func tokensToWei(tokens int64) *big.Int {
 	return wei.Mul(wei, multiplier)
 }
 
-// TestBNBLiveScanner tests the real BNB scanner against a local Anvil node.
-func TestBNBLiveScanner(t *testing.T) {
+// TestBSCLiveScanner tests the real BSC scanner against a local Anvil node.
+func TestBSCLiveScanner(t *testing.T) {
 	requireT := require.New(t)
 	ctx := context.Background()
 	logger := zaptest.NewLogger(t)
@@ -106,7 +106,7 @@ func TestBNBLiveScanner(t *testing.T) {
 	t.Logf("Bridge transaction: %s", bridgeTx.TxHash.Hex())
 
 	// Create scanner
-	scannerCfg := bnb.ScannerConfig{
+	scannerCfg := bsc.ScannerConfig{
 		RPCURL:        anvil.RPCURL(),
 		BridgeAddress: contracts.BridgeAddress,
 		StartBlock:    0,
@@ -115,11 +115,11 @@ func TestBNBLiveScanner(t *testing.T) {
 		ChainID:   bridgeCfg.ChainID,
 	}
 
-	scanner, err := bnb.NewScanner(scannerCfg, logger)
+	scanner, err := bsc.NewScanner(scannerCfg, logger)
 	requireT.NoError(err)
 
 	// Subscribe to events
-	eventCh := make(chan *bnbabi.TxBridgeBridgeInitiated, 10)
+	eventCh := make(chan *bscabi.TxBridgeBridgeInitiated, 10)
 	scanCtx, scanCancel := context.WithTimeout(ctx, 10*time.Second)
 	defer scanCancel()
 
@@ -142,8 +142,8 @@ func TestBNBLiveScanner(t *testing.T) {
 	t.Log("Live scanner test passed!")
 }
 
-// TestBNBLiveEndToEnd tests the complete flow: EVM bridge tx -> TX Chain bank send.
-func TestBNBLiveEndToEnd(t *testing.T) {
+// TestBSCLiveEndToEnd tests the complete flow: EVM bridge tx -> TX Chain bank send.
+func TestBSCLiveEndToEnd(t *testing.T) {
 	ctx, chains := NewTestingContext(t)
 	requireT := require.New(t)
 	txChain := chains.TX
@@ -202,7 +202,7 @@ func TestBNBLiveEndToEnd(t *testing.T) {
 		MinAmount:        sdkmath.NewIntFromUint64(100),
 		MaxAmount:        sdkmath.NewIntFromUint64(200_000_000),
 		XRPLTokens:       []tx.XRPLToken{},
-		Label:            "bnb_live_bridge_test",
+		Label:            "bsc_live_bridge_test",
 	})
 	requireT.NoError(err)
 
@@ -242,7 +242,7 @@ func TestBNBLiveEndToEnd(t *testing.T) {
 	t.Logf("EVM bridge tx: %s", bridgeTx.TxHash.Hex())
 
 	// Create the scanner
-	scanner, err := bnb.NewScanner(bnb.ScannerConfig{
+	scanner, err := bsc.NewScanner(bsc.ScannerConfig{
 		RPCURL:        anvil.RPCURL(),
 		BridgeAddress: contracts.BridgeAddress,
 		StartBlock:    0,
@@ -253,7 +253,7 @@ func TestBNBLiveEndToEnd(t *testing.T) {
 	requireT.NoError(err)
 
 	// Build and start executors with scanner (2 executors, threshold=2)
-	instances := buildAndStartBNBLiveExecutors(
+	instances := buildAndStartBSCLiveExecutors(
 		ctx, t, txChain, contractAddr,
 		[]sdk.AccAddress{trustedAddress1, trustedAddress2},
 		scanner,
@@ -265,7 +265,7 @@ func TestBNBLiveEndToEnd(t *testing.T) {
 	expectedBalance := txChain.TXChain.NewCoin(sdkmath.NewInt(50_000_000))
 	awaitForBalance(ctx, t, txChain.TXChain.ClientContext, recipientAddress.String(), expectedBalance)
 
-	t.Log("BNB live end-to-end bridge test passed!")
+	t.Log("BSC live end-to-end bridge test passed!")
 
 	t.Cleanup(func() {
 		// to fully complete processing before canceling context
@@ -276,8 +276,8 @@ func TestBNBLiveEndToEnd(t *testing.T) {
 	})
 }
 
-// TestBNBLiveMultipleTransactions tests multiple bridge transactions through the live flow.
-func TestBNBLiveMultipleTransactions(t *testing.T) {
+// TestBSCLiveMultipleTransactions tests multiple bridge transactions through the live flow.
+func TestBSCLiveMultipleTransactions(t *testing.T) {
 	ctx, chains := NewTestingContext(t)
 	requireT := require.New(t)
 	txChain := chains.TX
@@ -332,7 +332,7 @@ func TestBNBLiveMultipleTransactions(t *testing.T) {
 		MinAmount:        sdkmath.NewIntFromUint64(100),
 		MaxAmount:        sdkmath.NewIntFromUint64(500_000_000),
 		XRPLTokens:       []tx.XRPLToken{},
-		Label:            "bnb_live_multi_test",
+		Label:            "bsc_live_multi_test",
 	})
 	requireT.NoError(err)
 
@@ -361,7 +361,7 @@ func TestBNBLiveMultipleTransactions(t *testing.T) {
 	requireT.NoError(err)
 
 	// Create scanner and start executors
-	scanner, err := bnb.NewScanner(bnb.ScannerConfig{
+	scanner, err := bsc.NewScanner(bsc.ScannerConfig{
 		RPCURL:        anvil.RPCURL(),
 		BridgeAddress: contracts.BridgeAddress,
 		StartBlock:    0,
@@ -371,7 +371,7 @@ func TestBNBLiveMultipleTransactions(t *testing.T) {
 	}, logger)
 	requireT.NoError(err)
 
-	instances := buildAndStartBNBLiveExecutors(
+	instances := buildAndStartBSCLiveExecutors(
 		ctx, t, txChain, contractAddr,
 		[]sdk.AccAddress{trustedAddress1, trustedAddress2},
 		scanner,
@@ -428,13 +428,13 @@ func TestBNBLiveMultipleTransactions(t *testing.T) {
 }
 
 // helper that creates and starts executors with a real scanner.
-func buildAndStartBNBLiveExecutors(
+func buildAndStartBSCLiveExecutors(
 	ctx context.Context,
 	t *testing.T,
 	txChain TXChain,
 	contractAddr sdk.AccAddress,
 	trustedAddresses []sdk.AccAddress,
-	scanner *bnb.Scanner,
+	scanner *bsc.Scanner,
 	chainID string,
 ) []*executorInstance {
 	t.Helper()
@@ -447,9 +447,9 @@ func buildAndStartBNBLiveExecutors(
 	wg := sync.WaitGroup{}
 
 	for _, trustedAddr := range trustedAddresses {
-		// Create BNB finder with scanner
-		bnbFinder := finder.NewBNBFinder(
-			finder.BNBFinderConfig{
+		// Create BSC finder with scanner
+		bscFinder := finder.NewBSCFinder(
+			finder.BSCFinderConfig{
 				ChainID:    chainID,
 				TXDenom:    txChain.TXChain.ChainSettings.Denom,
 				TXDecimals: 6,
@@ -469,7 +469,7 @@ func buildAndStartBNBLiveExecutors(
 			executor.DefaultConfig(trustedAddr),
 			logger,
 			contractClient,
-			[]executor.Finder{bnbFinder},
+			[]executor.Finder{bscFinder},
 		)
 
 		execCtx, execCancel := context.WithCancel(ctx)

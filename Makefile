@@ -54,9 +54,9 @@ test-integration: test-integration-xrpl
 test-integration-xrpl:
 	@go test -v --tags=integrationtests -mod=readonly -parallel=4 -run 'Test(XRPL|Contract|Migration|Config)' ./integration-tests -timeout 300s
 
-.PHONY: test-integration-bnb
-test-integration-bnb:
-	@go test -v --tags=integrationtests -mod=readonly -run 'TestBNB' ./integration-tests -timeout 300s
+.PHONY: test-integration-bsc
+test-integration-bsc:
+	@go test -v --tags=integrationtests -mod=readonly -run 'TestBSC' ./integration-tests -timeout 300s
 
 .PHONY: lint
 lint:

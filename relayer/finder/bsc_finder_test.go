@@ -10,13 +10,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/require"
-	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bnb/abi"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc/abi"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/metric"
 	"go.uber.org/zap/zaptest"
 )
 
-func TestConvertBNBAmountToTXCoin(t *testing.T) {
+func TestConvertBSCAmountToTXCoin(t *testing.T) {
 	const denom = "ucore"
 	tests := []struct {
 		name       string
@@ -82,18 +82,18 @@ func TestConvertBNBAmountToTXCoin(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := convertBNBAmountToTXCoin(tt.weiAmount, denom, tt.txDecimals)
+			got := convertBSCAmountToTXCoin(tt.weiAmount, denom, tt.txDecimals)
 			require.Equal(t, tt.wantAmount.String(), got.String())
 		})
 	}
 }
 
-func TestBNBFinderBuildPendingTransaction(t *testing.T) {
+func TestBSCFinderBuildPendingTransaction(t *testing.T) {
 	t.Parallel()
 
 	setSDKConfig()
 
-	cfg := BNBFinderConfig{
+	cfg := BSCFinderConfig{
 		ChainID: "/coreum-mainnet-1/v1",
 		TXDenom:     "ucore",
 		TXDecimals:  6,
@@ -207,7 +207,7 @@ func TestBNBFinderBuildPendingTransaction(t *testing.T) {
 			metricRecorder, err := metric.NewRecorder()
 			require.NoError(t, err)
 
-			finder := NewBNBFinder(cfg, logger.NewZapLogger(zaptest.NewLogger(t), metricRecorder), nil)
+			finder := NewBSCFinder(cfg, logger.NewZapLogger(zaptest.NewLogger(t), metricRecorder), nil)
 
 			// Create a copy of the event
 			eventCopy := *validEvent

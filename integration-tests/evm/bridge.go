@@ -13,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 
-	bnbabi "github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bnb/abi"
+	bscabi "github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc/abi"
 )
 
 // represents a completed bridge transaction.
@@ -29,7 +29,7 @@ func Bridge(
 	client *ethclient.Client,
 	privateKey *ecdsa.PrivateKey,
 	chainID *big.Int,
-	bridge *bnbabi.TxBridge,
+	bridge *bscabi.TxBridge,
 	amount *big.Int,
 	destinationPayload string,
 ) (*BridgeTransaction, error) {
@@ -86,10 +86,10 @@ func MintAndBridge(
 // retrieves BridgeInitiated events from the bridge contract.
 func GetBridgeEvents(
 	client *ethclient.Client,
-	bridge *bnbabi.TxBridge,
+	bridge *bscabi.TxBridge,
 	fromBlock uint64,
 	toBlock *uint64,
-) ([]*bnbabi.TxBridgeBridgeInitiated, error) {
+) ([]*bscabi.TxBridgeBridgeInitiated, error) {
 	iter, err := bridge.FilterBridgeInitiated(&bind.FilterOpts{
 		Start:   fromBlock,
 		End:     toBlock,
@@ -100,7 +100,7 @@ func GetBridgeEvents(
 	}
 	defer iter.Close()
 
-	var events []*bnbabi.TxBridgeBridgeInitiated
+	var events []*bscabi.TxBridgeBridgeInitiated
 	for iter.Next() {
 		events = append(events, iter.Event)
 	}

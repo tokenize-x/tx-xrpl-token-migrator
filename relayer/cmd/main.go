@@ -20,7 +20,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bnb"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/service"
 	"go.uber.org/zap"
@@ -44,12 +44,12 @@ const (
 	flagXRPLToken                     = "xrpl-token"
 	flagXRPLMemoSuffix                = "xrpl-memo-suffix"
 
-	flagBNBRPCURL        = "bnb-rpc-url"
-	flagBNBBridgeAddress = "bnb-bridge-address"
-	flagBNBStartBlock    = "bnb-start-block"
-	flagBNBChainID       = "bnb-chain-id"
-	flagBNBPollInterval  = "bnb-poll-interval"
-	flagBNBConfirmations = "bnb-confirmations"
+	flagBSCRPCURL        = "bsc-rpc-url"
+	flagBSCBridgeAddress = "bsc-bridge-address"
+	flagBSCStartBlock    = "bsc-start-block"
+	flagBSCChainID       = "bsc-chain-id"
+	flagBSCPollInterval  = "bsc-poll-interval"
+	flagBSCConfirmations = "bsc-confirmations"
 
 	flagTXChainID             = "tx-chain-id"
 	flagTXRPCURL              = "tx-rpc-url"
@@ -195,7 +195,7 @@ func StartCmd(ctx context.Context) *cobra.Command {
 	}
 
 	addXRPLFlags(cmd)
-	addBNBFlags(cmd)
+	addBSCFlags(cmd)
 	addTXFlags(cmd)
 	addKeyringFlags(cmd)
 	addPrometheusFlags(cmd)
@@ -853,13 +853,13 @@ func addXRPLFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().String(flagXRPLMemoSuffix, "", "")
 }
 
-func addBNBFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().String(flagBNBRPCURL, "", "BNB/EVM RPC URL for bridge event scanning")
-	cmd.PersistentFlags().String(flagBNBBridgeAddress, "", "BNB bridge contract address")
-	cmd.PersistentFlags().Uint64(flagBNBStartBlock, 0, "BNB block number to start scanning from")
-	cmd.PersistentFlags().String(flagBNBChainID, "", "ChainID suffix to strip from destinationPayload (e.g., /coreum-testnet-1/v1)")
-	cmd.PersistentFlags().Duration(flagBNBPollInterval, 3*time.Second, "BNB block polling interval (e.g., 3s, 5s)")
-	cmd.PersistentFlags().Uint64(flagBNBConfirmations, 5, "BNB block confirmations before processing (reorg protection)")
+func addBSCFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().String(flagBSCRPCURL, "", "BSC/EVM RPC URL for bridge event scanning")
+	cmd.PersistentFlags().String(flagBSCBridgeAddress, "", "BSC bridge contract address")
+	cmd.PersistentFlags().Uint64(flagBSCStartBlock, 0, "BSC block number to start scanning from")
+	cmd.PersistentFlags().String(flagBSCChainID, "", "ChainID suffix to strip from destinationPayload (e.g., /coreum-testnet-1/v1)")
+	cmd.PersistentFlags().Duration(flagBSCPollInterval, 3*time.Second, "BSC block polling interval (e.g., 3s, 5s)")
+	cmd.PersistentFlags().Uint64(flagBSCConfirmations, 5, "BSC block confirmations before processing (reorg protection)")
 }
 
 func addPrometheusFlags(cmd *cobra.Command) {
@@ -946,8 +946,8 @@ func readServicesConfig(cmd *cobra.Command) (service.Config, error) {
 		}
 	}
 
-	// Read BNB config (handled separately due to address parsing)
-	if err := readBNBConfig(cmd, &cfg.BNBScanner); err != nil {
+	// Read BSC config (handled separately due to address parsing)
+	if err := readBSCConfig(cmd, &cfg.BSCScanner); err != nil {
 		return service.Config{}, err
 	}
 
@@ -1001,49 +1001,49 @@ func setDateIfNotEmpty(flag string, cmd *cobra.Command, v *time.Time) error {
 	return nil
 }
 
-func readBNBConfig(cmd *cobra.Command, cfg *bnb.ScannerConfig) error {
-	if cmd.Flags().Lookup(flagBNBRPCURL) == nil {
+func readBSCConfig(cmd *cobra.Command, cfg *bsc.ScannerConfig) error {
+	if cmd.Flags().Lookup(flagBSCRPCURL) == nil {
 		return nil
 	}
 
-	rpcURL, err := cmd.Flags().GetString(flagBNBRPCURL)
+	rpcURL, err := cmd.Flags().GetString(flagBSCRPCURL)
 	if err != nil {
 		return err
 	}
 	if rpcURL == "" {
-		return nil // BNB not configured
+		return nil // BSC not configured
 	}
 
-	bridgeAddrStr, err := cmd.Flags().GetString(flagBNBBridgeAddress)
+	bridgeAddrStr, err := cmd.Flags().GetString(flagBSCBridgeAddress)
 	if err != nil {
 		return err
 	}
 	if bridgeAddrStr == "" {
-		return errors.Errorf("flag %s is required when %s is set", flagBNBBridgeAddress, flagBNBRPCURL)
+		return errors.Errorf("flag %s is required when %s is set", flagBSCBridgeAddress, flagBSCRPCURL)
 	}
 	if !common.IsHexAddress(bridgeAddrStr) {
 		return errors.Errorf("invalid bridge address: %s", bridgeAddrStr)
 	}
 
-	startBlock, err := cmd.Flags().GetUint64(flagBNBStartBlock)
+	startBlock, err := cmd.Flags().GetUint64(flagBSCStartBlock)
 	if err != nil {
 		return err
 	}
 
-	chainID, err := cmd.Flags().GetString(flagBNBChainID)
+	chainID, err := cmd.Flags().GetString(flagBSCChainID)
 	if err != nil {
 		return err
 	}
 	if chainID == "" {
-		return errors.Errorf("flag %s is required when %s is set", flagBNBChainID, flagBNBRPCURL)
+		return errors.Errorf("flag %s is required when %s is set", flagBSCChainID, flagBSCRPCURL)
 	}
 
-	pollInterval, err := cmd.Flags().GetDuration(flagBNBPollInterval)
+	pollInterval, err := cmd.Flags().GetDuration(flagBSCPollInterval)
 	if err != nil {
 		return err
 	}
 
-	confirmations, err := cmd.Flags().GetUint64(flagBNBConfirmations)
+	confirmations, err := cmd.Flags().GetUint64(flagBSCConfirmations)
 	if err != nil {
 		return err
 	}

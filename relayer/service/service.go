@@ -18,7 +18,7 @@ import (
 	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/samber/lo"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/audit"
-	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bnb"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/xrpl"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/executor"
@@ -55,7 +55,7 @@ type Config struct {
 
 	XRPLMemoSuffix string
 
-	BNBScanner bnb.ScannerConfig
+	BSCScanner bsc.ScannerConfig
 
 	TXChainID         string
 	TXRPCURL          string
@@ -377,31 +377,31 @@ func NewServices(
 		return nil, errors.Wrap(err, "failed to create finders")
 	}
 
-	// collect all finders (XRPL + optional BNB)
+	// collect all finders (XRPL + optional BSC)
 	allFinders := lo.Map(txFinders, func(f *finder.Finder, _ int) executor.Finder {
 		return f
 	})
 
-	// init BNB finder if configured
-	if cfg.BNBScanner.RPCURL != "" {
-		bnbScanner, err := bnb.NewScanner(cfg.BNBScanner, log)
+	// init BSC finder if configured
+	if cfg.BSCScanner.RPCURL != "" {
+		bscScanner, err := bsc.NewScanner(cfg.BSCScanner, log)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to create BNB scanner")
+			return nil, errors.Wrap(err, "failed to create BSC scanner")
 		}
 
-		bnbFinder := finder.NewBNBFinder(
-			finder.BNBFinderConfig{
-				ChainID:    cfg.BNBScanner.ChainID,
+		bscFinder := finder.NewBSCFinder(
+			finder.BSCFinderConfig{
+				ChainID:    cfg.BSCScanner.ChainID,
 				TXDenom:    network.Denom(),
 				TXDecimals: 6,
 			},
 			log,
-			bnbScanner,
+			bscScanner,
 		)
-		allFinders = append(allFinders, bnbFinder)
-		log.Info("BNB bridge enabled",
-			zap.String("rpcURL", cfg.BNBScanner.RPCURL),
-			zap.String("bridgeAddress", cfg.BNBScanner.BridgeAddress.Hex()),
+		allFinders = append(allFinders, bscFinder)
+		log.Info("BSC bridge enabled",
+			zap.String("rpcURL", cfg.BSCScanner.RPCURL),
+			zap.String("bridgeAddress", cfg.BSCScanner.BridgeAddress.Hex()),
 		)
 	}
 
