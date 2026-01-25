@@ -25,7 +25,7 @@ jobs:
           - ci_step: "test"
             command: "make build-contract && make test"
           - ci_step: "integration-tests"
-            command: "make build-contract && make rebuild-dev-env && make restart-dev-env && make test-integration"
+            command: "make install-foundry && make build-contract && make rebuild-dev-env && make restart-dev-env && make test-integration"
           - ci_step: "contract-lint-and-test"
             command: "make test-contract"
 
