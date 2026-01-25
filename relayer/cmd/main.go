@@ -859,7 +859,7 @@ func addBSCFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().Uint64(flagBSCStartBlock, 0, "BSC block number to start scanning from")
 	cmd.PersistentFlags().String(flagBSCChainID, "", "ChainID suffix to strip from destinationPayload (e.g., /coreum-testnet-1/v1)")
 	cmd.PersistentFlags().Duration(flagBSCPollInterval, 3*time.Second, "BSC block polling interval (e.g., 3s, 5s)")
-	cmd.PersistentFlags().Uint64(flagBSCConfirmations, 5, "BSC block confirmations before processing (reorg protection)")
+	cmd.PersistentFlags().Uint64(flagBSCConfirmations, 15, "BSC block confirmations before processing (reorg protection)")
 }
 
 func addPrometheusFlags(cmd *cobra.Command) {
