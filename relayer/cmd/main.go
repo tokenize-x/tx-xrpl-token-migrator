@@ -1001,59 +1001,80 @@ func setDateIfNotEmpty(flag string, cmd *cobra.Command, v *time.Time) error {
 	return nil
 }
 
+func setUint64(cmd *cobra.Command, flagName string, v *uint64) error {
+	val, err := cmd.Flags().GetUint64(flagName)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}
+
+func setDuration(cmd *cobra.Command, flagName string, v *time.Duration) error {
+	val, err := cmd.Flags().GetDuration(flagName)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}
+
+func setHexAddressIfNotEmpty(cmd *cobra.Command, flagName string, v *common.Address) error {
+	val, err := cmd.Flags().GetString(flagName)
+	if err != nil {
+		return err
+	}
+	if val == "" {
+		return nil
+	}
+	if !common.IsHexAddress(val) {
+		return errors.Errorf("invalid hex address for %s: %s", flagName, val)
+	}
+	*v = common.HexToAddress(val)
+	return nil
+}
+
 func readBSCConfig(cmd *cobra.Command, cfg *bsc.ScannerConfig) error {
 	if cmd.Flags().Lookup(flagBSCRPCURL) == nil {
 		return nil
 	}
 
-	rpcURL, err := cmd.Flags().GetString(flagBSCRPCURL)
-	if err != nil {
-		return err
-	}
-	if rpcURL == "" {
-		return nil // BSC not configured
-	}
-
-	bridgeAddrStr, err := cmd.Flags().GetString(flagBSCBridgeAddress)
-	if err != nil {
-		return err
-	}
-	if bridgeAddrStr == "" {
-		return errors.Errorf("flag %s is required when %s is set", flagBSCBridgeAddress, flagBSCRPCURL)
-	}
-	if !common.IsHexAddress(bridgeAddrStr) {
-		return errors.Errorf("invalid bridge address: %s", bridgeAddrStr)
-	}
-
-	startBlock, err := cmd.Flags().GetUint64(flagBSCStartBlock)
-	if err != nil {
-		return err
+	setters := map[string]func(string) error{
+		flagBSCRPCURL: func(flag string) error {
+			return setStringIfNotEmpty(cmd, flag, &cfg.RPCURL)
+		},
+		flagBSCBridgeAddress: func(flag string) error {
+			return setHexAddressIfNotEmpty(cmd, flag, &cfg.BridgeAddress)
+		},
+		flagBSCChainID: func(flag string) error {
+			return setStringIfNotEmpty(cmd, flag, &cfg.ChainID)
+		},
+		flagBSCStartBlock: func(flag string) error {
+			return setUint64(cmd, flag, &cfg.StartBlock)
+		},
+		flagBSCPollInterval: func(flag string) error {
+			return setDuration(cmd, flag, &cfg.PollInterval)
+		},
+		flagBSCConfirmations: func(flag string) error {
+			return setUint64(cmd, flag, &cfg.Confirmations)
+		},
 	}
 
-	chainID, err := cmd.Flags().GetString(flagBSCChainID)
-	if err != nil {
-		return err
-	}
-	if chainID == "" {
-		return errors.Errorf("flag %s is required when %s is set", flagBSCChainID, flagBSCRPCURL)
+	for flagName, setter := range setters {
+		if err := setter(flagName); err != nil {
+			return err
+		}
 	}
 
-	pollInterval, err := cmd.Flags().GetDuration(flagBSCPollInterval)
-	if err != nil {
-		return err
+	// if BSC is enabled, required fields must be set
+	if cfg.RPCURL != "" {
+		if cfg.BridgeAddress == (common.Address{}) {
+			return errors.Errorf("flag %s is required when %s is set", flagBSCBridgeAddress, flagBSCRPCURL)
+		}
+		if cfg.ChainID == "" {
+			return errors.Errorf("flag %s is required when %s is set", flagBSCChainID, flagBSCRPCURL)
+		}
 	}
-
-	confirmations, err := cmd.Flags().GetUint64(flagBSCConfirmations)
-	if err != nil {
-		return err
-	}
-
-	cfg.RPCURL = rpcURL
-	cfg.BridgeAddress = common.HexToAddress(bridgeAddrStr)
-	cfg.StartBlock = startBlock
-	cfg.ChainID = chainID
-	cfg.PollInterval = pollInterval
-	cfg.Confirmations = confirmations
 
 	return nil
 }
