@@ -1,6 +1,6 @@
 //go:build integrationtests
 
-package integrationtests
+package xrpl
 
 import (
 	"testing"
@@ -8,9 +8,10 @@ import (
 	sdkmath "cosmossdk.io/math"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/stretchr/testify/require"
-	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 
 	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
+
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 )
 
 func TestContractMigration(t *testing.T) {
@@ -46,7 +47,7 @@ func TestContractMigration(t *testing.T) {
 		Threshold:  2,
 		MinAmount:  sdkmath.NewIntFromUint64(100),
 		MaxAmount:  sdkmath.NewIntFromUint64(200_000_000),
-		XRPLTokens: testXRPLTokens,
+		XRPLTokens: TestXRPLTokens,
 		Label:      "bank_threshold_send",
 	})
 	requireT.NoError(err)

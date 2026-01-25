@@ -1,6 +1,6 @@
 //go:build integrationtests
 
-package integrationtests
+package bsc
 
 import (
 	"context"
@@ -12,14 +12,18 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
 	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 
-	"github.com/tokenize-x/tx-xrpl-token-migrator/integration-tests/evm"
+	integrationtests "github.com/tokenize-x/tx-xrpl-token-migrator/integration-tests"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/integration-tests/bsc/evm"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc"
 	bscabi "github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc/abi"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
@@ -431,7 +435,7 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 func buildAndStartBSCLiveExecutors(
 	ctx context.Context,
 	t *testing.T,
-	txChain TXChain,
+	txChain integrationtests.TXChain,
 	contractAddr sdk.AccAddress,
 	trustedAddresses []sdk.AccAddress,
 	scanner *bsc.Scanner,
@@ -500,4 +504,43 @@ func buildAndStartBSCLiveExecutors(
 	time.Sleep(1 * time.Second)
 
 	return instances
+}
+
+func awaitForBalance(
+	ctx context.Context,
+	t *testing.T,
+	clientCtx client.Context,
+	address string,
+	expectedBalance sdk.Coin,
+) {
+	t.Helper()
+
+	t.Logf("Waiting for account %s balance, expected balance: %s.", address, expectedBalance.String())
+	bankClient := banktypes.NewQueryClient(clientCtx)
+	retryCtx, retryCancel := context.WithTimeout(ctx, time.Minute)
+	defer retryCancel()
+	require.NoError(t, retry.Do(retryCtx, time.Second, func() error {
+		requestCtx, requestCancel := context.WithTimeout(retryCtx, 5*time.Second)
+		defer requestCancel()
+
+		balancesRes, err := bankClient.AllBalances(requestCtx, &banktypes.QueryAllBalancesRequest{
+			Address: address,
+		})
+		if err != nil {
+			return err
+		}
+
+		if balancesRes.Balances.AmountOf(expectedBalance.Denom).String() != expectedBalance.Amount.String() {
+			return retry.Retryable(
+				errors.Errorf(
+					"account %s %s balance is still not equal to expected, all balances: %s",
+					address, expectedBalance, balancesRes,
+				),
+			)
+		}
+
+		return nil
+	}))
+
+	t.Logf("Received expected balance: %s.", expectedBalance)
 }

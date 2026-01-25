@@ -69,7 +69,7 @@ func DefaultBridgeConfig() BridgeConfig {
 // returns the path to the ABI directory.
 func getABIDir() string {
 	_, currentFile, _, _ := runtime.Caller(0)
-	projectRoot := filepath.Dir(filepath.Dir(filepath.Dir(currentFile)))
+	projectRoot := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(currentFile))))
 	return filepath.Join(projectRoot, "relayer", "client", "bsc", "abi")
 }
 
