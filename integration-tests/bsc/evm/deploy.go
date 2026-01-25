@@ -7,9 +7,6 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"math/big"
-	"os"
-	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -66,17 +63,9 @@ func DefaultBridgeConfig() BridgeConfig {
 	}
 }
 
-// returns the path to the ABI directory.
-func getABIDir() string {
-	_, currentFile, _, _ := runtime.Caller(0)
-	projectRoot := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(currentFile))))
-	return filepath.Join(projectRoot, "relayer", "client", "bsc", "abi")
-}
-
-// loads a contract artifact from a JSON file.
+// loads a contract artifact from embedded files.
 func loadArtifact(name string) (*ContractArtifact, error) {
-	path := filepath.Join(getABIDir(), name+".json")
-	data, err := os.ReadFile(path)
+	data, err := bscabi.ArtifactFiles.ReadFile(name + ".json")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read artifact %s", name)
 	}
