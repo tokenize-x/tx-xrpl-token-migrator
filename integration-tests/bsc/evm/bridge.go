@@ -26,6 +26,7 @@ type BridgeTransaction struct {
 
 // initiates a bridge transaction.
 func Bridge(
+	ctx context.Context,
 	client *ethclient.Client,
 	privateKey *ecdsa.PrivateKey,
 	chainID *big.Int,
@@ -33,7 +34,7 @@ func Bridge(
 	amount *big.Int,
 	destinationPayload string,
 ) (*BridgeTransaction, error) {
-	auth, err := getTransactOpts(client, privateKey, chainID)
+	auth, err := getTransactOpts(ctx, client, privateKey, chainID)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +44,7 @@ func Bridge(
 		return nil, errors.Wrapf(err, "failed to call bridge (from=%s, amount=%s)", auth.From.Hex(), amount.String())
 	}
 
-	receipt, err := bind.WaitMined(context.Background(), client, tx)
+	receipt, err := bind.WaitMined(ctx, client, tx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to wait for bridge tx")
 	}
@@ -61,6 +62,7 @@ func Bridge(
 
 // mints tokens to user and bridges them in sequence. full flow for testing.
 func MintAndBridge(
+	ctx context.Context,
 	client *ethclient.Client,
 	adminPrivateKey *ecdsa.PrivateKey,
 	userPrivateKey *ecdsa.PrivateKey,
@@ -69,23 +71,23 @@ func MintAndBridge(
 	amount *big.Int,
 	destinationPayload string,
 ) (*BridgeTransaction, error) {
-	userAuth, err := getTransactOpts(client, userPrivateKey, chainID)
+	userAuth, err := getTransactOpts(ctx, client, userPrivateKey, chainID)
 	if err != nil {
 		return nil, err
 	}
 	userAddress := userAuth.From
 
-	if err := MintTokens(client, adminPrivateKey, chainID, contracts.Token, userAddress, amount); err != nil {
+	if err := MintTokens(ctx, client, adminPrivateKey, chainID, contracts.Token, userAddress, amount); err != nil {
 		return nil, errors.Wrap(err, "failed to mint tokens")
 	}
 
 	// user bridges
-	return Bridge(client, userPrivateKey, chainID, contracts.Bridge, amount, destinationPayload)
+	return Bridge(ctx, client, userPrivateKey, chainID, contracts.Bridge, amount, destinationPayload)
 }
 
 // retrieves BridgeInitiated events from the bridge contract.
 func GetBridgeEvents(
-	client *ethclient.Client,
+	ctx context.Context,
 	bridge *bscabi.TxBridge,
 	fromBlock uint64,
 	toBlock *uint64,
@@ -93,7 +95,7 @@ func GetBridgeEvents(
 	iter, err := bridge.FilterBridgeInitiated(&bind.FilterOpts{
 		Start:   fromBlock,
 		End:     toBlock,
-		Context: context.Background(),
+		Context: ctx,
 	}, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to filter events")

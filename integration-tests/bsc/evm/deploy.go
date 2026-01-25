@@ -90,13 +90,12 @@ func loadArtifact(name string) (*ContractArtifact, error) {
 }
 
 // creates transaction options for a given private key.
-func getTransactOpts(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int) (*bind.TransactOpts, error) {
+func getTransactOpts(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int) (*bind.TransactOpts, error) {
 	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create transactor")
 	}
 
-	ctx := context.Background()
 	nonce, err := client.PendingNonceAt(ctx, auth.From)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get nonce")
@@ -115,7 +114,7 @@ func getTransactOpts(client *ethclient.Client, privateKey *ecdsa.PrivateKey, cha
 }
 
 // deploys a contract and returns its address.
-func deployContract(client *ethclient.Client, auth *bind.TransactOpts, bytecode string, constructorArgs ...[]byte) (common.Address, *types.Transaction, error) {
+func deployContract(ctx context.Context, client *ethclient.Client, auth *bind.TransactOpts, bytecode string, constructorArgs ...[]byte) (common.Address, *types.Transaction, error) {
 	bytecode = strings.TrimPrefix(bytecode, "0x")
 
 	// combine bytecode with constructor args
@@ -137,11 +136,11 @@ func deployContract(client *ethclient.Client, auth *bind.TransactOpts, bytecode 
 		return common.Address{}, nil, errors.Wrap(err, "failed to sign transaction")
 	}
 
-	if err := client.SendTransaction(context.Background(), signedTx); err != nil {
+	if err := client.SendTransaction(ctx, signedTx); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to send transaction")
 	}
 
-	receipt, err := bind.WaitMined(context.Background(), client, signedTx)
+	receipt, err := bind.WaitMined(ctx, client, signedTx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to wait for mining")
 	}
@@ -173,8 +172,8 @@ func encodeProxyConstructor(implementation common.Address, initData []byte) ([]b
 }
 
 // deploys the TXToken contract through a proxy.
-func DeployTXToken(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, name, symbol string) (common.Address, *bscabi.TxToken, error) {
-	auth, err := getTransactOpts(client, privateKey, chainID)
+func DeployTXToken(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, name, symbol string) (common.Address, *bscabi.TxToken, error) {
+	auth, err := getTransactOpts(ctx, client, privateKey, chainID)
 	if err != nil {
 		return common.Address{}, nil, err
 	}
@@ -186,7 +185,7 @@ func DeployTXToken(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chain
 	}
 
 	// deploy implementation
-	implAddress, _, err := deployContract(client, auth, artifact.Bytecode)
+	implAddress, _, err := deployContract(ctx, client, auth, artifact.Bytecode)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to deploy token implementation")
 	}
@@ -212,12 +211,12 @@ func DeployTXToken(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chain
 	}
 
 	// deploy proxy - need new nonce
-	auth, err = getTransactOpts(client, privateKey, chainID)
+	auth, err = getTransactOpts(ctx, client, privateKey, chainID)
 	if err != nil {
 		return common.Address{}, nil, err
 	}
 
-	proxyAddress, _, err := deployContract(client, auth, erc1967ProxyBytecode, proxyArgs)
+	proxyAddress, _, err := deployContract(ctx, client, auth, erc1967ProxyBytecode, proxyArgs)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to deploy token proxy")
 	}
@@ -232,8 +231,8 @@ func DeployTXToken(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chain
 }
 
 // deploys the TXBridge contract through a proxy.
-func DeployTXBridge(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, tokenAddress common.Address, cfg BridgeConfig) (common.Address, *bscabi.TxBridge, error) {
-	auth, err := getTransactOpts(client, privateKey, chainID)
+func DeployTXBridge(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, tokenAddress common.Address, cfg BridgeConfig) (common.Address, *bscabi.TxBridge, error) {
+	auth, err := getTransactOpts(ctx, client, privateKey, chainID)
 	if err != nil {
 		return common.Address{}, nil, err
 	}
@@ -243,7 +242,7 @@ func DeployTXBridge(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chai
 		return common.Address{}, nil, err
 	}
 
-	implAddress, _, err := deployContract(client, auth, artifact.Bytecode)
+	implAddress, _, err := deployContract(ctx, client, auth, artifact.Bytecode)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to deploy bridge implementation")
 	}
@@ -273,12 +272,12 @@ func DeployTXBridge(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chai
 		return common.Address{}, nil, errors.Wrap(err, "failed to encode proxy constructor")
 	}
 
-	auth, err = getTransactOpts(client, privateKey, chainID)
+	auth, err = getTransactOpts(ctx, client, privateKey, chainID)
 	if err != nil {
 		return common.Address{}, nil, err
 	}
 
-	proxyAddress, _, err := deployContract(client, auth, erc1967ProxyBytecode, proxyArgs)
+	proxyAddress, _, err := deployContract(ctx, client, auth, erc1967ProxyBytecode, proxyArgs)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to deploy bridge proxy")
 	}
@@ -292,27 +291,27 @@ func DeployTXBridge(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chai
 }
 
 // deploys both contracts and configures them.
-func SetupBridgeEnvironment(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, cfg BridgeConfig) (*DeployedContracts, error) {
+func SetupBridgeEnvironment(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, cfg BridgeConfig) (*DeployedContracts, error) {
 	// Deploy token
-	tokenAddress, token, err := DeployTXToken(client, privateKey, chainID, "TX Token", "TXT")
+	tokenAddress, token, err := DeployTXToken(ctx, client, privateKey, chainID, "TX Token", "TXT")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to deploy token")
 	}
 
 	// Deploy bridge
-	bridgeAddress, bridge, err := DeployTXBridge(client, privateKey, chainID, tokenAddress, cfg)
+	bridgeAddress, bridge, err := DeployTXBridge(ctx, client, privateKey, chainID, tokenAddress, cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to deploy bridge")
 	}
 
 	// Grant BRIDGE_ROLE to bridge contract on token
-	auth, err := getTransactOpts(client, privateKey, chainID)
+	auth, err := getTransactOpts(ctx, client, privateKey, chainID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get BRIDGE_ROLE hash
-	bridgeRole, err := token.BRIDGEROLE(&bind.CallOpts{})
+	bridgeRole, err := token.BRIDGEROLE(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get BRIDGE_ROLE")
 	}
@@ -324,7 +323,7 @@ func SetupBridgeEnvironment(client *ethclient.Client, privateKey *ecdsa.PrivateK
 	}
 
 	// Finalize
-	receipt, err := bind.WaitMined(context.Background(), client, tx)
+	receipt, err := bind.WaitMined(ctx, client, tx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to wait for grant role tx")
 	}
@@ -341,8 +340,8 @@ func SetupBridgeEnvironment(client *ethclient.Client, privateKey *ecdsa.PrivateK
 }
 
 // mints tokens to a specified address.
-func MintTokens(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, token *bscabi.TxToken, to common.Address, amount *big.Int) error {
-	auth, err := getTransactOpts(client, privateKey, chainID)
+func MintTokens(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, token *bscabi.TxToken, to common.Address, amount *big.Int) error {
+	auth, err := getTransactOpts(ctx, client, privateKey, chainID)
 	if err != nil {
 		return err
 	}
@@ -352,7 +351,7 @@ func MintTokens(client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID 
 		return errors.Wrap(err, "failed to mint tokens")
 	}
 
-	receipt, err := bind.WaitMined(context.Background(), client, tx)
+	receipt, err := bind.WaitMined(ctx, client, tx)
 	if err != nil {
 		return errors.Wrap(err, "failed to wait for mint tx")
 	}

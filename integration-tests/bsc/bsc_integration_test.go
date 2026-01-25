@@ -47,7 +47,7 @@ func tokensToWei(tokens int64) *big.Int {
 // TestBSCLiveScanner tests the real BSC scanner against a local Anvil node.
 func TestBSCLiveScanner(t *testing.T) {
 	requireT := require.New(t)
-	ctx := context.Background()
+	ctx, _ := NewTestingContext(t)
 	logger := zaptest.NewLogger(t)
 
 	// Start Anvil
@@ -70,7 +70,7 @@ func TestBSCLiveScanner(t *testing.T) {
 
 	// Deploy contracts
 	t.Log("Deploying TXToken and TXBridge contracts...")
-	contracts, err := evm.SetupBridgeEnvironment(client, deployerKey, anvil.ChainID(), bridgeCfg)
+	contracts, err := evm.SetupBridgeEnvironment(ctx, client, deployerKey, anvil.ChainID(), bridgeCfg)
 	requireT.NoError(err)
 	t.Logf("Token deployed at: %s", contracts.TokenAddress.Hex())
 	t.Logf("Bridge deployed at: %s", contracts.BridgeAddress.Hex())
@@ -83,7 +83,7 @@ func TestBSCLiveScanner(t *testing.T) {
 	// Mint tokens to user
 	mintAmount := tokensToWei(100) // 100 tokens (18 decimals)
 	t.Logf("Minting %s tokens to user %s", mintAmount.String(), userAddr.Hex())
-	err = evm.MintTokens(client, deployerKey, anvil.ChainID(), contracts.Token, userAddr, mintAmount)
+	err = evm.MintTokens(ctx, client, deployerKey, anvil.ChainID(), contracts.Token, userAddr, mintAmount)
 	requireT.NoError(err)
 
 	// Verify user balance
@@ -99,6 +99,7 @@ func TestBSCLiveScanner(t *testing.T) {
 	t.Logf("Bridging %s tokens to %s", bridgeAmount.String(), destinationPayload)
 
 	bridgeTx, err := evm.Bridge(
+		ctx,
 		client,
 		userKey,
 		anvil.ChainID(),
@@ -173,7 +174,7 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 
 	// Deploy EVM contracts
 	t.Log("Deploying EVM contracts...")
-	contracts, err := evm.SetupBridgeEnvironment(client, deployerKey, anvil.ChainID(), bridgeCfg)
+	contracts, err := evm.SetupBridgeEnvironment(ctx, client, deployerKey, anvil.ChainID(), bridgeCfg)
 	requireT.NoError(err)
 
 	// Setup TX chain side
@@ -225,9 +226,9 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 
 	// Mint tokens to users
 	mintAmount := tokensToWei(100) // 100 tokens each
-	err = evm.MintTokens(client, deployerKey, anvil.ChainID(), contracts.Token, user1Addr, mintAmount)
+	err = evm.MintTokens(ctx, client, deployerKey, anvil.ChainID(), contracts.Token, user1Addr, mintAmount)
 	requireT.NoError(err)
-	err = evm.MintTokens(client, deployerKey, anvil.ChainID(), contracts.Token, user2Addr, mintAmount)
+	err = evm.MintTokens(ctx, client, deployerKey, anvil.ChainID(), contracts.Token, user2Addr, mintAmount)
 	requireT.NoError(err)
 
 	// Create scanner and start executors
@@ -250,7 +251,7 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 
 	// Bridge transaction 1: 30 tokens from user1 to recipient1
 	_, err = evm.Bridge(
-		client, user1Key, anvil.ChainID(),
+		ctx, client, user1Key, anvil.ChainID(),
 		contracts.Bridge,
 		tokensToWei(30),
 		recipient1.String()+bridgeCfg.ChainID,
@@ -260,7 +261,7 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 
 	// Bridge transaction 2: 45 tokens from user2 to recipient2
 	_, err = evm.Bridge(
-		client, user2Key, anvil.ChainID(),
+		ctx, client, user2Key, anvil.ChainID(),
 		contracts.Bridge,
 		tokensToWei(45),
 		recipient2.String()+bridgeCfg.ChainID,
@@ -270,7 +271,7 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 
 	// Bridge transaction 3: 20 tokens from user1 to recipient1
 	_, err = evm.Bridge(
-		client, user1Key, anvil.ChainID(),
+		ctx, client, user1Key, anvil.ChainID(),
 		contracts.Bridge,
 		tokensToWei(20),
 		recipient1.String()+bridgeCfg.ChainID,
