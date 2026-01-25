@@ -30,6 +30,9 @@ type BSCFinder struct {
 	scanner BSCScanner
 }
 
+// ensure bsc.Scanner implements the BSCScanner interface
+var _ BSCScanner = (*bsc.Scanner)(nil)
+
 func NewBSCFinder(cfg BSCFinderConfig, log logger.Logger, scanner BSCScanner) *BSCFinder {
 	return &BSCFinder{
 		cfg:     cfg,
@@ -127,6 +130,3 @@ func convertBSCAmountToTXCoin(weiAmount *big.Int, denom string, txDecimals int) 
 
 	return sdk.NewCoin(denom, sdkmath.NewIntFromBigInt(txAmount))
 }
-
-// ensure BSCFinder implements the scanner interface requirement
-var _ BSCScanner = (*bsc.Scanner)(nil)
