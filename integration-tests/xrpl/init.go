@@ -19,28 +19,28 @@ import (
 
 // Test constants matching defaultTestnetCfg from main.go.
 const (
-	XrplTestMemoSuffix = "/integration-test"
-	XrplCORECurrency   = "434F524500000000000000000000000000000000"
-	XrplXCORECurrency  = "58434F5245000000000000000000000000000000"
-	XrplSOLOCurrency   = "534F4C4F00000000000000000000000000000000"
+	XRPLTestMemoSuffix = "/integration-test"
+	XRPLCORECurrency   = "434F524500000000000000000000000000000000"
+	XRPLXCORECurrency  = "58434F5245000000000000000000000000000000"
+	XRPLSOLOCurrency   = "534F4C4F00000000000000000000000000000000"
 )
 
 // TestXRPLTokens matches the defaultTestnetCfg XRPL tokens configuration.
 var TestXRPLTokens = []tx.XRPLToken{
 	{
-		Currency:       XrplCORECurrency,
+		Currency:       XRPLCORECurrency,
 		Issuer:         "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
 		ActivationDate: 946684800, // time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
 		Multiplier:     "1.0",
 	},
 	{
-		Currency:       XrplXCORECurrency,
+		Currency:       XRPLXCORECurrency,
 		Issuer:         "rawnyFwFLkntQttzBgEFiASg5iB5ULdKpX",
 		ActivationDate: 946684800,
 		Multiplier:     "1.0",
 	},
 	{
-		Currency:       XrplSOLOCurrency,
+		Currency:       XRPLSOLOCurrency,
 		Issuer:         "rHZwvHEs56GCmHupwjA4RY7oPA3EoAJWuN",
 		ActivationDate: 946684800,
 		Multiplier:     "1.25",
