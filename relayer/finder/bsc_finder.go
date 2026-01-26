@@ -76,7 +76,7 @@ func (f *BSCFinder) buildPendingTransaction(event *abi.TxBridgeBridgeInitiated) 
 
 	destAddr, err := sdk.AccAddressFromBech32(address)
 	if err != nil {
-		f.log.Error("invalid BSC bridge destination address",
+		f.log.Warn("invalid BSC bridge destination address",
 			zap.String("txHash", txHash),
 			zap.String("destinationPayload", event.DestinationPayload),
 			zap.String("extractedAddress", address),
