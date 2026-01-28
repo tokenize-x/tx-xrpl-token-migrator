@@ -37,11 +37,10 @@ type executorInstance struct {
 	cancel   context.CancelFunc
 }
 
-// converts whole tokens to wei (18 decimals).
-func tokensToWei(tokens int64) *big.Int {
-	wei := big.NewInt(tokens)
-	multiplier := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
-	return wei.Mul(wei, multiplier)
+func tokensToAmount(tokens int64) *big.Int {
+	amount := big.NewInt(tokens)
+	multiplier := new(big.Int).Exp(big.NewInt(10), big.NewInt(6), nil)
+	return amount.Mul(amount, multiplier)
 }
 
 // TestBSCLiveScanner tests the real BSC scanner against a local Anvil node.
@@ -81,7 +80,7 @@ func TestBSCLiveScanner(t *testing.T) {
 	userAddr := crypto.PubkeyToAddress(userKey.PublicKey)
 
 	// Mint tokens to user
-	mintAmount := tokensToWei(100) // 100 tokens (18 decimals)
+	mintAmount := tokensToAmount(100) // 100 tokens (6 decimals)
 	t.Logf("Minting %s tokens to user %s", mintAmount.String(), userAddr.Hex())
 	err = evm.MintTokens(ctx, client, deployerKey, anvil.ChainID(), contracts.Token, userAddr, mintAmount)
 	requireT.NoError(err)
@@ -91,21 +90,21 @@ func TestBSCLiveScanner(t *testing.T) {
 	requireT.NoError(err)
 	requireT.Equal(mintAmount.String(), balance.String(), "user should have minted tokens")
 
-	// Create destination payload (address is valid bech32)
-	destinationPayload := "devcore1cz8x502s930v0ux8m6lpfw6s3l5tydz3gsx87w" + bridgeCfg.ChainID
+	// TX destination address (valid bech32)
+	txAddress := "devcore1cz8x502s930v0ux8m6lpfw6s3l5tydz3gsx87w"
 
 	// Bridge
-	bridgeAmount := tokensToWei(10) // 10 tokens
-	t.Logf("Bridging %s tokens to %s", bridgeAmount.String(), destinationPayload)
+	bridgeAmount := tokensToAmount(10) // 10 tokens
+	t.Logf("Bridging %s tokens to %s", bridgeAmount.String(), txAddress)
 
-	bridgeTx, err := evm.Bridge(
+	bridgeTx, err := evm.SendToTxChain(
 		ctx,
 		client,
 		userKey,
 		anvil.ChainID(),
 		contracts.Bridge,
 		bridgeAmount,
-		destinationPayload,
+		txAddress,
 	)
 	requireT.NoError(err)
 	t.Logf("Bridge transaction: %s", bridgeTx.TxHash.Hex())
@@ -117,14 +116,13 @@ func TestBSCLiveScanner(t *testing.T) {
 		StartBlock:    0,
 		PollInterval:  500 * time.Millisecond,
 		Confirmations: 0,
-		ChainID:   bridgeCfg.ChainID,
 	}
 
 	scanner, err := bsc.NewScanner(scannerCfg, logger)
 	requireT.NoError(err)
 
 	// Subscribe to events
-	eventCh := make(chan *bscabi.TxBridgeBridgeInitiated, 10)
+	eventCh := make(chan *bscabi.TxBridgeSentToTxChain, 10)
 	scanCtx, scanCancel := context.WithTimeout(ctx, 10*time.Second)
 	defer scanCancel()
 
@@ -132,14 +130,14 @@ func TestBSCLiveScanner(t *testing.T) {
 	requireT.NoError(err)
 
 	// Wait for event
-	t.Log("Waiting for BridgeInitiated event...")
+	t.Log("Waiting for SentToTxChain event...")
 	select {
 	case event := <-eventCh:
-		t.Logf("Received event: from=%s, amount=%s, payload=%s",
-			event.From.Hex(), event.Amount.String(), event.DestinationPayload)
+		t.Logf("Received event: from=%s, amount=%s, txAddress=%s",
+			event.From.Hex(), event.Amount.String(), event.TxAddress)
 		requireT.Equal(userAddr, event.From, "event should be from user")
 		requireT.Equal(bridgeAmount.String(), event.Amount.String(), "amount should match")
-		requireT.Equal(destinationPayload, event.DestinationPayload, "payload should match")
+		requireT.Equal(txAddress, event.TxAddress, "txAddress should match")
 	case <-scanCtx.Done():
 		t.Fatal("timeout waiting for bridge event")
 	}
@@ -225,7 +223,7 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 	user2Addr := crypto.PubkeyToAddress(user2Key.PublicKey)
 
 	// Mint tokens to users
-	mintAmount := tokensToWei(100) // 100 tokens each
+	mintAmount := tokensToAmount(100) // 100 tokens each
 	err = evm.MintTokens(ctx, client, deployerKey, anvil.ChainID(), contracts.Token, user1Addr, mintAmount)
 	requireT.NoError(err)
 	err = evm.MintTokens(ctx, client, deployerKey, anvil.ChainID(), contracts.Token, user2Addr, mintAmount)
@@ -238,7 +236,6 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 		StartBlock:    0,
 		PollInterval:  500 * time.Millisecond,
 		Confirmations: 0,
-		ChainID:   bridgeCfg.ChainID,
 	}, logger)
 	requireT.NoError(err)
 
@@ -246,35 +243,34 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 		ctx, t, txChain, contractAddr,
 		[]sdk.AccAddress{trustedAddress1, trustedAddress2},
 		scanner,
-		bridgeCfg.ChainID,
 	)
 
 	// Bridge transaction 1: 30 tokens from user1 to recipient1
-	_, err = evm.Bridge(
+	_, err = evm.SendToTxChain(
 		ctx, client, user1Key, anvil.ChainID(),
 		contracts.Bridge,
-		tokensToWei(30),
-		recipient1.String()+bridgeCfg.ChainID,
+		tokensToAmount(30),
+		recipient1.String(),
 	)
 	requireT.NoError(err)
 	t.Log("Submitted bridge tx 1: 30 tokens to recipient1")
 
 	// Bridge transaction 2: 45 tokens from user2 to recipient2
-	_, err = evm.Bridge(
+	_, err = evm.SendToTxChain(
 		ctx, client, user2Key, anvil.ChainID(),
 		contracts.Bridge,
-		tokensToWei(45),
-		recipient2.String()+bridgeCfg.ChainID,
+		tokensToAmount(45),
+		recipient2.String(),
 	)
 	requireT.NoError(err)
 	t.Log("Submitted bridge tx 2: 45 tokens to recipient2")
 
 	// Bridge transaction 3: 20 tokens from user1 to recipient1
-	_, err = evm.Bridge(
+	_, err = evm.SendToTxChain(
 		ctx, client, user1Key, anvil.ChainID(),
 		contracts.Bridge,
-		tokensToWei(20),
-		recipient1.String()+bridgeCfg.ChainID,
+		tokensToAmount(20),
+		recipient1.String(),
 	)
 	requireT.NoError(err)
 	t.Log("Submitted bridge tx 3: 20 tokens to recipient1")
@@ -306,7 +302,6 @@ func buildAndStartBSCLiveExecutors(
 	contractAddr sdk.AccAddress,
 	trustedAddresses []sdk.AccAddress,
 	scanner *bsc.Scanner,
-	chainID string,
 ) []*executorInstance {
 	t.Helper()
 
@@ -321,7 +316,6 @@ func buildAndStartBSCLiveExecutors(
 		// Create BSC finder with scanner
 		bscFinder := finder.NewBSCFinder(
 			finder.BSCFinderConfig{
-				ChainID:    chainID,
 				TXDenom:    txChain.TXChain.ChainSettings.Denom,
 				TXDecimals: 6,
 			},
