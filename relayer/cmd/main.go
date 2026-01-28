@@ -47,7 +47,6 @@ const (
 	flagBSCRPCURL        = "bsc-rpc-url"
 	flagBSCBridgeAddress = "bsc-bridge-address"
 	flagBSCStartBlock    = "bsc-start-block"
-	flagBSCChainID       = "bsc-chain-id"
 	flagBSCPollInterval  = "bsc-poll-interval"
 	flagBSCConfirmations = "bsc-confirmations"
 
@@ -857,7 +856,6 @@ func addBSCFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().String(flagBSCRPCURL, "", "BSC/EVM RPC URL for bridge event scanning")
 	cmd.PersistentFlags().String(flagBSCBridgeAddress, "", "BSC bridge contract address")
 	cmd.PersistentFlags().Uint64(flagBSCStartBlock, 0, "BSC block number to start scanning from")
-	cmd.PersistentFlags().String(flagBSCChainID, "", "ChainID suffix to strip from destinationPayload (e.g., /coreum-testnet-1/v1)")
 	cmd.PersistentFlags().Duration(flagBSCPollInterval, 3*time.Second, "BSC block polling interval (e.g., 3s, 5s)")
 	cmd.PersistentFlags().Uint64(flagBSCConfirmations, 15, "BSC block confirmations before processing (reorg protection)")
 }
@@ -1046,9 +1044,6 @@ func readBSCConfig(cmd *cobra.Command, cfg *bsc.ScannerConfig) error {
 		flagBSCBridgeAddress: func(flag string) error {
 			return setHexAddressIfNotEmpty(cmd, flag, &cfg.BridgeAddress)
 		},
-		flagBSCChainID: func(flag string) error {
-			return setStringIfNotEmpty(cmd, flag, &cfg.ChainID)
-		},
 		flagBSCStartBlock: func(flag string) error {
 			return setUint64(cmd, flag, &cfg.StartBlock)
 		},
@@ -1070,9 +1065,6 @@ func readBSCConfig(cmd *cobra.Command, cfg *bsc.ScannerConfig) error {
 	if cfg.RPCURL != "" {
 		if cfg.BridgeAddress == (common.Address{}) {
 			return errors.Errorf("flag %s is required when %s is set", flagBSCBridgeAddress, flagBSCRPCURL)
-		}
-		if cfg.ChainID == "" {
-			return errors.Errorf("flag %s is required when %s is set", flagBSCChainID, flagBSCRPCURL)
 		}
 	}
 
