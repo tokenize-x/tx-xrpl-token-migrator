@@ -1,6 +1,77 @@
-# XRPL bridge
+# TX Token Migrator
 
-The XRPL bridge is one way XRPL to TX bridge.
+One-way token bridge from XRPL and BNB Smart Chain to TX Chain.
+
+## BSC Bridge
+
+The BSC bridge enables one-way token migration from BNB Smart Chain to TX Chain.
+
+### Deployed Contracts (BNB Testnet)
+
+| Contract | Address | Explorer |
+|----------|---------|----------|
+| TxToken | `0x02A4Df72317C6D2b5D60afdA3c6B143a0bca94d7` | [View](https://testnet.bscscan.com/address/0x02A4Df72317C6D2b5D60afdA3c6B143a0bca94d7#readProxyContract) |
+| TxBridge | `0x30C960905C626531442617caa326B74e5e996A77` | [View](https://testnet.bscscan.com/address/0x30C960905C626531442617caa326B74e5e996A77#code) |
+
+### How It Works
+
+1. User calls `bridge(amount, destinationPayload)` on TxBridge contract (BSC)
+2. Contract burns tokens and emits `BridgeInitiated` event
+3. Relayer scans for events using `--bsc-start-block` as historical start point
+4. Events are converted to TX send transactions and submitted to TX Chain
+
+### File Structure
+
+```
+relayer/client/bsc/
+├── abi/
+│   ├── TXToken.json      # Token contract ABI (generated)
+│   ├── TXBridge.json     # Bridge contract ABI (generated)
+│   ├── txtoken.go        # Go bindings (generated)
+│   ├── txbridge.go       # Go bindings (generated)
+│   └── embed.go          # Embeds JSON files
+└── scanner.go            # Event scanner
+
+relayer/finder/
+└── bsc_finder.go         # Converts BSC events to TX transactions
+
+integration-tests/bsc/
+├── bsc_integration_test.go
+└── evm/
+    ├── anvil.go          # Local EVM node
+    └── deploy.go         # Contract deployment helpers
+```
+
+### Generating ABI Files
+
+ABI JSON files are exported from Solidity compilation. Go bindings are generated using `abigen`:
+
+```bash
+abigen --abi=TXToken.json --pkg=abi --type=TxToken --out=txtoken.go
+abigen --abi=TXBridge.json --pkg=abi --type=TxBridge --out=txbridge.go
+```
+
+### Running BSC Integration Tests
+
+BSC tests require [Anvil](https://book.getfoundry.sh/anvil/) (local EVM node from Foundry) and a running znet environment.
+
+```bash
+# Install Foundry (includes Anvil)
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+
+# Start or restart local dev environment
+make restart-dev-env
+
+# Run BSC tests
+make integration-tests-bsc
+```
+
+For build instructions, see [Build](#build) section below.
+
+## XRPL Bridge
+
+The XRPL bridge enables one-way token migration from XRPL to TX Chain. Relayer monitors XRPL account transactions with specific memo format and submits corresponding send transactions to TX Chain.
 
 ## Build
 

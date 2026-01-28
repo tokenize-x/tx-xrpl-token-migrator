@@ -1,6 +1,6 @@
 //go:build integrationtests
 
-package integrationtests
+package xrpl
 
 import (
 	"context"
@@ -17,8 +17,6 @@ import (
 	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
-	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
-	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/service"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/exp/slices"
@@ -26,6 +24,9 @@ import (
 	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
 	"github.com/CoreumFoundation/coreum/v5/pkg/client"
 	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
+
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/service"
 )
 
 type payment struct {
@@ -46,15 +47,15 @@ func TestXRPLToTXBridgingMultiTokenSending(t *testing.T) {
 	txChain := chains.TX
 
 	coreIssuer := xrplChain.GenAccount(ctx, t, 10)
-	coreCurrency, err := rippledata.NewCurrency(xrplCORECurrency)
+	coreCurrency, err := rippledata.NewCurrency(XRPLCORECurrency)
 	requireT.NoError(err)
 
 	xCoreIssuer := xrplChain.GenAccount(ctx, t, 10)
-	xCoreCurrency, err := rippledata.NewCurrency(xrplXCORECurrency)
+	xCoreCurrency, err := rippledata.NewCurrency(XRPLXCORECurrency)
 	requireT.NoError(err)
 
 	soloIssuer := xrplChain.GenAccount(ctx, t, 10)
-	soloCurrency, err := rippledata.NewCurrency(xrplSOLOCurrency)
+	soloCurrency, err := rippledata.NewCurrency(XRPLSOLOCurrency)
 	requireT.NoError(err)
 
 	enableDefaultRippling(ctx, t, chains, coreIssuer, soloIssuer)
@@ -62,19 +63,19 @@ func TestXRPLToTXBridgingMultiTokenSending(t *testing.T) {
 	tokens := []service.XRPLTokenConfig{
 		{
 			XRPLIssuer:     coreIssuer.String(),
-			XRPLCurrency:   xrplCORECurrency,
+			XRPLCurrency:   XRPLCORECurrency,
 			ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 			Multiplier:     "1.0",
 		},
 		{
 			XRPLIssuer:     xCoreIssuer.String(),
-			XRPLCurrency:   xrplXCORECurrency,
+			XRPLCurrency:   XRPLXCORECurrency,
 			ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 			Multiplier:     "1.0",
 		},
 		{
 			XRPLIssuer:     soloIssuer.String(),
-			XRPLCurrency:   xrplSOLOCurrency,
+			XRPLCurrency:   XRPLSOLOCurrency,
 			ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 			Multiplier:     "1.25",
 		},
@@ -235,15 +236,15 @@ func TestXRPLToTXBridgingTokenActivationDate(t *testing.T) {
 	txChain := chains.TX
 
 	coreIssuer := xrplChain.GenAccount(ctx, t, 10)
-	coreCurrency, err := rippledata.NewCurrency(xrplCORECurrency)
+	coreCurrency, err := rippledata.NewCurrency(XRPLCORECurrency)
 	requireT.NoError(err)
 
 	xCoreIssuer := xrplChain.GenAccount(ctx, t, 10)
-	xCoreCurrency, err := rippledata.NewCurrency(xrplXCORECurrency)
+	xCoreCurrency, err := rippledata.NewCurrency(XRPLXCORECurrency)
 	requireT.NoError(err)
 
 	soloIssuer := xrplChain.GenAccount(ctx, t, 10)
-	soloCurrency, err := rippledata.NewCurrency(xrplSOLOCurrency)
+	soloCurrency, err := rippledata.NewCurrency(XRPLSOLOCurrency)
 	requireT.NoError(err)
 
 	enableDefaultRippling(ctx, t, chains, coreIssuer, soloIssuer)
@@ -251,20 +252,20 @@ func TestXRPLToTXBridgingTokenActivationDate(t *testing.T) {
 	tokens := []service.XRPLTokenConfig{
 		{
 			XRPLIssuer:     coreIssuer.String(),
-			XRPLCurrency:   xrplCORECurrency,
+			XRPLCurrency:   XRPLCORECurrency,
 			ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 			Multiplier:     "1.0",
 		},
 		{
 			XRPLIssuer:   xCoreIssuer.String(),
-			XRPLCurrency: xrplXCORECurrency,
+			XRPLCurrency: XRPLXCORECurrency,
 			// the XCORE will be activated in the future
 			ActivationDate: time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC),
 			Multiplier:     "1.0",
 		},
 		{
 			XRPLIssuer:   soloIssuer.String(),
-			XRPLCurrency: xrplSOLOCurrency,
+			XRPLCurrency: XRPLSOLOCurrency,
 			// the SOLO will be activated in the future
 			ActivationDate: time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC),
 			Multiplier:     "1.25",
@@ -415,7 +416,7 @@ func sendPayments(
 					Memos: rippledata.Memos{
 						rippledata.Memo{
 							Memo: rippledata.MemoItem{
-								MemoData: []byte(p.address + xrplTestMemoSuffix),
+								MemoData: []byte(p.address + XRPLTestMemoSuffix),
 							},
 						},
 					},
@@ -564,7 +565,7 @@ func buildTestingServices(
 		XRPLHistoryScanStartLedger:    0,
 		XRPLRecentScanIndexesBack:     30_000,
 		XRPLRecentScanSkipLastIndexes: 0,
-		XRPLMemoSuffix:                xrplTestMemoSuffix,
+		XRPLMemoSuffix:                XRPLTestMemoSuffix,
 		// we don't use the chain ctx here intentionally to fully check the client initialization
 		TXRPCURL:          txRPCURL,
 		TXGRPCURL:         txGRPCURL,
@@ -631,7 +632,7 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 
 	// Setup token issuer
 	tokenIssuer := xrplChain.GenAccount(ctx, t, 10)
-	tokenCurrency, err := rippledata.NewCurrency(xrplCORECurrency)
+	tokenCurrency, err := rippledata.NewCurrency(XRPLCORECurrency)
 	requireT.NoError(err)
 
 	enableDefaultRippling(ctx, t, chains, tokenIssuer)
@@ -640,7 +641,7 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 	tokens := []service.XRPLTokenConfig{
 		{
 			XRPLIssuer:     tokenIssuer.String(),
-			XRPLCurrency:   xrplCORECurrency,
+			XRPLCurrency:   XRPLCORECurrency,
 			ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 			Multiplier:     initialMultiplier,
 		},
@@ -750,7 +751,7 @@ func TestDuplicateTransactionPrevention(t *testing.T) {
 	newMultiplier := "2.0"
 	newTokens := []tx.XRPLToken{
 		{
-			Currency:       xrplCORECurrency,
+			Currency:       XRPLCORECurrency,
 			Issuer:         tokenIssuer.String(),
 			ActivationDate: uint64(time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC).Unix()),
 			Multiplier:     newMultiplier,
@@ -838,7 +839,7 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 
 	// Setup token issuer
 	tokenIssuer := xrplChain.GenAccount(ctx, t, 10)
-	tokenCurrency, err := rippledata.NewCurrency(xrplCORECurrency)
+	tokenCurrency, err := rippledata.NewCurrency(XRPLCORECurrency)
 	requireT.NoError(err)
 
 	enableDefaultRippling(ctx, t, chains, tokenIssuer)
@@ -847,7 +848,7 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 	initialTokens := []service.XRPLTokenConfig{
 		{
 			XRPLIssuer:     tokenIssuer.String(),
-			XRPLCurrency:   xrplCORECurrency,
+			XRPLCurrency:   XRPLCORECurrency,
 			ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 			Multiplier:     "1.0",
 		},
@@ -899,7 +900,7 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 		XRPLHistoryScanStartLedger:    0,
 		XRPLRecentScanIndexesBack:     30_000,
 		XRPLRecentScanSkipLastIndexes: 0,
-		XRPLMemoSuffix:                xrplTestMemoSuffix,
+		XRPLMemoSuffix:                XRPLTestMemoSuffix,
 		TXRPCURL:                      txChain.Config().RPCAddress,
 		TXGRPCURL:                     txChain.Config().GRPCAddress,
 		TXChainID:                     txChain.TXChain.ChainSettings.ChainID,
@@ -970,7 +971,7 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 	t.Log("Attempting to add duplicate token (should fail - tokens are immutable)")
 	newTokens := []tx.XRPLToken{
 		{
-			Currency:       xrplCORECurrency,
+			Currency:       XRPLCORECurrency,
 			Issuer:         tokenIssuer.String(),
 			ActivationDate: uint64(time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC).Unix()),
 			Multiplier:     "2.0", // Changed from 1.0 to 2.0

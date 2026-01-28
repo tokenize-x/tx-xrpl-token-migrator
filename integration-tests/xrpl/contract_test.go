@@ -1,6 +1,6 @@
 //go:build integrationtests
 
-package integrationtests
+package xrpl
 
 import (
 	"context"
@@ -19,12 +19,13 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
-	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"golang.org/x/exp/slices"
 
 	"github.com/CoreumFoundation/coreum/v5/pkg/client"
 	"github.com/CoreumFoundation/coreum/v5/testutil/event"
-	integrationtests "github.com/CoreumFoundation/coreum/v5/testutil/integration"
+	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
+
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 )
 
 const (
@@ -68,10 +69,10 @@ func TestWASMContractThresholdBankSend(t *testing.T) {
 
 	requireT := require.New(t)
 	chain.TXChain.Faucet.FundAccounts(ctx, t,
-		integrationtests.NewFundedAccount(owner, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(trustedAddress1, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(trustedAddress2, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(trustedAddress3, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(owner, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress1, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress2, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress3, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
 	)
 
 	bankClient := banktypes.NewQueryClient(chain.TXChain.ClientContext)
@@ -85,13 +86,13 @@ func TestWASMContractThresholdBankSend(t *testing.T) {
 		Threshold:        threshold,
 		MinAmount:        minAmount,
 		MaxAmount:        maxAmount,
-		XRPLTokens:       testXRPLTokens,
+		XRPLTokens:       TestXRPLTokens,
 		Label:            "bank_threshold_send",
 	})
 	requireT.NoError(err)
 
 	coinToFundContract := chain.TXChain.NewCoin(sdkmath.NewInt(10_000))
-	chain.TXChain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(contractAddr, coinToFundContract))
+	chain.TXChain.Faucet.FundAccounts(ctx, t, integration.NewFundedAccount(contractAddr, coinToFundContract))
 
 	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
 
@@ -249,11 +250,11 @@ func TestWASMContractExecutePending(t *testing.T) {
 
 	requireT := require.New(t)
 	chain.TXChain.Faucet.FundAccounts(ctx, t,
-		integrationtests.NewFundedAccount(owner, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(trustedAddress1, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(trustedAddress2, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(trustedAddress3, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(anyAddress, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(owner, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress1, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress2, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress3, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(anyAddress, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
 	)
 
 	bankClient := banktypes.NewQueryClient(chain.TXChain.ClientContext)
@@ -267,13 +268,13 @@ func TestWASMContractExecutePending(t *testing.T) {
 		Threshold:        threshold,
 		MinAmount:        minAmount,
 		MaxAmount:        maxAmount,
-		XRPLTokens:       testXRPLTokens,
+		XRPLTokens:       TestXRPLTokens,
 		Label:            "bank_threshold_send",
 	})
 	requireT.NoError(err)
 
 	coinToFundContract := chain.TXChain.NewCoin(sdkmath.NewInt(10_000))
-	chain.TXChain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(contractAddr, coinToFundContract))
+	chain.TXChain.Faucet.FundAccounts(ctx, t, integration.NewFundedAccount(contractAddr, coinToFundContract))
 
 	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
 
@@ -424,10 +425,10 @@ func TestWASMContractExecutePendingWithMultisig(t *testing.T) {
 	signer2KeyName := keyNamesSet[1]
 
 	chain.TXChain.Faucet.FundAccounts(ctx, t,
-		integrationtests.NewFundedAccount(owner, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(trustedAddress1, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(trustedAddress2, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(multisigAddress, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(owner, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress1, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress2, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(multisigAddress, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
 	)
 
 	bankClient := banktypes.NewQueryClient(chain.TXChain.ClientContext)
@@ -444,13 +445,13 @@ func TestWASMContractExecutePendingWithMultisig(t *testing.T) {
 		Threshold:        threshold,
 		MinAmount:        minAmount,
 		MaxAmount:        maxAmount,
-		XRPLTokens:       testXRPLTokens,
+		XRPLTokens:       TestXRPLTokens,
 		Label:            "bank_threshold_send",
 	})
 	requireT.NoError(err)
 
 	coinToFundContract := chain.TXChain.NewCoin(sdkmath.NewInt(10_000))
-	chain.TXChain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(contractAddr, coinToFundContract))
+	chain.TXChain.Faucet.FundAccounts(ctx, t, integration.NewFundedAccount(contractAddr, coinToFundContract))
 
 	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
 
@@ -556,8 +557,8 @@ func TestWASMUpdateMinMaxAmounts(t *testing.T) {
 
 	requireT := require.New(t)
 	chain.TXChain.Faucet.FundAccounts(ctx, t,
-		integrationtests.NewFundedAccount(owner, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(anyAddress, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(owner, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(anyAddress, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
 	)
 
 	contractClient := tx.NewContractClient(tx.DefaultContractClientConfig(nil, ""), chain.TXChain.ClientContext)
@@ -576,7 +577,7 @@ func TestWASMUpdateMinMaxAmounts(t *testing.T) {
 		MinAmount:  minAmount,
 		MaxAmount:  maxAmount,
 		Label:      "bank_threshold_send",
-		XRPLTokens: testXRPLTokens,
+		XRPLTokens: TestXRPLTokens,
 	})
 	requireT.NoError(err)
 
@@ -628,8 +629,8 @@ func TestWASMUpdateTrustedAddresses(t *testing.T) {
 
 	requireT := require.New(t)
 	chain.TXChain.Faucet.FundAccounts(ctx, t,
-		integrationtests.NewFundedAccount(owner, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(anyAddress, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(owner, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(anyAddress, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
 	)
 
 	contractClient := tx.NewContractClient(tx.DefaultContractClientConfig(nil, ""), chain.TXChain.ClientContext)
@@ -645,7 +646,7 @@ func TestWASMUpdateTrustedAddresses(t *testing.T) {
 		MinAmount:  sdkmath.NewInt(1),
 		MaxAmount:  sdkmath.NewIntFromUint64(10_000),
 		Label:      "bank_threshold_send",
-		XRPLTokens: testXRPLTokens,
+		XRPLTokens: TestXRPLTokens,
 	})
 	requireT.NoError(err)
 
@@ -686,8 +687,8 @@ func TestWASMAddXRPLTokens(t *testing.T) {
 
 	requireT := require.New(t)
 	chain.TXChain.Faucet.FundAccounts(ctx, t,
-		integrationtests.NewFundedAccount(owner, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(anyAddress, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(owner, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(anyAddress, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
 	)
 
 	contractClient := tx.NewContractClient(tx.DefaultContractClientConfig(nil, ""), chain.TXChain.ClientContext)
@@ -703,7 +704,7 @@ func TestWASMAddXRPLTokens(t *testing.T) {
 		MinAmount:  sdkmath.NewInt(1),
 		MaxAmount:  sdkmath.NewIntFromUint64(10_000),
 		Label:      "bank_threshold_send",
-		XRPLTokens: testXRPLTokens,
+		XRPLTokens: TestXRPLTokens,
 	})
 	requireT.NoError(err)
 
@@ -713,7 +714,7 @@ func TestWASMAddXRPLTokens(t *testing.T) {
 	// Verify initial tokens are present
 	cfg, err := contractClient.GetContractConfig(ctx)
 	requireT.NoError(err)
-	requireT.Equal(len(testXRPLTokens), len(cfg.XRPLTokens))
+	requireT.Equal(len(TestXRPLTokens), len(cfg.XRPLTokens))
 
 	t.Logf("Trying to add XRPL tokens from non-owner.")
 	newXRPLTokens := []tx.XRPLToken{
@@ -747,10 +748,10 @@ func TestWASMAddXRPLTokens(t *testing.T) {
 	// Verify tokens were appended (not replaced) - existing tokens remain immutable
 	cfg, err = contractClient.GetContractConfig(ctx)
 	requireT.NoError(err)
-	requireT.Len(cfg.XRPLTokens, len(testXRPLTokens)+len(newXRPLTokens))
+	requireT.Len(cfg.XRPLTokens, len(TestXRPLTokens)+len(newXRPLTokens))
 
 	// Verify original tokens are still present
-	for _, originalToken := range testXRPLTokens {
+	for _, originalToken := range TestXRPLTokens {
 		found := false
 		for _, token := range cfg.XRPLTokens {
 			if token.Issuer == originalToken.Issuer && token.Currency == originalToken.Currency {
@@ -765,9 +766,9 @@ func TestWASMAddXRPLTokens(t *testing.T) {
 	// Try to add duplicate token - should fail
 	duplicateToken := []tx.XRPLToken{
 		{
-			Currency:       testXRPLTokens[0].Currency,
-			Issuer:         testXRPLTokens[0].Issuer,
-			ActivationDate: testXRPLTokens[0].ActivationDate,
+			Currency:       TestXRPLTokens[0].Currency,
+			Issuer:         TestXRPLTokens[0].Issuer,
+			ActivationDate: TestXRPLTokens[0].ActivationDate,
 			Multiplier:     "5.0", // Valid multiplier, but same issuer/currency (duplicate)
 		},
 	}
@@ -779,7 +780,7 @@ func TestWASMAddXRPLTokens(t *testing.T) {
 	// Verify that after duplicate rejection, config still contains original + new tokens
 	cfg, err = contractClient.GetContractConfig(ctx)
 	requireT.NoError(err)
-	requireT.Len(cfg.XRPLTokens, len(testXRPLTokens)+len(newXRPLTokens))
+	requireT.Len(cfg.XRPLTokens, len(TestXRPLTokens)+len(newXRPLTokens))
 }
 
 func TestWASMContractQueryPagination(t *testing.T) {
@@ -796,10 +797,10 @@ func TestWASMContractQueryPagination(t *testing.T) {
 
 	requireT := require.New(t)
 	chain.TXChain.Faucet.FundAccounts(ctx, t,
-		integrationtests.NewFundedAccount(owner, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(trustedAddress1, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(trustedAddress2, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
-		integrationtests.NewFundedAccount(trustedAddress3, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(owner, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress1, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress2, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(trustedAddress3, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
 	)
 
 	bankClient := banktypes.NewQueryClient(chain.TXChain.ClientContext)
@@ -821,12 +822,12 @@ func TestWASMContractQueryPagination(t *testing.T) {
 		MinAmount:  minAmount,
 		MaxAmount:  maxAmount,
 		Label:      "bank_threshold_send",
-		XRPLTokens: testXRPLTokens,
+		XRPLTokens: TestXRPLTokens,
 	})
 	requireT.NoError(err)
 
 	coinToFundContract := chain.TXChain.NewCoin(sdkmath.NewInt(10_000000))
-	chain.TXChain.Faucet.FundAccounts(ctx, t, integrationtests.NewFundedAccount(contractAddr, coinToFundContract))
+	chain.TXChain.Faucet.FundAccounts(ctx, t, integration.NewFundedAccount(contractAddr, coinToFundContract))
 
 	assertBankBalance(ctx, t, bankClient, contractAddr, coinToFundContract)
 
@@ -835,7 +836,7 @@ func TestWASMContractQueryPagination(t *testing.T) {
 
 	t.Logf("Funding the smart contract to test pagination.")
 	chain.TXChain.Faucet.FundAccounts(ctx, t,
-		integrationtests.NewFundedAccount(contractAddr, chain.TXChain.NewCoin(sdkmath.NewInt(1000000000))),
+		integration.NewFundedAccount(contractAddr, chain.TXChain.NewCoin(sdkmath.NewInt(1000000000))),
 	)
 
 	transactionsCount := 100

@@ -1,6 +1,6 @@
 //go:build integrationtests
 
-package integrationtests
+package xrpl
 
 import (
 	"context"
@@ -10,35 +10,37 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
+	integrationtests "github.com/tokenize-x/tx-xrpl-token-migrator/integration-tests"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
-	"go.uber.org/zap"
 )
 
 // Test constants matching defaultTestnetCfg from main.go.
 const (
-	xrplTestMemoSuffix = "/integration-test"
-	xrplCORECurrency   = "434F524500000000000000000000000000000000"
-	xrplXCORECurrency  = "58434F5245000000000000000000000000000000"
-	xrplSOLOCurrency   = "534F4C4F00000000000000000000000000000000"
+	XRPLTestMemoSuffix = "/integration-test"
+	XRPLCORECurrency   = "434F524500000000000000000000000000000000"
+	XRPLXCORECurrency  = "58434F5245000000000000000000000000000000"
+	XRPLSOLOCurrency   = "534F4C4F00000000000000000000000000000000"
 )
 
-// testXRPLTokens matches the defaultTestnetCfg XRPL tokens configuration.
-var testXRPLTokens = []tx.XRPLToken{
+// TestXRPLTokens matches the defaultTestnetCfg XRPL tokens configuration.
+var TestXRPLTokens = []tx.XRPLToken{
 	{
-		Currency:       xrplCORECurrency,
+		Currency:       XRPLCORECurrency,
 		Issuer:         "raSEP47QAwU6jsZU493znUD2iGNHDQEyvA",
 		ActivationDate: 946684800, // time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
 		Multiplier:     "1.0",
 	},
 	{
-		Currency:       xrplXCORECurrency,
+		Currency:       XRPLXCORECurrency,
 		Issuer:         "rawnyFwFLkntQttzBgEFiASg5iB5ULdKpX",
 		ActivationDate: 946684800,
 		Multiplier:     "1.0",
 	},
 	{
-		Currency:       xrplSOLOCurrency,
+		Currency:       XRPLSOLOCurrency,
 		Issuer:         "rHZwvHEs56GCmHupwjA4RY7oPA3EoAJWuN",
 		ActivationDate: 946684800,
 		Multiplier:     "1.25",
@@ -49,13 +51,13 @@ var chains Chains
 
 // flag variables.
 var (
-	txCfg   TXChainConfig
+	txCfg   integrationtests.TXChainConfig
 	xrplCfg XRPLChainConfig
 )
 
 // Chains struct holds chains required for the testing.
 type Chains struct {
-	TX   TXChain
+	TX   integrationtests.TXChain
 	XRPL XRPLChain
 	Log  logger.Logger
 }
@@ -81,7 +83,7 @@ func init() {
 	}
 	chains.Log = log
 
-	txChain, err := NewTXChain(txCfg)
+	txChain, err := integrationtests.NewTXChain(txCfg)
 	if err != nil {
 		panic(errors.Wrapf(err, "failed to init TX chain"))
 	}
@@ -106,7 +108,7 @@ func NewTestingContext(t *testing.T) (context.Context, Chains) {
 }
 
 // NewTXTestingContext returns the configured TX blockchain and new context for the integration tests.
-func NewTXTestingContext(t *testing.T) (context.Context, TXChain) {
+func NewTXTestingContext(t *testing.T) (context.Context, integrationtests.TXChain) {
 	testCtx, testChains := NewTestingContext(t)
 
 	return testCtx, testChains.TX

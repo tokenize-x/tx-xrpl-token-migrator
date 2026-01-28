@@ -1,6 +1,6 @@
 //go:build integrationtests
 
-package integrationtests
+package xrpl
 
 import (
 	"context"

@@ -70,7 +70,7 @@ func NewTXChain(cfg TXChainConfig) (TXChain, error) {
 	setSDKConfig(txSettings.AddressPrefix)
 
 	return TXChain{
-		cfg: txCfg,
+		cfg: cfg,
 		TXChain: integration.NewCoreumChain(integration.NewChain(
 			txGRPCClient,
 			nil,

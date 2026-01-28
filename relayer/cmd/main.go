@@ -15,10 +15,12 @@ import (
 	txclient "github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/service"
 	"go.uber.org/zap"
@@ -41,6 +43,13 @@ const (
 	flagXRPLRecentScanSkipLastIndexes = "xrpl-recent-scan-skip-last-indexes"
 	flagXRPLToken                     = "xrpl-token"
 	flagXRPLMemoSuffix                = "xrpl-memo-suffix"
+
+	flagBSCRPCURL        = "bsc-rpc-url"
+	flagBSCBridgeAddress = "bsc-bridge-address"
+	flagBSCStartBlock    = "bsc-start-block"
+	flagBSCChainID       = "bsc-chain-id"
+	flagBSCPollInterval  = "bsc-poll-interval"
+	flagBSCConfirmations = "bsc-confirmations"
 
 	flagTXChainID             = "tx-chain-id"
 	flagTXRPCURL              = "tx-rpc-url"
@@ -186,6 +195,7 @@ func StartCmd(ctx context.Context) *cobra.Command {
 	}
 
 	addXRPLFlags(cmd)
+	addBSCFlags(cmd)
 	addTXFlags(cmd)
 	addKeyringFlags(cmd)
 	addPrometheusFlags(cmd)
@@ -843,6 +853,15 @@ func addXRPLFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().String(flagXRPLMemoSuffix, "", "")
 }
 
+func addBSCFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().String(flagBSCRPCURL, "", "BSC/EVM RPC URL for bridge event scanning")
+	cmd.PersistentFlags().String(flagBSCBridgeAddress, "", "BSC bridge contract address")
+	cmd.PersistentFlags().Uint64(flagBSCStartBlock, 0, "BSC block number to start scanning from")
+	cmd.PersistentFlags().String(flagBSCChainID, "", "ChainID suffix to strip from destinationPayload (e.g., /coreum-testnet-1/v1)")
+	cmd.PersistentFlags().Duration(flagBSCPollInterval, 3*time.Second, "BSC block polling interval (e.g., 3s, 5s)")
+	cmd.PersistentFlags().Uint64(flagBSCConfirmations, 15, "BSC block confirmations before processing (reorg protection)")
+}
+
 func addPrometheusFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().String(flagPrometheusURL, "", "Prometheus URL for metrics publishing")
 	cmd.PersistentFlags().String(flagPrometheusInstanceName, "", "Instance name label for prometheus")
@@ -927,6 +946,11 @@ func readServicesConfig(cmd *cobra.Command) (service.Config, error) {
 		}
 	}
 
+	// Read BSC config (handled separately due to address parsing)
+	if err := readBSCConfig(cmd, &cfg.BSCScanner); err != nil {
+		return service.Config{}, err
+	}
+
 	return cfg, nil
 }
 
@@ -973,6 +997,84 @@ func setDateIfNotEmpty(flag string, cmd *cobra.Command, v *time.Time) error {
 		return err
 	}
 	*v = val
+
+	return nil
+}
+
+func setUint64(cmd *cobra.Command, flagName string, v *uint64) error {
+	val, err := cmd.Flags().GetUint64(flagName)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}
+
+func setDuration(cmd *cobra.Command, flagName string, v *time.Duration) error {
+	val, err := cmd.Flags().GetDuration(flagName)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}
+
+func setHexAddressIfNotEmpty(cmd *cobra.Command, flagName string, v *common.Address) error {
+	val, err := cmd.Flags().GetString(flagName)
+	if err != nil {
+		return err
+	}
+	if val == "" {
+		return nil
+	}
+	if !common.IsHexAddress(val) {
+		return errors.Errorf("invalid hex address for %s: %s", flagName, val)
+	}
+	*v = common.HexToAddress(val)
+	return nil
+}
+
+func readBSCConfig(cmd *cobra.Command, cfg *bsc.ScannerConfig) error {
+	if cmd.Flags().Lookup(flagBSCRPCURL) == nil {
+		return nil
+	}
+
+	setters := map[string]func(string) error{
+		flagBSCRPCURL: func(flag string) error {
+			return setStringIfNotEmpty(cmd, flag, &cfg.RPCURL)
+		},
+		flagBSCBridgeAddress: func(flag string) error {
+			return setHexAddressIfNotEmpty(cmd, flag, &cfg.BridgeAddress)
+		},
+		flagBSCChainID: func(flag string) error {
+			return setStringIfNotEmpty(cmd, flag, &cfg.ChainID)
+		},
+		flagBSCStartBlock: func(flag string) error {
+			return setUint64(cmd, flag, &cfg.StartBlock)
+		},
+		flagBSCPollInterval: func(flag string) error {
+			return setDuration(cmd, flag, &cfg.PollInterval)
+		},
+		flagBSCConfirmations: func(flag string) error {
+			return setUint64(cmd, flag, &cfg.Confirmations)
+		},
+	}
+
+	for flagName, setter := range setters {
+		if err := setter(flagName); err != nil {
+			return err
+		}
+	}
+
+	// if BSC is enabled, required fields must be set
+	if cfg.RPCURL != "" {
+		if cfg.BridgeAddress == (common.Address{}) {
+			return errors.Errorf("flag %s is required when %s is set", flagBSCBridgeAddress, flagBSCRPCURL)
+		}
+		if cfg.ChainID == "" {
+			return errors.Errorf("flag %s is required when %s is set", flagBSCChainID, flagBSCRPCURL)
+		}
+	}
 
 	return nil
 }
