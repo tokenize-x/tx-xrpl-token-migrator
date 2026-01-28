@@ -15,8 +15,8 @@ The BSC bridge enables one-way token migration from BNB Smart Chain to TX Chain.
 
 ### How It Works
 
-1. User calls `bridge(amount, destinationPayload)` on TxBridge contract (BSC)
-2. Contract burns tokens and emits `BridgeInitiated` event
+1. User calls `sendToTxChain(amount, txAddress)` on TxBridge contract (BSC)
+2. Contract burns tokens and emits `SentToTxChain` event with the destination bech32 address
 3. Relayer scans for events using `--bsc-start-block` as historical start point
 4. Events are converted to TX send transactions and submitted to TX Chain
 
