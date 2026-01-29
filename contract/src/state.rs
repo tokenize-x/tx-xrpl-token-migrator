@@ -12,6 +12,7 @@ pub struct ContractConfig {
     pub min_amount: Uint128,
     pub max_amount: Uint128,
     pub xrpl_tokens: Vec<msg::XRPLToken>,
+    pub bsc_tokens: Vec<msg::BSCToken>,
     pub version: u64,
 }
 
