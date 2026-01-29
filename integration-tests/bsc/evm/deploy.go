@@ -7,16 +7,16 @@ package evm
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"encoding/json"
 	"math/big"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 
@@ -73,9 +73,9 @@ func loadArtifact(name string) (*ContractArtifact, error) {
 	return &artifact, nil
 }
 
-// creates transaction options for a given private key.
-func getTransactOpts(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int) (*bind.TransactOpts, error) {
-	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
+// creates transaction options for a given account.
+func getTransactOpts(ctx context.Context, client *ethclient.Client, chainID *big.Int, ks *keystore.KeyStore, account accounts.Account) (*bind.TransactOpts, error) {
+	auth, err := bind.NewKeyStoreTransactorWithChainID(ks, account, chainID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create transactor")
 	}
@@ -89,10 +89,23 @@ func getTransactOpts(ctx context.Context, client *ethclient.Client, privateKey *
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get gas price")
 	}
+	//
+	//tip, err := client.SuggestGasTipCap(context.Background())
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "failed to get gas tip")
+	//}
+	//
+	//// maxFee = baseFee * 2 + tip (standard formula)
+	//maxFee := new(big.Int).Add(
+	//	new(big.Int).Mul(gasPrice, big.NewInt(2)),
+	//	tip,
+	//)
 
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.GasPrice = gasPrice
+	//auth.GasTipCap = tip
 	auth.GasLimit = 5000000
+	//auth.GasFeeCap = maxFee
 
 	return auth, nil
 }
@@ -136,6 +149,56 @@ func deployContract(ctx context.Context, client *ethclient.Client, auth *bind.Tr
 	return receipt.ContractAddress, nil
 }
 
+// TransferFunds transfers fund to the address.
+func TransferFunds(ctx context.Context, client *ethclient.Client, chainID *big.Int, ks *keystore.KeyStore, fromAccount accounts.Account, toAddress common.Address, amount *big.Int) (common.Hash, error) {
+	auth, err := getTransactOpts(ctx, client, chainID, ks, fromAccount)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	tip, err := client.SuggestGasTipCap(context.Background())
+	if err != nil {
+		return common.Hash{}, errors.Wrap(err, "failed to get gas tip")
+	}
+
+	// maxFee = baseFee * 2 + tip (standard formula)
+	maxFee := new(big.Int).Add(
+		new(big.Int).Mul(auth.GasPrice, big.NewInt(2)),
+		tip,
+	)
+
+	tx := types.NewTx(&types.DynamicFeeTx{
+		ChainID:   chainID,
+		Nonce:     auth.Nonce.Uint64(),
+		GasTipCap: tip,
+		GasFeeCap: maxFee,
+		Gas:       auth.GasLimit,
+		To:        &toAddress,
+		Value:     amount,
+		Data:      nil,
+	})
+
+	signedTx, err := auth.Signer(auth.From, tx)
+	if err != nil {
+		return common.Hash{}, errors.Wrap(err, "failed to sign transaction")
+	}
+
+	if err = client.SendTransaction(ctx, signedTx); err != nil {
+		return common.Hash{}, errors.Wrap(err, "failed to send transaction")
+	}
+
+	receipt, err := bind.WaitMined(ctx, client, signedTx)
+	if err != nil {
+		return common.Hash{}, errors.Wrap(err, "failed to wait for mining")
+	}
+
+	if receipt.Status != types.ReceiptStatusSuccessful {
+		return common.Hash{}, errors.Errorf("contract deployment failed: tx=%s, gas_used=%d", receipt.TxHash.Hex(), receipt.GasUsed)
+	}
+
+	return receipt.TxHash, nil
+}
+
 // encodeInitializeData encodes initialization call data for a proxy.
 func encodeInitializeData(contractABI abi.ABI, args ...interface{}) ([]byte, error) {
 	return contractABI.Pack("initialize", args...)
@@ -156,8 +219,8 @@ func encodeProxyConstructor(implementation common.Address, initData []byte) ([]b
 }
 
 // DeployTXToken deploys the TXToken contract through a proxy.
-func DeployTXToken(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, name, symbol string) (common.Address, *bscabi.TXToken, error) {
-	auth, err := getTransactOpts(ctx, client, privateKey, chainID)
+func DeployTXToken(ctx context.Context, client *ethclient.Client, chainID *big.Int, ks *keystore.KeyStore, account accounts.Account, name, symbol string) (common.Address, *bscabi.TXToken, error) {
+	auth, err := getTransactOpts(ctx, client, chainID, ks, account)
 	if err != nil {
 		return common.Address{}, nil, err
 	}
@@ -175,7 +238,7 @@ func DeployTXToken(ctx context.Context, client *ethclient.Client, privateKey *ec
 	}
 
 	// get owner address
-	owner := crypto.PubkeyToAddress(privateKey.PublicKey)
+	owner := account.Address
 
 	// encode initialize call
 	tokenABI, err := bscabi.TXTokenMetaData.GetAbi()
@@ -195,7 +258,7 @@ func DeployTXToken(ctx context.Context, client *ethclient.Client, privateKey *ec
 	}
 
 	// deploy proxy - need new nonce
-	auth, err = getTransactOpts(ctx, client, privateKey, chainID)
+	auth, err = getTransactOpts(ctx, client, chainID, ks, account)
 	if err != nil {
 		return common.Address{}, nil, err
 	}
@@ -215,8 +278,8 @@ func DeployTXToken(ctx context.Context, client *ethclient.Client, privateKey *ec
 }
 
 // DeployTXBridge deploys the TXBridge contract through a proxy.
-func DeployTXBridge(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, tokenAddress common.Address, cfg BridgeConfig) (common.Address, *bscabi.TXBridge, error) {
-	auth, err := getTransactOpts(ctx, client, privateKey, chainID)
+func DeployTXBridge(ctx context.Context, client *ethclient.Client, chainID *big.Int, ks *keystore.KeyStore, account accounts.Account, tokenAddress common.Address, cfg BridgeConfig) (common.Address, *bscabi.TXBridge, error) {
+	auth, err := getTransactOpts(ctx, client, chainID, ks, account)
 	if err != nil {
 		return common.Address{}, nil, err
 	}
@@ -231,7 +294,7 @@ func DeployTXBridge(ctx context.Context, client *ethclient.Client, privateKey *e
 		return common.Address{}, nil, errors.Wrap(err, "failed to deploy bridge implementation")
 	}
 
-	admin := crypto.PubkeyToAddress(privateKey.PublicKey)
+	admin := account.Address
 
 	bridgeABI, err := bscabi.TXBridgeMetaData.GetAbi()
 	if err != nil {
@@ -254,7 +317,7 @@ func DeployTXBridge(ctx context.Context, client *ethclient.Client, privateKey *e
 		return common.Address{}, nil, errors.Wrap(err, "failed to encode proxy constructor")
 	}
 
-	auth, err = getTransactOpts(ctx, client, privateKey, chainID)
+	auth, err = getTransactOpts(ctx, client, chainID, ks, account)
 	if err != nil {
 		return common.Address{}, nil, err
 	}
@@ -273,20 +336,20 @@ func DeployTXBridge(ctx context.Context, client *ethclient.Client, privateKey *e
 }
 
 // SetupBridgeEnvironment deploys both contracts and configures them.
-func SetupBridgeEnvironment(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, cfg BridgeConfig) (*DeployedContracts, error) {
-	tokenAddress, token, err := DeployTXToken(ctx, client, privateKey, chainID, "tx Token", "TX")
+func SetupBridgeEnvironment(ctx context.Context, client *ethclient.Client, chainID *big.Int, ks *keystore.KeyStore, account accounts.Account, cfg BridgeConfig) (*DeployedContracts, error) {
+	tokenAddress, token, err := DeployTXToken(ctx, client, chainID, ks, account, "tx Token", "TX")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to deploy token")
 	}
 
 	// Deploy bridge
-	bridgeAddress, bridge, err := DeployTXBridge(ctx, client, privateKey, chainID, tokenAddress, cfg)
+	bridgeAddress, bridge, err := DeployTXBridge(ctx, client, chainID, ks, account, tokenAddress, cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to deploy bridge")
 	}
 
 	// Grant BRIDGE_ROLE to bridge contract on token
-	auth, err := getTransactOpts(ctx, client, privateKey, chainID)
+	auth, err := getTransactOpts(ctx, client, chainID, ks, account)
 	if err != nil {
 		return nil, err
 	}
@@ -321,8 +384,8 @@ func SetupBridgeEnvironment(ctx context.Context, client *ethclient.Client, priva
 }
 
 // MintTokens mints tokens to a specified address.
-func MintTokens(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, token *bscabi.TXToken, to common.Address, amount *big.Int) error {
-	auth, err := getTransactOpts(ctx, client, privateKey, chainID)
+func MintTokens(ctx context.Context, client *ethclient.Client, chainID *big.Int, ks *keystore.KeyStore, account accounts.Account, token *bscabi.TXToken, to common.Address, amount *big.Int) error {
+	auth, err := getTransactOpts(ctx, client, chainID, ks, account)
 	if err != nil {
 		return err
 	}
