@@ -33,12 +33,7 @@ type Scanner struct {
 }
 
 // NewScanner creates a new BSC event scanner.
-func NewScanner(cfg ScannerConfig, log logger.Logger) (*Scanner, error) {
-	client, err := ethclient.Dial(cfg.RPCURL)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect to BSC RPC")
-	}
-
+func NewScanner(cfg ScannerConfig, log logger.Logger, client *ethclient.Client) (*Scanner, error) {
 	filterer, err := abi.NewTXBridgeFilterer(cfg.BridgeAddress, client)
 	if err != nil {
 		client.Close()

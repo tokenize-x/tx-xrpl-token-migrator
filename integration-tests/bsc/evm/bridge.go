@@ -4,10 +4,11 @@ package evm
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -28,13 +29,14 @@ type BridgeTransaction struct {
 func SendToTxChain(
 	ctx context.Context,
 	client *ethclient.Client,
-	privateKey *ecdsa.PrivateKey,
 	chainID *big.Int,
+	ks *keystore.KeyStore,
+	account accounts.Account,
 	bridge *bscabi.TXBridge,
 	amount *big.Int,
 	txAddress string,
 ) (*BridgeTransaction, error) {
-	auth, err := getTransactOpts(ctx, client, privateKey, chainID)
+	auth, err := getTransactOpts(ctx, client, chainID, ks, account)
 	if err != nil {
 		return nil, err
 	}
@@ -64,24 +66,25 @@ func SendToTxChain(
 func MintAndSendToTxChain(
 	ctx context.Context,
 	client *ethclient.Client,
-	adminPrivateKey *ecdsa.PrivateKey,
-	userPrivateKey *ecdsa.PrivateKey,
 	chainID *big.Int,
+	ks *keystore.KeyStore,
+	adminAccount accounts.Account,
+	userAccount accounts.Account,
 	contracts *DeployedContracts,
 	amount *big.Int,
 	txAddress string,
 ) (*BridgeTransaction, error) {
-	userAuth, err := getTransactOpts(ctx, client, userPrivateKey, chainID)
+	userAuth, err := getTransactOpts(ctx, client, chainID, ks, userAccount)
 	if err != nil {
 		return nil, err
 	}
 	userAddress := userAuth.From
 
-	if err := MintTokens(ctx, client, adminPrivateKey, chainID, contracts.Token, userAddress, amount); err != nil {
+	if err := MintTokens(ctx, client, chainID, ks, adminAccount, contracts.Token, userAddress, amount); err != nil {
 		return nil, errors.Wrap(err, "failed to mint tokens")
 	}
 
-	return SendToTxChain(ctx, client, userPrivateKey, chainID, contracts.Bridge, amount, txAddress)
+	return SendToTxChain(ctx, client, chainID, ks, userAccount, contracts.Bridge, amount, txAddress)
 }
 
 // GetBridgeEvents retrieves SentToTXChain events from the bridge contract.
