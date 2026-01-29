@@ -81,6 +81,15 @@ type XRPLToken struct {
 	Multiplier     string `json:"multiplier"`
 }
 
+// BSCToken represents BSC token configuration.
+//
+//nolint:tagliatelle //contract spec
+type BSCToken struct {
+	BridgeAddress  string `json:"bridge_address"`
+	ActivationDate uint64 `json:"activation_date"`
+	Decimals       uint32 `json:"decimals"`
+}
+
 // Config represents contract config.
 //
 //nolint:tagliatelle //contract spec
@@ -91,6 +100,7 @@ type Config struct {
 	MinAmount        sdkmath.Int `json:"min_amount"`
 	MaxAmount        sdkmath.Int `json:"max_amount"`
 	XRPLTokens       []XRPLToken `json:"xrpl_tokens"`
+	BSCTokens        []BSCToken  `json:"bsc_tokens"`
 	Version          uint64      `json:"version"`
 }
 

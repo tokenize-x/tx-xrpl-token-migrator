@@ -10,6 +10,13 @@ pub struct XRPLToken {
 }
 
 #[cw_serde]
+pub struct BSCToken {
+    pub bridge_address: String,
+    pub activation_date: u64,
+    pub decimals: u8,
+}
+
+#[cw_serde]
 pub struct InstantiateMsg {
     pub owner: Addr,
     pub trusted_addresses: Vec<Addr>,
@@ -17,6 +24,7 @@ pub struct InstantiateMsg {
     pub min_amount: Uint128,
     pub max_amount: Uint128,
     pub xrpl_tokens: Vec<XRPLToken>,
+    pub bsc_tokens: Vec<BSCToken>,
 }
 
 #[cw_serde]
@@ -40,6 +48,9 @@ pub enum ExecuteMsg {
     },
     AddXrplTokens {
         xrpl_tokens: Vec<XRPLToken>,
+    },
+    AddBscTokens {
+        bsc_tokens: Vec<BSCToken>,
     },
 }
 
@@ -75,6 +86,7 @@ pub struct ConfigResponse {
     pub min_amount: Uint128,
     pub max_amount: Uint128,
     pub xrpl_tokens: Vec<XRPLToken>,
+    pub bsc_tokens: Vec<BSCToken>,
     pub version: u64,
 }
 

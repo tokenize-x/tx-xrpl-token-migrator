@@ -22,6 +22,9 @@ pub enum ContractError {
     #[error("Duplicated XRPL token")]
     DuplicatedXRPLToken {},
 
+    #[error("Duplicated BSC token: {bridge_address}")]
+    DuplicatedBscToken { bridge_address: String },
+
     #[error("Invalid XRPL currency format: {reason}")]
     InvalidXRPLCurrency { reason: String },
 
