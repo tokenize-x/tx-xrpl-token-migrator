@@ -95,7 +95,7 @@ func TestBSCFinderBuildPendingTransaction(t *testing.T) {
 			want:        PendingTXSendTransaction{},
 		},
 		{
-			name: "negative_negative_amount",
+			name: "negative_amount",
 			eventFunc: func(e *abi.TxBridgeSentToTxChain) *abi.TxBridgeSentToTxChain {
 				e.Amount = big.NewInt(-1000000)
 				return e
