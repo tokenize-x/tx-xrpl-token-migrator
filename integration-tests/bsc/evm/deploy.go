@@ -49,8 +49,8 @@ type BridgeConfig struct {
 // returns default bridge configuration for testing.
 func DefaultBridgeConfig() BridgeConfig {
 	return BridgeConfig{
-		MinAmount:     big.NewInt(1000),       // 0.001 tokens (6 decimals)
-		MaxAmount:     big.NewInt(1000000000), // 1000 tokens (6 decimals)
+		MinAmount:     big.NewInt(1000000),     // 1 token (6 decimals)
+		MaxAmount:     big.NewInt(50000000000), // 50,000 tokens (6 decimals)
 		AddressPrefix: "devcore",
 	}
 }
@@ -271,8 +271,7 @@ func DeployTXBridge(ctx context.Context, client *ethclient.Client, privateKey *e
 
 // deploys both contracts and configures them.
 func SetupBridgeEnvironment(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, cfg BridgeConfig) (*DeployedContracts, error) {
-	// Deploy token
-	tokenAddress, token, err := DeployTXToken(ctx, client, privateKey, chainID, "TX Token", "TXT")
+	tokenAddress, token, err := DeployTXToken(ctx, client, privateKey, chainID, "TX Token", "TX")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to deploy token")
 	}
