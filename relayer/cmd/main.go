@@ -37,6 +37,7 @@ var (
 )
 
 const (
+	flagXRPLScannerDisabled           = "xrpl-scanner-disabled"
 	flagXRPLRPCURL                    = "xrpl-rpc-url"
 	flagXRPLHistoryScanStartLedger    = "xrpl-history-scan-start-ledger"
 	flagXRPLRecentScanIndexesBack     = "xrpl-recent-scan-indexes-back"
@@ -44,11 +45,12 @@ const (
 	flagXRPLToken                     = "xrpl-token"
 	flagXRPLMemoSuffix                = "xrpl-memo-suffix"
 
-	flagBSCRPCURL        = "bsc-rpc-url"
-	flagBSCBridgeAddress = "bsc-bridge-address"
-	flagBSCStartBlock    = "bsc-start-block"
-	flagBSCPollInterval  = "bsc-poll-interval"
-	flagBSCConfirmations = "bsc-confirmations"
+	flagBSCScannerDisabled = "bsc-scanner-disabled"
+	flagBSCRPCURL          = "bsc-rpc-url"
+	flagBSCBridgeAddress   = "bsc-bridge-address"
+	flagBSCStartBlock      = "bsc-start-block"
+	flagBSCPollInterval    = "bsc-poll-interval"
+	flagBSCConfirmations   = "bsc-confirmations"
 
 	flagTXChainID             = "tx-chain-id"
 	flagTXRPCURL              = "tx-rpc-url"
@@ -76,11 +78,13 @@ const defaultHome = ".tx-xrpl-token-migrator"
 
 var (
 	defaultTestnetCfg = service.Config{
+		XRPLScannerDisabled:           false,
 		XRPLHistoryScanStartLedger:    20_000,
 		XRPLRecentScanIndexesBack:     30_000,
 		XRPLRecentScanSkipLastIndexes: 20,
+		XRPLMemoSuffix:                "/coreum-testnet-1/v1",
 
-		XRPLMemoSuffix: "/coreum-testnet-1/v1",
+		BSCScannerDisabled: false,
 
 		TXChainID: string(constant.ChainIDTest),
 
@@ -88,11 +92,13 @@ var (
 	}
 
 	defaultMainnnetCfg = service.Config{
+		XRPLScannerDisabled:           false,
 		XRPLHistoryScanStartLedger:    81400000,
 		XRPLRecentScanIndexesBack:     30_000,
 		XRPLRecentScanSkipLastIndexes: 20,
+		XRPLMemoSuffix:                "/coreum-mainnet-1/v1",
 
-		XRPLMemoSuffix: "/coreum-mainnet-1/v1",
+		BSCScannerDisabled: false,
 
 		TXChainID: string(constant.ChainIDMain),
 
@@ -846,6 +852,7 @@ func addTXFlags(cmd *cobra.Command) {
 }
 
 func addXRPLFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().Bool(flagXRPLScannerDisabled, false, "Disable XRPL scanner")
 	cmd.PersistentFlags().String(flagXRPLRPCURL, "", "")
 	cmd.PersistentFlags().Int64(flagXRPLHistoryScanStartLedger, 0, "")
 	cmd.PersistentFlags().Int64(flagXRPLRecentScanIndexesBack, 0, "")
@@ -853,6 +860,7 @@ func addXRPLFlags(cmd *cobra.Command) {
 }
 
 func addBSCFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().Bool(flagBSCScannerDisabled, false, "Disable BSC scanner")
 	cmd.PersistentFlags().String(flagBSCRPCURL, "", "BSC/EVM RPC URL for bridge event scanning")
 	cmd.PersistentFlags().String(flagBSCBridgeAddress, "", "BSC bridge contract address")
 	cmd.PersistentFlags().Uint64(flagBSCStartBlock, 0, "BSC block number to start scanning from")
@@ -890,6 +898,14 @@ func readServicesConfig(cmd *cobra.Command) (service.Config, error) {
 		cfg = defaultMainnnetCfg
 	default:
 		return service.Config{}, errors.Errorf("unspported chain id: %s", chainID)
+	}
+
+	// Read scanner disabled flags
+	if err := setBool(cmd, flagXRPLScannerDisabled, &cfg.XRPLScannerDisabled); err != nil {
+		return service.Config{}, err
+	}
+	if err := setBool(cmd, flagBSCScannerDisabled, &cfg.BSCScannerDisabled); err != nil {
+		return service.Config{}, err
 	}
 
 	setters := map[string]func(string) error{
@@ -1001,6 +1017,18 @@ func setDateIfNotEmpty(flag string, cmd *cobra.Command, v *time.Time) error {
 
 func setUint64(cmd *cobra.Command, flagName string, v *uint64) error {
 	val, err := cmd.Flags().GetUint64(flagName)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}
+
+func setBool(cmd *cobra.Command, flagName string, v *bool) error {
+	if cmd.Flags().Lookup(flagName) == nil {
+		return nil
+	}
+	val, err := cmd.Flags().GetBool(flagName)
 	if err != nil {
 		return err
 	}

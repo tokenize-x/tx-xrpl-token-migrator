@@ -48,14 +48,15 @@ type XRPLTokenConfig struct {
 
 // Config is services config.
 type Config struct {
+	XRPLScannerDisabled           bool
 	XRPLRPCURL                    string
 	XRPLHistoryScanStartLedger    int64
 	XRPLRecentScanIndexesBack     int64
 	XRPLRecentScanSkipLastIndexes int64
+	XRPLMemoSuffix                string
 
-	XRPLMemoSuffix string
-
-	BSCScanner bsc.ScannerConfig
+	BSCScannerDisabled bool
+	BSCScanner         bsc.ScannerConfig
 
 	TXChainID         string
 	TXRPCURL          string
@@ -298,11 +299,35 @@ func NewServices(
 
 	log := logger.NewZapLogger(zapLogger, metricRecorder)
 	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
-	xrplRPCClient := xrpl.NewRPCClient(xrpl.DefaultRPCClientConfig(cfg.XRPLRPCURL), log, httpClient)
 
-	scannerCfg := xrpl.DefaultTxScannerConfig()
-	scannerCfg.RecentScanSkipLastIndexes = cfg.XRPLRecentScanSkipLastIndexes
-	xrplTxScanner := xrpl.NewTxScanner(scannerCfg, log, xrplRPCClient, metricRecorder)
+	if cfg.XRPLScannerDisabled && cfg.BSCScannerDisabled {
+		return nil, errors.New("at least one scanner (XRPL or BSC) must be enabled")
+	}
+
+	var xrplTxScanner *xrpl.TxScanner
+	if !cfg.XRPLScannerDisabled {
+		xrplRPCClient := xrpl.NewRPCClient(xrpl.DefaultRPCClientConfig(cfg.XRPLRPCURL), log, httpClient)
+		scannerCfg := xrpl.DefaultTxScannerConfig()
+		scannerCfg.RecentScanSkipLastIndexes = cfg.XRPLRecentScanSkipLastIndexes
+		xrplTxScanner = xrpl.NewTxScanner(scannerCfg, log, xrplRPCClient, metricRecorder)
+		log.Info("XRPL scanner enabled", zap.String("rpcURL", cfg.XRPLRPCURL))
+	} else {
+		log.Info("XRPL scanner disabled via flag")
+	}
+
+	var bscScanner *bsc.Scanner
+	if !cfg.BSCScannerDisabled && cfg.BSCScanner.RPCURL != "" {
+		bscScanner, err = bsc.NewScanner(cfg.BSCScanner, log)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create BSC scanner")
+		}
+		log.Info("BSC scanner enabled",
+			zap.String("rpcURL", cfg.BSCScanner.RPCURL),
+			zap.String("bridgeAddress", cfg.BSCScanner.BridgeAddress.Hex()),
+		)
+	} else if cfg.BSCScannerDisabled {
+		log.Info("BSC scanner disabled via flag")
+	}
 
 	network, err := config.NetworkConfigByChainID(constant.ChainID(cfg.TXChainID))
 	if err != nil {
@@ -362,33 +387,31 @@ func NewServices(
 		return nil, errors.Wrap(err, "failed to query initial contract config")
 	}
 
-	// Create finders from token configuration
-	txFinders, _, err := createFindersAndAuditConfig(
-		contractCfg.XRPLTokens,
-		cfg.XRPLHistoryScanStartLedger,
-		cfg.XRPLRecentScanIndexesBack,
-		cfg.XRPLMemoSuffix,
-		network.Denom(),
-		6,
-		log,
-		xrplTxScanner,
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create finders")
+	var allFinders []executor.Finder
+	var txFinders []*finder.Finder
+
+	// XRPL finders
+	if xrplTxScanner != nil {
+		txFinders, _, err = createFindersAndAuditConfig(
+			contractCfg.XRPLTokens,
+			cfg.XRPLHistoryScanStartLedger,
+			cfg.XRPLRecentScanIndexesBack,
+			cfg.XRPLMemoSuffix,
+			network.Denom(),
+			6,
+			log,
+			xrplTxScanner,
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create XRPL finders")
+		}
+		allFinders = lo.Map(txFinders, func(f *finder.Finder, _ int) executor.Finder {
+			return f
+		})
 	}
 
-	// collect all finders (XRPL + optional BSC)
-	allFinders := lo.Map(txFinders, func(f *finder.Finder, _ int) executor.Finder {
-		return f
-	})
-
-	// init BSC finder if configured
-	if cfg.BSCScanner.RPCURL != "" {
-		bscScanner, err := bsc.NewScanner(cfg.BSCScanner, log)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create BSC scanner")
-		}
-
+	// BSC finder
+	if bscScanner != nil {
 		bscFinder := finder.NewBSCFinder(
 			finder.BSCFinderConfig{
 				TXDenom:    network.Denom(),
@@ -398,10 +421,6 @@ func NewServices(
 			bscScanner,
 		)
 		allFinders = append(allFinders, bscFinder)
-		log.Info("BSC bridge enabled",
-			zap.String("rpcURL", cfg.BSCScanner.RPCURL),
-			zap.String("bridgeAddress", cfg.BSCScanner.BridgeAddress.Hex()),
-		)
 	}
 
 	// Create executor with all finders
