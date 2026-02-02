@@ -566,6 +566,7 @@ func buildTestingServices(
 		XRPLRecentScanIndexesBack:     30_000,
 		XRPLRecentScanSkipLastIndexes: 0,
 		XRPLMemoSuffix:                XRPLTestMemoSuffix,
+		BSCScannerDisabled:            true,
 		// we don't use the chain ctx here intentionally to fully check the client initialization
 		TXRPCURL:          txRPCURL,
 		TXGRPCURL:         txGRPCURL,
@@ -901,6 +902,7 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 		XRPLRecentScanIndexesBack:     30_000,
 		XRPLRecentScanSkipLastIndexes: 0,
 		XRPLMemoSuffix:                XRPLTestMemoSuffix,
+		BSCScannerDisabled:            true,
 		TXRPCURL:                      txChain.Config().RPCAddress,
 		TXGRPCURL:                     txChain.Config().GRPCAddress,
 		TXChainID:                     txChain.TXChain.ChainSettings.ChainID,
