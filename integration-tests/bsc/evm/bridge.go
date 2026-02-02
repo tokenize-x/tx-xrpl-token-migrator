@@ -18,30 +18,30 @@ import (
 
 // represents a completed bridge transaction.
 type BridgeTransaction struct {
-	TxHash             common.Hash
-	Amount             *big.Int
-	DestinationPayload string
-	From               common.Address
+	TxHash    common.Hash
+	Amount    *big.Int
+	TxAddress string
+	From      common.Address
 }
 
 // initiates a bridge transaction.
-func Bridge(
+func SendToTxChain(
 	ctx context.Context,
 	client *ethclient.Client,
 	privateKey *ecdsa.PrivateKey,
 	chainID *big.Int,
 	bridge *bscabi.TxBridge,
 	amount *big.Int,
-	destinationPayload string,
+	txAddress string,
 ) (*BridgeTransaction, error) {
 	auth, err := getTransactOpts(ctx, client, privateKey, chainID)
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := bridge.Bridge(auth, amount, destinationPayload)
+	tx, err := bridge.SendToTxChain(auth, amount, txAddress)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to call bridge (from=%s, amount=%s)", auth.From.Hex(), amount.String())
+		return nil, errors.Wrapf(err, "failed to call sendToTxChain (from=%s, amount=%s)", auth.From.Hex(), amount.String())
 	}
 
 	receipt, err := bind.WaitMined(ctx, client, tx)
@@ -53,15 +53,15 @@ func Bridge(
 	}
 
 	return &BridgeTransaction{
-		TxHash:             receipt.TxHash,
-		Amount:             amount,
-		DestinationPayload: destinationPayload,
-		From:               auth.From,
+		TxHash:    receipt.TxHash,
+		Amount:    amount,
+		TxAddress: txAddress,
+		From:      auth.From,
 	}, nil
 }
 
 // mints tokens to user and bridges them in sequence. full flow for testing.
-func MintAndBridge(
+func MintAndSendToTxChain(
 	ctx context.Context,
 	client *ethclient.Client,
 	adminPrivateKey *ecdsa.PrivateKey,
@@ -69,7 +69,7 @@ func MintAndBridge(
 	chainID *big.Int,
 	contracts *DeployedContracts,
 	amount *big.Int,
-	destinationPayload string,
+	txAddress string,
 ) (*BridgeTransaction, error) {
 	userAuth, err := getTransactOpts(ctx, client, userPrivateKey, chainID)
 	if err != nil {
@@ -81,18 +81,17 @@ func MintAndBridge(
 		return nil, errors.Wrap(err, "failed to mint tokens")
 	}
 
-	// user bridges
-	return Bridge(ctx, client, userPrivateKey, chainID, contracts.Bridge, amount, destinationPayload)
+	return SendToTxChain(ctx, client, userPrivateKey, chainID, contracts.Bridge, amount, txAddress)
 }
 
-// retrieves BridgeInitiated events from the bridge contract.
+// retrieves SentToTxChain events from the bridge contract.
 func GetBridgeEvents(
 	ctx context.Context,
 	bridge *bscabi.TxBridge,
 	fromBlock uint64,
 	toBlock *uint64,
-) ([]*bscabi.TxBridgeBridgeInitiated, error) {
-	iter, err := bridge.FilterBridgeInitiated(&bind.FilterOpts{
+) ([]*bscabi.TxBridgeSentToTxChain, error) {
+	iter, err := bridge.FilterSentToTxChain(&bind.FilterOpts{
 		Start:   fromBlock,
 		End:     toBlock,
 		Context: ctx,
@@ -102,7 +101,7 @@ func GetBridgeEvents(
 	}
 	defer iter.Close()
 
-	var events []*bscabi.TxBridgeBridgeInitiated
+	var events []*bscabi.TxBridgeSentToTxChain
 	for iter.Next() {
 		events = append(events, iter.Event)
 	}
@@ -112,9 +111,4 @@ func GetBridgeEvents(
 	}
 
 	return events, nil
-}
-
-// constructs the destination payload from address and chain ID.
-func BuildDestinationPayload(bech32Address, chainID string) string {
-	return bech32Address + chainID
 }

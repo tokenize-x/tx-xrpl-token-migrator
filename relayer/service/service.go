@@ -391,7 +391,6 @@ func NewServices(
 
 		bscFinder := finder.NewBSCFinder(
 			finder.BSCFinderConfig{
-				ChainID:    cfg.BSCScanner.ChainID,
 				TXDenom:    network.Denom(),
 				TXDecimals: 6,
 			},

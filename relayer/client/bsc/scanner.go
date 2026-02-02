@@ -20,7 +20,6 @@ type ScannerConfig struct {
 	StartBlock    uint64
 	PollInterval  time.Duration
 	Confirmations uint64
-	ChainID       string // chainID suffix to strip from destinationPayload (e.g., "/coreum-testnet-1/v1")
 }
 
 // Scanner is the BSC bridge event scanner.
@@ -51,8 +50,8 @@ func NewScanner(cfg ScannerConfig, log logger.Logger) (*Scanner, error) {
 	}, nil
 }
 
-// starts scanning for BridgeInitiated events and sends them to the channel.
-func (s *Scanner) Subscribe(ctx context.Context, ch chan<- *abi.TxBridgeBridgeInitiated) error {
+// starts scanning for SentToTxChain events and sends them to the channel.
+func (s *Scanner) Subscribe(ctx context.Context, ch chan<- *abi.TxBridgeSentToTxChain) error {
 	currentBlock, err := s.client.BlockNumber(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to get current block")
@@ -66,7 +65,7 @@ func (s *Scanner) Subscribe(ctx context.Context, ch chan<- *abi.TxBridgeBridgeIn
 	return nil
 }
 
-func (s *Scanner) scanHistorical(ctx context.Context, from, to uint64, ch chan<- *abi.TxBridgeBridgeInitiated) {
+func (s *Scanner) scanHistorical(ctx context.Context, from, to uint64, ch chan<- *abi.TxBridgeSentToTxChain) {
 	if from >= to {
 		return
 	}
@@ -97,7 +96,7 @@ func (s *Scanner) scanHistorical(ctx context.Context, from, to uint64, ch chan<-
 	s.log.Info("BSC historical scan completed")
 }
 
-func (s *Scanner) scanRecent(ctx context.Context, from uint64, ch chan<- *abi.TxBridgeBridgeInitiated) {
+func (s *Scanner) scanRecent(ctx context.Context, from uint64, ch chan<- *abi.TxBridgeSentToTxChain) {
 	lastBlock := from
 	s.log.Info("starting BSC recent block polling", zap.Uint64("from", from))
 
@@ -130,19 +129,19 @@ func (s *Scanner) scanRecent(ctx context.Context, from uint64, ch chan<- *abi.Tx
 	}
 }
 
-func (s *Scanner) scanRange(ctx context.Context, from, to uint64, ch chan<- *abi.TxBridgeBridgeInitiated) error {
+func (s *Scanner) scanRange(ctx context.Context, from, to uint64, ch chan<- *abi.TxBridgeSentToTxChain) error {
 	_, err := s.scanRangeWithCount(ctx, from, to, ch)
 	return err
 }
 
-func (s *Scanner) scanRangeWithCount(ctx context.Context, from, to uint64, ch chan<- *abi.TxBridgeBridgeInitiated) (int, error) {
-	iter, err := s.filterer.FilterBridgeInitiated(&bind.FilterOpts{
+func (s *Scanner) scanRangeWithCount(ctx context.Context, from, to uint64, ch chan<- *abi.TxBridgeSentToTxChain) (int, error) {
+	iter, err := s.filterer.FilterSentToTxChain(&bind.FilterOpts{
 		Start:   from,
 		End:     &to,
 		Context: ctx,
 	}, nil)
 	if err != nil {
-		return 0, errors.Wrap(err, "failed to filter BridgeInitiated events")
+		return 0, errors.Wrap(err, "failed to filter SentToTxChain events")
 	}
 	defer iter.Close()
 

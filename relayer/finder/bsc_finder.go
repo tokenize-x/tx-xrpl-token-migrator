@@ -2,8 +2,6 @@ package finder
 
 import (
 	"context"
-	"math/big"
-	"strings"
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -14,11 +12,10 @@ import (
 )
 
 type BSCScanner interface {
-	Subscribe(ctx context.Context, ch chan<- *abi.TxBridgeBridgeInitiated) error
+	Subscribe(ctx context.Context, ch chan<- *abi.TxBridgeSentToTxChain) error
 }
 
 type BSCFinderConfig struct {
-	ChainID    string
 	TXDenom    string
 	TXDecimals int
 }
@@ -43,7 +40,7 @@ func NewBSCFinder(cfg BSCFinderConfig, log logger.Logger, scanner BSCScanner) *B
 
 // subscribes to BSC bridge events and sends valid transactions to the channel.
 func (f *BSCFinder) SubscribeTXSendTransactions(ctx context.Context, ch chan<- PendingTXSendTransaction) error {
-	eventsCh := make(chan *abi.TxBridgeBridgeInitiated)
+	eventsCh := make(chan *abi.TxBridgeSentToTxChain)
 
 	if err := f.scanner.Subscribe(ctx, eventsCh); err != nil {
 		return err
@@ -67,38 +64,30 @@ func (f *BSCFinder) SubscribeTXSendTransactions(ctx context.Context, ch chan<- P
 	return nil
 }
 
-func (f *BSCFinder) buildPendingTransaction(event *abi.TxBridgeBridgeInitiated) (PendingTXSendTransaction, bool) {
+func (f *BSCFinder) buildPendingTransaction(event *abi.TxBridgeSentToTxChain) (PendingTXSendTransaction, bool) {
 	txHash := event.Raw.TxHash.Hex()
 
-	// extract address by stripping the chainID from destinationPayload
-	// format: {bech32Address}{chainID} e.g., "devcore1abc.../coreum-devnet-1"
-	address := extractAddressFromDestinationPayload(event.DestinationPayload, f.cfg.ChainID)
-
-	destAddr, err := sdk.AccAddressFromBech32(address)
+	destAddr, err := sdk.AccAddressFromBech32(event.TxAddress)
 	if err != nil {
 		f.log.Warn("invalid BSC bridge destination address",
 			zap.String("txHash", txHash),
-			zap.String("destinationPayload", event.DestinationPayload),
-			zap.String("extractedAddress", address),
+			zap.String("txAddress", event.TxAddress),
 			zap.Error(err),
 		)
 		return PendingTXSendTransaction{}, false
 	}
 
-	// Convert amount from wei (18 decimals) to TX amount (6 decimals)
-	txAmount := convertBSCAmountToTXCoin(event.Amount, f.cfg.TXDenom, f.cfg.TXDecimals)
-	if txAmount.IsZero() {
-		f.log.Info("BSC bridge zero amount after conversion", zap.String("txHash", txHash))
+	if event.Amount == nil || event.Amount.Sign() <= 0 {
+		f.log.Info("BSC bridge zero or invalid amount", zap.String("txHash", txHash))
 		return PendingTXSendTransaction{}, false
 	}
+	txAmount := sdk.NewCoin(f.cfg.TXDenom, sdkmath.NewIntFromBigInt(event.Amount))
 
 	f.log.Debug("BSC bridge event converted to PendingTXSendTransaction",
 		zap.String("txHash", txHash),
-		zap.String("destinationPayload", event.DestinationPayload),
-		zap.String("extractedAddress", address),
+		zap.String("txAddress", event.TxAddress),
 		zap.String("destination", destAddr.String()),
-		zap.String("originalAmountWei", event.Amount.String()),
-		zap.String("convertedAmount", txAmount.String()),
+		zap.String("amount", txAmount.String()),
 	)
 
 	return PendingTXSendTransaction{
@@ -106,27 +95,4 @@ func (f *BSCFinder) buildPendingTransaction(event *abi.TxBridgeBridgeInitiated) 
 		TXAmount:      txAmount,
 		XRPLTxHash:    txHash,
 	}, true
-}
-
-// extractAddressFromDestinationPayload extracts the bech32 address by removing the chainID suffix.
-// Input format: "devcore1abc.../coreum-devnet-1" -> "devcore1abc..."
-func extractAddressFromDestinationPayload(destinationPayload, chainIDSuffix string) string {
-	return strings.TrimSuffix(destinationPayload, chainIDSuffix)
-}
-
-// converts BSC amount (18 decimals) to TX coin (6 decimals).
-func convertBSCAmountToTXCoin(weiAmount *big.Int, denom string, txDecimals int) sdk.Coin {
-	if weiAmount == nil || weiAmount.Sign() <= 0 {
-		return sdk.NewCoin(denom, sdkmath.ZeroInt())
-	}
-
-	// BSC/ERC20 uses 18 decimals, TX uses 6 decimals
-	// Divide by 10^(18-6) = 10^12
-	bscDecimals := 18
-	decimalDiff := bscDecimals - txDecimals
-
-	divisor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimalDiff)), nil)
-	txAmount := new(big.Int).Div(weiAmount, divisor)
-
-	return sdk.NewCoin(denom, sdkmath.NewIntFromBigInt(txAmount))
 }
