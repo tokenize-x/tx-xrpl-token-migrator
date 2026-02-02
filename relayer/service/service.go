@@ -306,6 +306,9 @@ func NewServices(
 
 	var xrplTxScanner *xrpl.TxScanner
 	if !cfg.XRPLScannerDisabled {
+		if cfg.XRPLRPCURL == "" {
+			return nil, errors.New("xrpl-rpc-url is required when XRPL scanner is enabled")
+		}
 		xrplRPCClient := xrpl.NewRPCClient(xrpl.DefaultRPCClientConfig(cfg.XRPLRPCURL), log, httpClient)
 		scannerCfg := xrpl.DefaultTxScannerConfig()
 		scannerCfg.RecentScanSkipLastIndexes = cfg.XRPLRecentScanSkipLastIndexes
@@ -316,7 +319,10 @@ func NewServices(
 	}
 
 	var bscScanner *bsc.Scanner
-	if !cfg.BSCScannerDisabled && cfg.BSCScanner.RPCURL != "" {
+	if !cfg.BSCScannerDisabled {
+		if cfg.BSCScanner.RPCURL == "" {
+			return nil, errors.New("bsc-rpc-url is required when BSC scanner is enabled")
+		}
 		bscScanner, err = bsc.NewScanner(cfg.BSCScanner, log)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create BSC scanner")
@@ -325,7 +331,7 @@ func NewServices(
 			zap.String("rpcURL", cfg.BSCScanner.RPCURL),
 			zap.String("bridgeAddress", cfg.BSCScanner.BridgeAddress.Hex()),
 		)
-	} else if cfg.BSCScannerDisabled {
+	} else {
 		log.Info("BSC scanner disabled via flag")
 	}
 
