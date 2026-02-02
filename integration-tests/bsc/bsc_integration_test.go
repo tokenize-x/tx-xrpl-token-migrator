@@ -145,7 +145,7 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 
 	// Get deployer key
 	deployer := chains.BSC.GenAccount(t)
-	chains.BSC.FundAccount(ctx, t, rpcClient, deployer.Address, tokensToAmount(100))
+	chains.BSC.FundAccount(ctx, t, rpcClient, deployer.Address, tokensToAmount(1000000))
 
 	// Configure bridge
 	bridgeCfg := evm.DefaultBridgeConfig()

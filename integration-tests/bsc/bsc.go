@@ -133,8 +133,6 @@ func extractPrivateKeyFromSeed(seedPhrase string) (*ecdsa.PrivateKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	// TODO: remove this hardcoded private key when tx-crust also uses the same mnemonic
-	return crypto.HexToECDSA("4c0883a69102937d6231471b5dbb6204fe5129617082796a5b8e6a3e3d6f4c7c")
 	return crypto.ToECDSA(derivedKey)
 }
 
