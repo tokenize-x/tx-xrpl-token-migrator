@@ -323,7 +323,7 @@ func NewServices(
 		if cfg.BSCScanner.RPCURL == "" {
 			return nil, errors.New("bsc-rpc-url is required when BSC scanner is enabled")
 		}
-		bscScanner, err = bsc.NewScanner(cfg.BSCScanner, log)
+		bscScanner, err = bsc.NewScanner(cfg.BSCScanner, log, metricRecorder)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create BSC scanner")
 		}

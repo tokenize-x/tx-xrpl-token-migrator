@@ -118,7 +118,7 @@ func TestBSCLiveScanner(t *testing.T) {
 		Confirmations: 0,
 	}
 
-	scanner, err := bsc.NewScanner(scannerCfg, logger)
+	scanner, err := bsc.NewScanner(scannerCfg, logger, nil)
 	requireT.NoError(err)
 
 	// Subscribe to events
@@ -236,7 +236,7 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 		StartBlock:    0,
 		PollInterval:  500 * time.Millisecond,
 		Confirmations: 0,
-	}, logger)
+	}, logger, nil)
 	requireT.NoError(err)
 
 	instances := buildAndStartBSCLiveExecutors(

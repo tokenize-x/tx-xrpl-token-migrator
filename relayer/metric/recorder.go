@@ -22,6 +22,11 @@ type Recorder struct {
 	xrplLatestLedgerIndex      int64
 	xrplLatestLedgerIndexMu    sync.Mutex
 
+	bscLatestProcessedBlockGauge prometheus.Gauge
+	bscLatestProcessedBlock      uint64
+	bscLatestProcessedBlockMu    sync.Mutex
+	bscChainHeadBlockGauge       prometheus.Gauge
+
 	errorsCounter prometheus.Counter
 }
 
@@ -63,6 +68,22 @@ func NewRecorder() (*Recorder, error) {
 		return nil, errors.Wrapf(err, "failed to register xrpl latest ledger index gauge")
 	}
 
+	bscLatestProcessedBlockGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "bsc_latest_processed_block",
+		Help: "Latest processed BSC block number",
+	})
+	if err := registry.Register(bscLatestProcessedBlockGauge); err != nil {
+		return nil, errors.Wrapf(err, "failed to register bsc latest processed block gauge")
+	}
+
+	bscChainHeadBlockGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "bsc_chain_head_block",
+		Help: "Current BSC chain head block number",
+	})
+	if err := registry.Register(bscChainHeadBlockGauge); err != nil {
+		return nil, errors.Wrapf(err, "failed to register bsc chain head block gauge")
+	}
+
 	errorsCounter := prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "errors_total",
 		Help: "Errors counter",
@@ -97,9 +118,12 @@ func NewRecorder() (*Recorder, error) {
 		txPendingApprovedTransactionsCount:   txPendingApprovedTransactionsTotal,
 		xrplLatestLedgerIndexGauge:           xrplLatestLedgerIndexGauge,
 		xrplLatestLedgerIndex:                0,
-
-		errorsCounter:           errorsCounter,
-		xrplLatestLedgerIndexMu: sync.Mutex{},
+		xrplLatestLedgerIndexMu:              sync.Mutex{},
+		bscLatestProcessedBlockGauge:         bscLatestProcessedBlockGauge,
+		bscLatestProcessedBlock:              0,
+		bscLatestProcessedBlockMu:            sync.Mutex{},
+		bscChainHeadBlockGauge:               bscChainHeadBlockGauge,
+		errorsCounter:                        errorsCounter,
 	}, nil
 }
 
@@ -126,6 +150,20 @@ func (r *Recorder) SetXRPLLatestAccountLedgerIndex(v int64) {
 		return
 	}
 	r.xrplLatestLedgerIndexGauge.Set(float64(v))
+}
+
+func (r *Recorder) SetBSCLatestProcessedBlock(v uint64) {
+	r.bscLatestProcessedBlockMu.Lock()
+	defer r.bscLatestProcessedBlockMu.Unlock()
+	if v < r.bscLatestProcessedBlock {
+		return
+	}
+	r.bscLatestProcessedBlock = v
+	r.bscLatestProcessedBlockGauge.Set(float64(v))
+}
+
+func (r *Recorder) SetBSCChainHeadBlock(v uint64) {
+	r.bscChainHeadBlockGauge.Set(float64(v))
 }
 
 // IncrementError increments error metric.

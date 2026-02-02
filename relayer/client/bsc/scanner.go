@@ -13,6 +13,11 @@ import (
 	"go.uber.org/zap"
 )
 
+type MetricRecorder interface {
+	SetBSCLatestProcessedBlock(v uint64)
+	SetBSCChainHeadBlock(v uint64)
+}
+
 // configuration for the BSC event scanner.
 type ScannerConfig struct {
 	RPCURL        string
@@ -24,13 +29,14 @@ type ScannerConfig struct {
 
 // Scanner is the BSC bridge event scanner.
 type Scanner struct {
-	cfg      ScannerConfig
-	log      logger.Logger
-	client   *ethclient.Client
-	filterer *abi.TxBridgeFilterer
+	cfg            ScannerConfig
+	log            logger.Logger
+	client         *ethclient.Client
+	filterer       *abi.TxBridgeFilterer
+	metricRecorder MetricRecorder
 }
 
-func NewScanner(cfg ScannerConfig, log logger.Logger) (*Scanner, error) {
+func NewScanner(cfg ScannerConfig, log logger.Logger, metricRecorder MetricRecorder) (*Scanner, error) {
 	client, err := ethclient.Dial(cfg.RPCURL)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to connect to BSC RPC")
@@ -43,10 +49,11 @@ func NewScanner(cfg ScannerConfig, log logger.Logger) (*Scanner, error) {
 	}
 
 	return &Scanner{
-		cfg:      cfg,
-		log:      log,
-		client:   client,
-		filterer: filterer,
+		cfg:            cfg,
+		log:            log,
+		client:         client,
+		filterer:       filterer,
+		metricRecorder: metricRecorder,
 	}, nil
 }
 
@@ -91,6 +98,10 @@ func (s *Scanner) scanHistorical(ctx context.Context, from, to uint64, ch chan<-
 			start -= batchSize // retry the same batch
 			continue
 		}
+
+		if s.metricRecorder != nil {
+			s.metricRecorder.SetBSCLatestProcessedBlock(end)
+		}
 	}
 
 	s.log.Info("BSC historical scan completed")
@@ -113,6 +124,10 @@ func (s *Scanner) scanRecent(ctx context.Context, from uint64, ch chan<- *abi.Tx
 			continue
 		}
 
+		if s.metricRecorder != nil {
+			s.metricRecorder.SetBSCChainHeadBlock(currentBlock)
+		}
+
 		safeBlock := currentBlock - s.cfg.Confirmations
 		if safeBlock <= lastBlock {
 			continue
@@ -126,6 +141,9 @@ func (s *Scanner) scanRecent(ctx context.Context, from uint64, ch chan<- *abi.Tx
 
 		s.log.Info("polled BSC blocks", zap.Uint64("from", lastBlock+1), zap.Uint64("to", safeBlock), zap.Int("events", count))
 		lastBlock = safeBlock
+		if s.metricRecorder != nil {
+			s.metricRecorder.SetBSCLatestProcessedBlock(lastBlock)
+		}
 	}
 }
 
