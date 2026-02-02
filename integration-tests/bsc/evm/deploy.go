@@ -89,29 +89,29 @@ func getTransactOpts(ctx context.Context, client *ethclient.Client, chainID *big
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get gas price")
 	}
-	//
-	//tip, err := client.SuggestGasTipCap(context.Background())
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "failed to get gas tip")
-	//}
-	//
-	//// maxFee = baseFee * 2 + tip (standard formula)
-	//maxFee := new(big.Int).Add(
-	//	new(big.Int).Mul(gasPrice, big.NewInt(2)),
-	//	tip,
-	//)
+
+	tip, err := client.SuggestGasTipCap(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get gas tip")
+	}
+
+	// maxFee = baseFee * 2 + tip (standard formula)
+	maxFee := new(big.Int).Add(
+		new(big.Int).Mul(gasPrice, big.NewInt(2)),
+		tip,
+	)
 
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.GasPrice = gasPrice
-	//auth.GasTipCap = tip
+	auth.GasTipCap = tip
 	auth.GasLimit = 5000000
-	//auth.GasFeeCap = maxFee
+	auth.GasFeeCap = maxFee
 
 	return auth, nil
 }
 
 // deploys a contract and returns its address.
-func deployContract(ctx context.Context, client *ethclient.Client, auth *bind.TransactOpts, bytecode string, constructorArgs ...[]byte) (common.Address, error) {
+func deployContract(ctx context.Context, client *ethclient.Client, chainID *big.Int, auth *bind.TransactOpts, bytecode string, constructorArgs ...[]byte) (common.Address, error) {
 	bytecode = strings.TrimPrefix(bytecode, "0x")
 
 	// combine bytecode with constructor args
@@ -120,13 +120,15 @@ func deployContract(ctx context.Context, client *ethclient.Client, auth *bind.Tr
 		data = append(data, arg...)
 	}
 
-	tx := types.NewContractCreation(
-		auth.Nonce.Uint64(),
-		big.NewInt(0),
-		auth.GasLimit,
-		auth.GasPrice,
-		data,
-	)
+	tx := types.NewTx(&types.DynamicFeeTx{
+		ChainID:   chainID,
+		Nonce:     auth.Nonce.Uint64(),
+		GasTipCap: auth.GasTipCap,
+		GasFeeCap: auth.GasFeeCap,
+		Gas:       auth.GasLimit,
+		Data:      data,
+		Value:     big.NewInt(0),
+	})
 
 	signedTx, err := auth.Signer(auth.From, tx)
 	if err != nil {
@@ -156,26 +158,15 @@ func TransferFunds(ctx context.Context, client *ethclient.Client, chainID *big.I
 		return common.Hash{}, err
 	}
 
-	tip, err := client.SuggestGasTipCap(context.Background())
-	if err != nil {
-		return common.Hash{}, errors.Wrap(err, "failed to get gas tip")
-	}
-
-	// maxFee = baseFee * 2 + tip (standard formula)
-	maxFee := new(big.Int).Add(
-		new(big.Int).Mul(auth.GasPrice, big.NewInt(2)),
-		tip,
-	)
-
 	tx := types.NewTx(&types.DynamicFeeTx{
 		ChainID:   chainID,
 		Nonce:     auth.Nonce.Uint64(),
-		GasTipCap: tip,
-		GasFeeCap: maxFee,
+		GasTipCap: auth.GasTipCap,
+		GasFeeCap: auth.GasFeeCap,
 		Gas:       auth.GasLimit,
 		To:        &toAddress,
 		Value:     amount,
-		Data:      nil,
+		Data:      []byte{},
 	})
 
 	signedTx, err := auth.Signer(auth.From, tx)
@@ -232,7 +223,7 @@ func DeployTXToken(ctx context.Context, client *ethclient.Client, chainID *big.I
 	}
 
 	// deploy implementation
-	implAddress, err := deployContract(ctx, client, auth, artifact.Bytecode)
+	implAddress, err := deployContract(ctx, client, chainID, auth, artifact.Bytecode)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to deploy token implementation")
 	}
@@ -263,7 +254,7 @@ func DeployTXToken(ctx context.Context, client *ethclient.Client, chainID *big.I
 		return common.Address{}, nil, err
 	}
 
-	proxyAddress, err := deployContract(ctx, client, auth, erc1967ProxyBytecode, proxyArgs)
+	proxyAddress, err := deployContract(ctx, client, chainID, auth, erc1967ProxyBytecode, proxyArgs)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to deploy token proxy")
 	}
@@ -289,7 +280,7 @@ func DeployTXBridge(ctx context.Context, client *ethclient.Client, chainID *big.
 		return common.Address{}, nil, err
 	}
 
-	implAddress, err := deployContract(ctx, client, auth, artifact.Bytecode)
+	implAddress, err := deployContract(ctx, client, chainID, auth, artifact.Bytecode)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to deploy bridge implementation")
 	}
@@ -322,7 +313,7 @@ func DeployTXBridge(ctx context.Context, client *ethclient.Client, chainID *big.
 		return common.Address{}, nil, err
 	}
 
-	proxyAddress, err := deployContract(ctx, client, auth, erc1967ProxyBytecode, proxyArgs)
+	proxyAddress, err := deployContract(ctx, client, chainID, auth, erc1967ProxyBytecode, proxyArgs)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to deploy bridge proxy")
 	}
