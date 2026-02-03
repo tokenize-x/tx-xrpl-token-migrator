@@ -122,7 +122,7 @@ func TestBSCLiveScanner(t *testing.T) {
 	requireT.NoError(err)
 
 	// Subscribe to events
-	eventCh := make(chan *bscabi.TxBridgeSentToTXChain, 10)
+	eventCh := make(chan *bscabi.TXBridgeSentToTXChain, 10)
 	scanCtx, scanCancel := context.WithTimeout(ctx, 10*time.Second)
 	defer scanCancel()
 

@@ -30,7 +30,7 @@ func SendToTxChain(
 	client *ethclient.Client,
 	privateKey *ecdsa.PrivateKey,
 	chainID *big.Int,
-	bridge *bscabi.TxBridge,
+	bridge *bscabi.TXBridge,
 	amount *big.Int,
 	txAddress string,
 ) (*BridgeTransaction, error) {
@@ -87,10 +87,10 @@ func MintAndSendToTxChain(
 // retrieves SentToTXChain events from the bridge contract.
 func GetBridgeEvents(
 	ctx context.Context,
-	bridge *bscabi.TxBridge,
+	bridge *bscabi.TXBridge,
 	fromBlock uint64,
 	toBlock *uint64,
-) ([]*bscabi.TxBridgeSentToTXChain, error) {
+) ([]*bscabi.TXBridgeSentToTXChain, error) {
 	iter, err := bridge.FilterSentToTXChain(&bind.FilterOpts{
 		Start:   fromBlock,
 		End:     toBlock,
@@ -101,7 +101,7 @@ func GetBridgeEvents(
 	}
 	defer iter.Close()
 
-	var events []*bscabi.TxBridgeSentToTXChain
+	var events []*bscabi.TXBridgeSentToTXChain
 	for iter.Next() {
 		events = append(events, iter.Event)
 	}

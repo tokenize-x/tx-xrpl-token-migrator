@@ -29,113 +29,113 @@ var (
 	_ = abi.ConvertType
 )
 
-// TxBridgeMetaData contains all meta data concerning the TxBridge contract.
-var TxBridgeMetaData = &bind.MetaData{
+// TXBridgeMetaData contains all meta data concerning the TXBridge contract.
+var TXBridgeMetaData = &bind.MetaData{
 	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AccessControlBadConfirmation\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"neededRole\",\"type\":\"bytes32\"}],\"name\":\"AccessControlUnauthorizedAccount\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maximum\",\"type\":\"uint256\"}],\"name\":\"AmountAboveMaximum\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minimum\",\"type\":\"uint256\"}],\"name\":\"AmountBelowMinimum\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"EmptyString\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"EnforcedPause\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ExpectedPause\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidAmount\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidInitialization\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidTXAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotInitializing\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ReentrancyGuardReentrantCall\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ZeroAddress\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"version\",\"type\":\"uint64\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Paused\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"previousAdminRole\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"newAdminRole\",\"type\":\"bytes32\"}],\"name\":\"RoleAdminChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleGranted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleRevoked\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"txAddress\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"SentToTXChain\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"oldToken\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"newToken\",\"type\":\"address\"}],\"name\":\"TokenUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Unpaused\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"DEFAULT_ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"OPERATOR_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"addressPrefix\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleAdmin\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"grantRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"hasRole\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_admin\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_minAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_maxAmount\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"_addressPrefix\",\"type\":\"string\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"txAddress\",\"type\":\"string\"}],\"name\":\"isValidTXAddress\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"maxAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"callerConfirmation\",\"type\":\"address\"}],\"name\":\"renounceRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"revokeRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"txAddress\",\"type\":\"string\"}],\"name\":\"sendToTXChain\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_addressPrefix\",\"type\":\"string\"}],\"name\":\"setAddressPrefix\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_maxAmount\",\"type\":\"uint256\"}],\"name\":\"setMaxAmount\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_minAmount\",\"type\":\"uint256\"}],\"name\":\"setMinAmount\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_token\",\"type\":\"address\"}],\"name\":\"setToken\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"token\",\"outputs\":[{\"internalType\":\"contractITXToken\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
-// TxBridgeABI is the input ABI used to generate the binding from.
-// Deprecated: Use TxBridgeMetaData.ABI instead.
-var TxBridgeABI = TxBridgeMetaData.ABI
+// TXBridgeABI is the input ABI used to generate the binding from.
+// Deprecated: Use TXBridgeMetaData.ABI instead.
+var TXBridgeABI = TXBridgeMetaData.ABI
 
-// TxBridge is an auto generated Go binding around an Ethereum contract.
-type TxBridge struct {
-	TxBridgeCaller     // Read-only binding to the contract
-	TxBridgeTransactor // Write-only binding to the contract
-	TxBridgeFilterer   // Log filterer for contract events
+// TXBridge is an auto generated Go binding around an Ethereum contract.
+type TXBridge struct {
+	TXBridgeCaller     // Read-only binding to the contract
+	TXBridgeTransactor // Write-only binding to the contract
+	TXBridgeFilterer   // Log filterer for contract events
 }
 
-// TxBridgeCaller is an auto generated read-only Go binding around an Ethereum contract.
-type TxBridgeCaller struct {
+// TXBridgeCaller is an auto generated read-only Go binding around an Ethereum contract.
+type TXBridgeCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// TxBridgeTransactor is an auto generated write-only Go binding around an Ethereum contract.
-type TxBridgeTransactor struct {
+// TXBridgeTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type TXBridgeTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// TxBridgeFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
-type TxBridgeFilterer struct {
+// TXBridgeFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type TXBridgeFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// TxBridgeSession is an auto generated Go binding around an Ethereum contract,
+// TXBridgeSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.
-type TxBridgeSession struct {
-	Contract     *TxBridge         // Generic contract binding to set the session for
+type TXBridgeSession struct {
+	Contract     *TXBridge         // Generic contract binding to set the session for
 	CallOpts     bind.CallOpts     // Call options to use throughout this session
 	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
 }
 
-// TxBridgeCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// TXBridgeCallerSession is an auto generated read-only Go binding around an Ethereum contract,
 // with pre-set call options.
-type TxBridgeCallerSession struct {
-	Contract *TxBridgeCaller // Generic contract caller binding to set the session for
+type TXBridgeCallerSession struct {
+	Contract *TXBridgeCaller // Generic contract caller binding to set the session for
 	CallOpts bind.CallOpts   // Call options to use throughout this session
 }
 
-// TxBridgeTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// TXBridgeTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
 // with pre-set transact options.
-type TxBridgeTransactorSession struct {
-	Contract     *TxBridgeTransactor // Generic contract transactor binding to set the session for
+type TXBridgeTransactorSession struct {
+	Contract     *TXBridgeTransactor // Generic contract transactor binding to set the session for
 	TransactOpts bind.TransactOpts   // Transaction auth options to use throughout this session
 }
 
-// TxBridgeRaw is an auto generated low-level Go binding around an Ethereum contract.
-type TxBridgeRaw struct {
-	Contract *TxBridge // Generic contract binding to access the raw methods on
+// TXBridgeRaw is an auto generated low-level Go binding around an Ethereum contract.
+type TXBridgeRaw struct {
+	Contract *TXBridge // Generic contract binding to access the raw methods on
 }
 
-// TxBridgeCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
-type TxBridgeCallerRaw struct {
-	Contract *TxBridgeCaller // Generic read-only contract binding to access the raw methods on
+// TXBridgeCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type TXBridgeCallerRaw struct {
+	Contract *TXBridgeCaller // Generic read-only contract binding to access the raw methods on
 }
 
-// TxBridgeTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
-type TxBridgeTransactorRaw struct {
-	Contract *TxBridgeTransactor // Generic write-only contract binding to access the raw methods on
+// TXBridgeTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type TXBridgeTransactorRaw struct {
+	Contract *TXBridgeTransactor // Generic write-only contract binding to access the raw methods on
 }
 
-// NewTxBridge creates a new instance of TxBridge, bound to a specific deployed contract.
-func NewTxBridge(address common.Address, backend bind.ContractBackend) (*TxBridge, error) {
-	contract, err := bindTxBridge(address, backend, backend, backend)
+// NewTXBridge creates a new instance of TXBridge, bound to a specific deployed contract.
+func NewTXBridge(address common.Address, backend bind.ContractBackend) (*TXBridge, error) {
+	contract, err := bindTXBridge(address, backend, backend, backend)
 	if err != nil {
 		return nil, err
 	}
-	return &TxBridge{TxBridgeCaller: TxBridgeCaller{contract: contract}, TxBridgeTransactor: TxBridgeTransactor{contract: contract}, TxBridgeFilterer: TxBridgeFilterer{contract: contract}}, nil
+	return &TXBridge{TXBridgeCaller: TXBridgeCaller{contract: contract}, TXBridgeTransactor: TXBridgeTransactor{contract: contract}, TXBridgeFilterer: TXBridgeFilterer{contract: contract}}, nil
 }
 
-// NewTxBridgeCaller creates a new read-only instance of TxBridge, bound to a specific deployed contract.
-func NewTxBridgeCaller(address common.Address, caller bind.ContractCaller) (*TxBridgeCaller, error) {
-	contract, err := bindTxBridge(address, caller, nil, nil)
+// NewTXBridgeCaller creates a new read-only instance of TXBridge, bound to a specific deployed contract.
+func NewTXBridgeCaller(address common.Address, caller bind.ContractCaller) (*TXBridgeCaller, error) {
+	contract, err := bindTXBridge(address, caller, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &TxBridgeCaller{contract: contract}, nil
+	return &TXBridgeCaller{contract: contract}, nil
 }
 
-// NewTxBridgeTransactor creates a new write-only instance of TxBridge, bound to a specific deployed contract.
-func NewTxBridgeTransactor(address common.Address, transactor bind.ContractTransactor) (*TxBridgeTransactor, error) {
-	contract, err := bindTxBridge(address, nil, transactor, nil)
+// NewTXBridgeTransactor creates a new write-only instance of TXBridge, bound to a specific deployed contract.
+func NewTXBridgeTransactor(address common.Address, transactor bind.ContractTransactor) (*TXBridgeTransactor, error) {
+	contract, err := bindTXBridge(address, nil, transactor, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &TxBridgeTransactor{contract: contract}, nil
+	return &TXBridgeTransactor{contract: contract}, nil
 }
 
-// NewTxBridgeFilterer creates a new log filterer instance of TxBridge, bound to a specific deployed contract.
-func NewTxBridgeFilterer(address common.Address, filterer bind.ContractFilterer) (*TxBridgeFilterer, error) {
-	contract, err := bindTxBridge(address, nil, nil, filterer)
+// NewTXBridgeFilterer creates a new log filterer instance of TXBridge, bound to a specific deployed contract.
+func NewTXBridgeFilterer(address common.Address, filterer bind.ContractFilterer) (*TXBridgeFilterer, error) {
+	contract, err := bindTXBridge(address, nil, nil, filterer)
 	if err != nil {
 		return nil, err
 	}
-	return &TxBridgeFilterer{contract: contract}, nil
+	return &TXBridgeFilterer{contract: contract}, nil
 }
 
-// bindTxBridge binds a generic wrapper to an already deployed contract.
-func bindTxBridge(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
-	parsed, err := TxBridgeMetaData.GetAbi()
+// bindTXBridge binds a generic wrapper to an already deployed contract.
+func bindTXBridge(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := TXBridgeMetaData.GetAbi()
 	if err != nil {
 		return nil, err
 	}
@@ -146,46 +146,46 @@ func bindTxBridge(address common.Address, caller bind.ContractCaller, transactor
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_TxBridge *TxBridgeRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _TxBridge.Contract.TxBridgeCaller.contract.Call(opts, result, method, params...)
+func (_TXBridge *TXBridgeRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _TXBridge.Contract.TXBridgeCaller.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_TxBridge *TxBridgeRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _TxBridge.Contract.TxBridgeTransactor.contract.Transfer(opts)
+func (_TXBridge *TXBridgeRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _TXBridge.Contract.TXBridgeTransactor.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_TxBridge *TxBridgeRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _TxBridge.Contract.TxBridgeTransactor.contract.Transact(opts, method, params...)
+func (_TXBridge *TXBridgeRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _TXBridge.Contract.TXBridgeTransactor.contract.Transact(opts, method, params...)
 }
 
 // Call invokes the (constant) contract method with params as input values and
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_TxBridge *TxBridgeCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _TxBridge.Contract.contract.Call(opts, result, method, params...)
+func (_TXBridge *TXBridgeCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _TXBridge.Contract.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_TxBridge *TxBridgeTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _TxBridge.Contract.contract.Transfer(opts)
+func (_TXBridge *TXBridgeTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _TXBridge.Contract.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_TxBridge *TxBridgeTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _TxBridge.Contract.contract.Transact(opts, method, params...)
+func (_TXBridge *TXBridgeTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _TXBridge.Contract.contract.Transact(opts, method, params...)
 }
 
 // DEFAULTADMINROLE is a free data retrieval call binding the contract method 0xa217fddf.
 //
 // Solidity: function DEFAULT_ADMIN_ROLE() view returns(bytes32)
-func (_TxBridge *TxBridgeCaller) DEFAULTADMINROLE(opts *bind.CallOpts) ([32]byte, error) {
+func (_TXBridge *TXBridgeCaller) DEFAULTADMINROLE(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
-	err := _TxBridge.contract.Call(opts, &out, "DEFAULT_ADMIN_ROLE")
+	err := _TXBridge.contract.Call(opts, &out, "DEFAULT_ADMIN_ROLE")
 
 	if err != nil {
 		return *new([32]byte), err
@@ -200,23 +200,23 @@ func (_TxBridge *TxBridgeCaller) DEFAULTADMINROLE(opts *bind.CallOpts) ([32]byte
 // DEFAULTADMINROLE is a free data retrieval call binding the contract method 0xa217fddf.
 //
 // Solidity: function DEFAULT_ADMIN_ROLE() view returns(bytes32)
-func (_TxBridge *TxBridgeSession) DEFAULTADMINROLE() ([32]byte, error) {
-	return _TxBridge.Contract.DEFAULTADMINROLE(&_TxBridge.CallOpts)
+func (_TXBridge *TXBridgeSession) DEFAULTADMINROLE() ([32]byte, error) {
+	return _TXBridge.Contract.DEFAULTADMINROLE(&_TXBridge.CallOpts)
 }
 
 // DEFAULTADMINROLE is a free data retrieval call binding the contract method 0xa217fddf.
 //
 // Solidity: function DEFAULT_ADMIN_ROLE() view returns(bytes32)
-func (_TxBridge *TxBridgeCallerSession) DEFAULTADMINROLE() ([32]byte, error) {
-	return _TxBridge.Contract.DEFAULTADMINROLE(&_TxBridge.CallOpts)
+func (_TXBridge *TXBridgeCallerSession) DEFAULTADMINROLE() ([32]byte, error) {
+	return _TXBridge.Contract.DEFAULTADMINROLE(&_TXBridge.CallOpts)
 }
 
 // OPERATORROLE is a free data retrieval call binding the contract method 0xf5b541a6.
 //
 // Solidity: function OPERATOR_ROLE() view returns(bytes32)
-func (_TxBridge *TxBridgeCaller) OPERATORROLE(opts *bind.CallOpts) ([32]byte, error) {
+func (_TXBridge *TXBridgeCaller) OPERATORROLE(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
-	err := _TxBridge.contract.Call(opts, &out, "OPERATOR_ROLE")
+	err := _TXBridge.contract.Call(opts, &out, "OPERATOR_ROLE")
 
 	if err != nil {
 		return *new([32]byte), err
@@ -231,23 +231,23 @@ func (_TxBridge *TxBridgeCaller) OPERATORROLE(opts *bind.CallOpts) ([32]byte, er
 // OPERATORROLE is a free data retrieval call binding the contract method 0xf5b541a6.
 //
 // Solidity: function OPERATOR_ROLE() view returns(bytes32)
-func (_TxBridge *TxBridgeSession) OPERATORROLE() ([32]byte, error) {
-	return _TxBridge.Contract.OPERATORROLE(&_TxBridge.CallOpts)
+func (_TXBridge *TXBridgeSession) OPERATORROLE() ([32]byte, error) {
+	return _TXBridge.Contract.OPERATORROLE(&_TXBridge.CallOpts)
 }
 
 // OPERATORROLE is a free data retrieval call binding the contract method 0xf5b541a6.
 //
 // Solidity: function OPERATOR_ROLE() view returns(bytes32)
-func (_TxBridge *TxBridgeCallerSession) OPERATORROLE() ([32]byte, error) {
-	return _TxBridge.Contract.OPERATORROLE(&_TxBridge.CallOpts)
+func (_TXBridge *TXBridgeCallerSession) OPERATORROLE() ([32]byte, error) {
+	return _TXBridge.Contract.OPERATORROLE(&_TXBridge.CallOpts)
 }
 
 // AddressPrefix is a free data retrieval call binding the contract method 0xf0e0de8f.
 //
 // Solidity: function addressPrefix() view returns(string)
-func (_TxBridge *TxBridgeCaller) AddressPrefix(opts *bind.CallOpts) (string, error) {
+func (_TXBridge *TXBridgeCaller) AddressPrefix(opts *bind.CallOpts) (string, error) {
 	var out []interface{}
-	err := _TxBridge.contract.Call(opts, &out, "addressPrefix")
+	err := _TXBridge.contract.Call(opts, &out, "addressPrefix")
 
 	if err != nil {
 		return *new(string), err
@@ -262,23 +262,23 @@ func (_TxBridge *TxBridgeCaller) AddressPrefix(opts *bind.CallOpts) (string, err
 // AddressPrefix is a free data retrieval call binding the contract method 0xf0e0de8f.
 //
 // Solidity: function addressPrefix() view returns(string)
-func (_TxBridge *TxBridgeSession) AddressPrefix() (string, error) {
-	return _TxBridge.Contract.AddressPrefix(&_TxBridge.CallOpts)
+func (_TXBridge *TXBridgeSession) AddressPrefix() (string, error) {
+	return _TXBridge.Contract.AddressPrefix(&_TXBridge.CallOpts)
 }
 
 // AddressPrefix is a free data retrieval call binding the contract method 0xf0e0de8f.
 //
 // Solidity: function addressPrefix() view returns(string)
-func (_TxBridge *TxBridgeCallerSession) AddressPrefix() (string, error) {
-	return _TxBridge.Contract.AddressPrefix(&_TxBridge.CallOpts)
+func (_TXBridge *TXBridgeCallerSession) AddressPrefix() (string, error) {
+	return _TXBridge.Contract.AddressPrefix(&_TXBridge.CallOpts)
 }
 
 // GetRoleAdmin is a free data retrieval call binding the contract method 0x248a9ca3.
 //
 // Solidity: function getRoleAdmin(bytes32 role) view returns(bytes32)
-func (_TxBridge *TxBridgeCaller) GetRoleAdmin(opts *bind.CallOpts, role [32]byte) ([32]byte, error) {
+func (_TXBridge *TXBridgeCaller) GetRoleAdmin(opts *bind.CallOpts, role [32]byte) ([32]byte, error) {
 	var out []interface{}
-	err := _TxBridge.contract.Call(opts, &out, "getRoleAdmin", role)
+	err := _TXBridge.contract.Call(opts, &out, "getRoleAdmin", role)
 
 	if err != nil {
 		return *new([32]byte), err
@@ -293,23 +293,23 @@ func (_TxBridge *TxBridgeCaller) GetRoleAdmin(opts *bind.CallOpts, role [32]byte
 // GetRoleAdmin is a free data retrieval call binding the contract method 0x248a9ca3.
 //
 // Solidity: function getRoleAdmin(bytes32 role) view returns(bytes32)
-func (_TxBridge *TxBridgeSession) GetRoleAdmin(role [32]byte) ([32]byte, error) {
-	return _TxBridge.Contract.GetRoleAdmin(&_TxBridge.CallOpts, role)
+func (_TXBridge *TXBridgeSession) GetRoleAdmin(role [32]byte) ([32]byte, error) {
+	return _TXBridge.Contract.GetRoleAdmin(&_TXBridge.CallOpts, role)
 }
 
 // GetRoleAdmin is a free data retrieval call binding the contract method 0x248a9ca3.
 //
 // Solidity: function getRoleAdmin(bytes32 role) view returns(bytes32)
-func (_TxBridge *TxBridgeCallerSession) GetRoleAdmin(role [32]byte) ([32]byte, error) {
-	return _TxBridge.Contract.GetRoleAdmin(&_TxBridge.CallOpts, role)
+func (_TXBridge *TXBridgeCallerSession) GetRoleAdmin(role [32]byte) ([32]byte, error) {
+	return _TXBridge.Contract.GetRoleAdmin(&_TXBridge.CallOpts, role)
 }
 
 // HasRole is a free data retrieval call binding the contract method 0x91d14854.
 //
 // Solidity: function hasRole(bytes32 role, address account) view returns(bool)
-func (_TxBridge *TxBridgeCaller) HasRole(opts *bind.CallOpts, role [32]byte, account common.Address) (bool, error) {
+func (_TXBridge *TXBridgeCaller) HasRole(opts *bind.CallOpts, role [32]byte, account common.Address) (bool, error) {
 	var out []interface{}
-	err := _TxBridge.contract.Call(opts, &out, "hasRole", role, account)
+	err := _TXBridge.contract.Call(opts, &out, "hasRole", role, account)
 
 	if err != nil {
 		return *new(bool), err
@@ -324,23 +324,23 @@ func (_TxBridge *TxBridgeCaller) HasRole(opts *bind.CallOpts, role [32]byte, acc
 // HasRole is a free data retrieval call binding the contract method 0x91d14854.
 //
 // Solidity: function hasRole(bytes32 role, address account) view returns(bool)
-func (_TxBridge *TxBridgeSession) HasRole(role [32]byte, account common.Address) (bool, error) {
-	return _TxBridge.Contract.HasRole(&_TxBridge.CallOpts, role, account)
+func (_TXBridge *TXBridgeSession) HasRole(role [32]byte, account common.Address) (bool, error) {
+	return _TXBridge.Contract.HasRole(&_TXBridge.CallOpts, role, account)
 }
 
 // HasRole is a free data retrieval call binding the contract method 0x91d14854.
 //
 // Solidity: function hasRole(bytes32 role, address account) view returns(bool)
-func (_TxBridge *TxBridgeCallerSession) HasRole(role [32]byte, account common.Address) (bool, error) {
-	return _TxBridge.Contract.HasRole(&_TxBridge.CallOpts, role, account)
+func (_TXBridge *TXBridgeCallerSession) HasRole(role [32]byte, account common.Address) (bool, error) {
+	return _TXBridge.Contract.HasRole(&_TXBridge.CallOpts, role, account)
 }
 
 // IsValidTXAddress is a free data retrieval call binding the contract method 0x061730e7.
 //
 // Solidity: function isValidTXAddress(string txAddress) view returns(bool)
-func (_TxBridge *TxBridgeCaller) IsValidTXAddress(opts *bind.CallOpts, txAddress string) (bool, error) {
+func (_TXBridge *TXBridgeCaller) IsValidTXAddress(opts *bind.CallOpts, txAddress string) (bool, error) {
 	var out []interface{}
-	err := _TxBridge.contract.Call(opts, &out, "isValidTXAddress", txAddress)
+	err := _TXBridge.contract.Call(opts, &out, "isValidTXAddress", txAddress)
 
 	if err != nil {
 		return *new(bool), err
@@ -355,23 +355,23 @@ func (_TxBridge *TxBridgeCaller) IsValidTXAddress(opts *bind.CallOpts, txAddress
 // IsValidTXAddress is a free data retrieval call binding the contract method 0x061730e7.
 //
 // Solidity: function isValidTXAddress(string txAddress) view returns(bool)
-func (_TxBridge *TxBridgeSession) IsValidTXAddress(txAddress string) (bool, error) {
-	return _TxBridge.Contract.IsValidTXAddress(&_TxBridge.CallOpts, txAddress)
+func (_TXBridge *TXBridgeSession) IsValidTXAddress(txAddress string) (bool, error) {
+	return _TXBridge.Contract.IsValidTXAddress(&_TXBridge.CallOpts, txAddress)
 }
 
 // IsValidTXAddress is a free data retrieval call binding the contract method 0x061730e7.
 //
 // Solidity: function isValidTXAddress(string txAddress) view returns(bool)
-func (_TxBridge *TxBridgeCallerSession) IsValidTXAddress(txAddress string) (bool, error) {
-	return _TxBridge.Contract.IsValidTXAddress(&_TxBridge.CallOpts, txAddress)
+func (_TXBridge *TXBridgeCallerSession) IsValidTXAddress(txAddress string) (bool, error) {
+	return _TXBridge.Contract.IsValidTXAddress(&_TXBridge.CallOpts, txAddress)
 }
 
 // MaxAmount is a free data retrieval call binding the contract method 0x5f48f393.
 //
 // Solidity: function maxAmount() view returns(uint256)
-func (_TxBridge *TxBridgeCaller) MaxAmount(opts *bind.CallOpts) (*big.Int, error) {
+func (_TXBridge *TXBridgeCaller) MaxAmount(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _TxBridge.contract.Call(opts, &out, "maxAmount")
+	err := _TXBridge.contract.Call(opts, &out, "maxAmount")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -386,23 +386,23 @@ func (_TxBridge *TxBridgeCaller) MaxAmount(opts *bind.CallOpts) (*big.Int, error
 // MaxAmount is a free data retrieval call binding the contract method 0x5f48f393.
 //
 // Solidity: function maxAmount() view returns(uint256)
-func (_TxBridge *TxBridgeSession) MaxAmount() (*big.Int, error) {
-	return _TxBridge.Contract.MaxAmount(&_TxBridge.CallOpts)
+func (_TXBridge *TXBridgeSession) MaxAmount() (*big.Int, error) {
+	return _TXBridge.Contract.MaxAmount(&_TXBridge.CallOpts)
 }
 
 // MaxAmount is a free data retrieval call binding the contract method 0x5f48f393.
 //
 // Solidity: function maxAmount() view returns(uint256)
-func (_TxBridge *TxBridgeCallerSession) MaxAmount() (*big.Int, error) {
-	return _TxBridge.Contract.MaxAmount(&_TxBridge.CallOpts)
+func (_TXBridge *TXBridgeCallerSession) MaxAmount() (*big.Int, error) {
+	return _TXBridge.Contract.MaxAmount(&_TXBridge.CallOpts)
 }
 
 // MinAmount is a free data retrieval call binding the contract method 0x9b2cb5d8.
 //
 // Solidity: function minAmount() view returns(uint256)
-func (_TxBridge *TxBridgeCaller) MinAmount(opts *bind.CallOpts) (*big.Int, error) {
+func (_TXBridge *TXBridgeCaller) MinAmount(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _TxBridge.contract.Call(opts, &out, "minAmount")
+	err := _TXBridge.contract.Call(opts, &out, "minAmount")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -417,23 +417,23 @@ func (_TxBridge *TxBridgeCaller) MinAmount(opts *bind.CallOpts) (*big.Int, error
 // MinAmount is a free data retrieval call binding the contract method 0x9b2cb5d8.
 //
 // Solidity: function minAmount() view returns(uint256)
-func (_TxBridge *TxBridgeSession) MinAmount() (*big.Int, error) {
-	return _TxBridge.Contract.MinAmount(&_TxBridge.CallOpts)
+func (_TXBridge *TXBridgeSession) MinAmount() (*big.Int, error) {
+	return _TXBridge.Contract.MinAmount(&_TXBridge.CallOpts)
 }
 
 // MinAmount is a free data retrieval call binding the contract method 0x9b2cb5d8.
 //
 // Solidity: function minAmount() view returns(uint256)
-func (_TxBridge *TxBridgeCallerSession) MinAmount() (*big.Int, error) {
-	return _TxBridge.Contract.MinAmount(&_TxBridge.CallOpts)
+func (_TXBridge *TXBridgeCallerSession) MinAmount() (*big.Int, error) {
+	return _TXBridge.Contract.MinAmount(&_TXBridge.CallOpts)
 }
 
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
 // Solidity: function paused() view returns(bool)
-func (_TxBridge *TxBridgeCaller) Paused(opts *bind.CallOpts) (bool, error) {
+func (_TXBridge *TXBridgeCaller) Paused(opts *bind.CallOpts) (bool, error) {
 	var out []interface{}
-	err := _TxBridge.contract.Call(opts, &out, "paused")
+	err := _TXBridge.contract.Call(opts, &out, "paused")
 
 	if err != nil {
 		return *new(bool), err
@@ -448,23 +448,23 @@ func (_TxBridge *TxBridgeCaller) Paused(opts *bind.CallOpts) (bool, error) {
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
 // Solidity: function paused() view returns(bool)
-func (_TxBridge *TxBridgeSession) Paused() (bool, error) {
-	return _TxBridge.Contract.Paused(&_TxBridge.CallOpts)
+func (_TXBridge *TXBridgeSession) Paused() (bool, error) {
+	return _TXBridge.Contract.Paused(&_TXBridge.CallOpts)
 }
 
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
 // Solidity: function paused() view returns(bool)
-func (_TxBridge *TxBridgeCallerSession) Paused() (bool, error) {
-	return _TxBridge.Contract.Paused(&_TxBridge.CallOpts)
+func (_TXBridge *TXBridgeCallerSession) Paused() (bool, error) {
+	return _TXBridge.Contract.Paused(&_TXBridge.CallOpts)
 }
 
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
 //
 // Solidity: function supportsInterface(bytes4 interfaceId) view returns(bool)
-func (_TxBridge *TxBridgeCaller) SupportsInterface(opts *bind.CallOpts, interfaceId [4]byte) (bool, error) {
+func (_TXBridge *TXBridgeCaller) SupportsInterface(opts *bind.CallOpts, interfaceId [4]byte) (bool, error) {
 	var out []interface{}
-	err := _TxBridge.contract.Call(opts, &out, "supportsInterface", interfaceId)
+	err := _TXBridge.contract.Call(opts, &out, "supportsInterface", interfaceId)
 
 	if err != nil {
 		return *new(bool), err
@@ -479,23 +479,23 @@ func (_TxBridge *TxBridgeCaller) SupportsInterface(opts *bind.CallOpts, interfac
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
 //
 // Solidity: function supportsInterface(bytes4 interfaceId) view returns(bool)
-func (_TxBridge *TxBridgeSession) SupportsInterface(interfaceId [4]byte) (bool, error) {
-	return _TxBridge.Contract.SupportsInterface(&_TxBridge.CallOpts, interfaceId)
+func (_TXBridge *TXBridgeSession) SupportsInterface(interfaceId [4]byte) (bool, error) {
+	return _TXBridge.Contract.SupportsInterface(&_TXBridge.CallOpts, interfaceId)
 }
 
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
 //
 // Solidity: function supportsInterface(bytes4 interfaceId) view returns(bool)
-func (_TxBridge *TxBridgeCallerSession) SupportsInterface(interfaceId [4]byte) (bool, error) {
-	return _TxBridge.Contract.SupportsInterface(&_TxBridge.CallOpts, interfaceId)
+func (_TXBridge *TXBridgeCallerSession) SupportsInterface(interfaceId [4]byte) (bool, error) {
+	return _TXBridge.Contract.SupportsInterface(&_TXBridge.CallOpts, interfaceId)
 }
 
 // Token is a free data retrieval call binding the contract method 0xfc0c546a.
 //
 // Solidity: function token() view returns(address)
-func (_TxBridge *TxBridgeCaller) Token(opts *bind.CallOpts) (common.Address, error) {
+func (_TXBridge *TXBridgeCaller) Token(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
-	err := _TxBridge.contract.Call(opts, &out, "token")
+	err := _TXBridge.contract.Call(opts, &out, "token")
 
 	if err != nil {
 		return *new(common.Address), err
@@ -510,251 +510,251 @@ func (_TxBridge *TxBridgeCaller) Token(opts *bind.CallOpts) (common.Address, err
 // Token is a free data retrieval call binding the contract method 0xfc0c546a.
 //
 // Solidity: function token() view returns(address)
-func (_TxBridge *TxBridgeSession) Token() (common.Address, error) {
-	return _TxBridge.Contract.Token(&_TxBridge.CallOpts)
+func (_TXBridge *TXBridgeSession) Token() (common.Address, error) {
+	return _TXBridge.Contract.Token(&_TXBridge.CallOpts)
 }
 
 // Token is a free data retrieval call binding the contract method 0xfc0c546a.
 //
 // Solidity: function token() view returns(address)
-func (_TxBridge *TxBridgeCallerSession) Token() (common.Address, error) {
-	return _TxBridge.Contract.Token(&_TxBridge.CallOpts)
+func (_TXBridge *TXBridgeCallerSession) Token() (common.Address, error) {
+	return _TXBridge.Contract.Token(&_TXBridge.CallOpts)
 }
 
 // GrantRole is a paid mutator transaction binding the contract method 0x2f2ff15d.
 //
 // Solidity: function grantRole(bytes32 role, address account) returns()
-func (_TxBridge *TxBridgeTransactor) GrantRole(opts *bind.TransactOpts, role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _TxBridge.contract.Transact(opts, "grantRole", role, account)
+func (_TXBridge *TXBridgeTransactor) GrantRole(opts *bind.TransactOpts, role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _TXBridge.contract.Transact(opts, "grantRole", role, account)
 }
 
 // GrantRole is a paid mutator transaction binding the contract method 0x2f2ff15d.
 //
 // Solidity: function grantRole(bytes32 role, address account) returns()
-func (_TxBridge *TxBridgeSession) GrantRole(role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _TxBridge.Contract.GrantRole(&_TxBridge.TransactOpts, role, account)
+func (_TXBridge *TXBridgeSession) GrantRole(role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _TXBridge.Contract.GrantRole(&_TXBridge.TransactOpts, role, account)
 }
 
 // GrantRole is a paid mutator transaction binding the contract method 0x2f2ff15d.
 //
 // Solidity: function grantRole(bytes32 role, address account) returns()
-func (_TxBridge *TxBridgeTransactorSession) GrantRole(role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _TxBridge.Contract.GrantRole(&_TxBridge.TransactOpts, role, account)
+func (_TXBridge *TXBridgeTransactorSession) GrantRole(role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _TXBridge.Contract.GrantRole(&_TXBridge.TransactOpts, role, account)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0x8e737af2.
 //
 // Solidity: function initialize(address _token, address _admin, uint256 _minAmount, uint256 _maxAmount, string _addressPrefix) returns()
-func (_TxBridge *TxBridgeTransactor) Initialize(opts *bind.TransactOpts, _token common.Address, _admin common.Address, _minAmount *big.Int, _maxAmount *big.Int, _addressPrefix string) (*types.Transaction, error) {
-	return _TxBridge.contract.Transact(opts, "initialize", _token, _admin, _minAmount, _maxAmount, _addressPrefix)
+func (_TXBridge *TXBridgeTransactor) Initialize(opts *bind.TransactOpts, _token common.Address, _admin common.Address, _minAmount *big.Int, _maxAmount *big.Int, _addressPrefix string) (*types.Transaction, error) {
+	return _TXBridge.contract.Transact(opts, "initialize", _token, _admin, _minAmount, _maxAmount, _addressPrefix)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0x8e737af2.
 //
 // Solidity: function initialize(address _token, address _admin, uint256 _minAmount, uint256 _maxAmount, string _addressPrefix) returns()
-func (_TxBridge *TxBridgeSession) Initialize(_token common.Address, _admin common.Address, _minAmount *big.Int, _maxAmount *big.Int, _addressPrefix string) (*types.Transaction, error) {
-	return _TxBridge.Contract.Initialize(&_TxBridge.TransactOpts, _token, _admin, _minAmount, _maxAmount, _addressPrefix)
+func (_TXBridge *TXBridgeSession) Initialize(_token common.Address, _admin common.Address, _minAmount *big.Int, _maxAmount *big.Int, _addressPrefix string) (*types.Transaction, error) {
+	return _TXBridge.Contract.Initialize(&_TXBridge.TransactOpts, _token, _admin, _minAmount, _maxAmount, _addressPrefix)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0x8e737af2.
 //
 // Solidity: function initialize(address _token, address _admin, uint256 _minAmount, uint256 _maxAmount, string _addressPrefix) returns()
-func (_TxBridge *TxBridgeTransactorSession) Initialize(_token common.Address, _admin common.Address, _minAmount *big.Int, _maxAmount *big.Int, _addressPrefix string) (*types.Transaction, error) {
-	return _TxBridge.Contract.Initialize(&_TxBridge.TransactOpts, _token, _admin, _minAmount, _maxAmount, _addressPrefix)
+func (_TXBridge *TXBridgeTransactorSession) Initialize(_token common.Address, _admin common.Address, _minAmount *big.Int, _maxAmount *big.Int, _addressPrefix string) (*types.Transaction, error) {
+	return _TXBridge.Contract.Initialize(&_TXBridge.TransactOpts, _token, _admin, _minAmount, _maxAmount, _addressPrefix)
 }
 
 // Pause is a paid mutator transaction binding the contract method 0x8456cb59.
 //
 // Solidity: function pause() returns()
-func (_TxBridge *TxBridgeTransactor) Pause(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _TxBridge.contract.Transact(opts, "pause")
+func (_TXBridge *TXBridgeTransactor) Pause(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _TXBridge.contract.Transact(opts, "pause")
 }
 
 // Pause is a paid mutator transaction binding the contract method 0x8456cb59.
 //
 // Solidity: function pause() returns()
-func (_TxBridge *TxBridgeSession) Pause() (*types.Transaction, error) {
-	return _TxBridge.Contract.Pause(&_TxBridge.TransactOpts)
+func (_TXBridge *TXBridgeSession) Pause() (*types.Transaction, error) {
+	return _TXBridge.Contract.Pause(&_TXBridge.TransactOpts)
 }
 
 // Pause is a paid mutator transaction binding the contract method 0x8456cb59.
 //
 // Solidity: function pause() returns()
-func (_TxBridge *TxBridgeTransactorSession) Pause() (*types.Transaction, error) {
-	return _TxBridge.Contract.Pause(&_TxBridge.TransactOpts)
+func (_TXBridge *TXBridgeTransactorSession) Pause() (*types.Transaction, error) {
+	return _TXBridge.Contract.Pause(&_TXBridge.TransactOpts)
 }
 
 // RenounceRole is a paid mutator transaction binding the contract method 0x36568abe.
 //
 // Solidity: function renounceRole(bytes32 role, address callerConfirmation) returns()
-func (_TxBridge *TxBridgeTransactor) RenounceRole(opts *bind.TransactOpts, role [32]byte, callerConfirmation common.Address) (*types.Transaction, error) {
-	return _TxBridge.contract.Transact(opts, "renounceRole", role, callerConfirmation)
+func (_TXBridge *TXBridgeTransactor) RenounceRole(opts *bind.TransactOpts, role [32]byte, callerConfirmation common.Address) (*types.Transaction, error) {
+	return _TXBridge.contract.Transact(opts, "renounceRole", role, callerConfirmation)
 }
 
 // RenounceRole is a paid mutator transaction binding the contract method 0x36568abe.
 //
 // Solidity: function renounceRole(bytes32 role, address callerConfirmation) returns()
-func (_TxBridge *TxBridgeSession) RenounceRole(role [32]byte, callerConfirmation common.Address) (*types.Transaction, error) {
-	return _TxBridge.Contract.RenounceRole(&_TxBridge.TransactOpts, role, callerConfirmation)
+func (_TXBridge *TXBridgeSession) RenounceRole(role [32]byte, callerConfirmation common.Address) (*types.Transaction, error) {
+	return _TXBridge.Contract.RenounceRole(&_TXBridge.TransactOpts, role, callerConfirmation)
 }
 
 // RenounceRole is a paid mutator transaction binding the contract method 0x36568abe.
 //
 // Solidity: function renounceRole(bytes32 role, address callerConfirmation) returns()
-func (_TxBridge *TxBridgeTransactorSession) RenounceRole(role [32]byte, callerConfirmation common.Address) (*types.Transaction, error) {
-	return _TxBridge.Contract.RenounceRole(&_TxBridge.TransactOpts, role, callerConfirmation)
+func (_TXBridge *TXBridgeTransactorSession) RenounceRole(role [32]byte, callerConfirmation common.Address) (*types.Transaction, error) {
+	return _TXBridge.Contract.RenounceRole(&_TXBridge.TransactOpts, role, callerConfirmation)
 }
 
 // RevokeRole is a paid mutator transaction binding the contract method 0xd547741f.
 //
 // Solidity: function revokeRole(bytes32 role, address account) returns()
-func (_TxBridge *TxBridgeTransactor) RevokeRole(opts *bind.TransactOpts, role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _TxBridge.contract.Transact(opts, "revokeRole", role, account)
+func (_TXBridge *TXBridgeTransactor) RevokeRole(opts *bind.TransactOpts, role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _TXBridge.contract.Transact(opts, "revokeRole", role, account)
 }
 
 // RevokeRole is a paid mutator transaction binding the contract method 0xd547741f.
 //
 // Solidity: function revokeRole(bytes32 role, address account) returns()
-func (_TxBridge *TxBridgeSession) RevokeRole(role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _TxBridge.Contract.RevokeRole(&_TxBridge.TransactOpts, role, account)
+func (_TXBridge *TXBridgeSession) RevokeRole(role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _TXBridge.Contract.RevokeRole(&_TXBridge.TransactOpts, role, account)
 }
 
 // RevokeRole is a paid mutator transaction binding the contract method 0xd547741f.
 //
 // Solidity: function revokeRole(bytes32 role, address account) returns()
-func (_TxBridge *TxBridgeTransactorSession) RevokeRole(role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _TxBridge.Contract.RevokeRole(&_TxBridge.TransactOpts, role, account)
+func (_TXBridge *TXBridgeTransactorSession) RevokeRole(role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _TXBridge.Contract.RevokeRole(&_TXBridge.TransactOpts, role, account)
 }
 
 // SendToTXChain is a paid mutator transaction binding the contract method 0x2389b2bc.
 //
 // Solidity: function sendToTXChain(uint256 amount, string txAddress) returns()
-func (_TxBridge *TxBridgeTransactor) SendToTXChain(opts *bind.TransactOpts, amount *big.Int, txAddress string) (*types.Transaction, error) {
-	return _TxBridge.contract.Transact(opts, "sendToTXChain", amount, txAddress)
+func (_TXBridge *TXBridgeTransactor) SendToTXChain(opts *bind.TransactOpts, amount *big.Int, txAddress string) (*types.Transaction, error) {
+	return _TXBridge.contract.Transact(opts, "sendToTXChain", amount, txAddress)
 }
 
 // SendToTXChain is a paid mutator transaction binding the contract method 0x2389b2bc.
 //
 // Solidity: function sendToTXChain(uint256 amount, string txAddress) returns()
-func (_TxBridge *TxBridgeSession) SendToTXChain(amount *big.Int, txAddress string) (*types.Transaction, error) {
-	return _TxBridge.Contract.SendToTXChain(&_TxBridge.TransactOpts, amount, txAddress)
+func (_TXBridge *TXBridgeSession) SendToTXChain(amount *big.Int, txAddress string) (*types.Transaction, error) {
+	return _TXBridge.Contract.SendToTXChain(&_TXBridge.TransactOpts, amount, txAddress)
 }
 
 // SendToTXChain is a paid mutator transaction binding the contract method 0x2389b2bc.
 //
 // Solidity: function sendToTXChain(uint256 amount, string txAddress) returns()
-func (_TxBridge *TxBridgeTransactorSession) SendToTXChain(amount *big.Int, txAddress string) (*types.Transaction, error) {
-	return _TxBridge.Contract.SendToTXChain(&_TxBridge.TransactOpts, amount, txAddress)
+func (_TXBridge *TXBridgeTransactorSession) SendToTXChain(amount *big.Int, txAddress string) (*types.Transaction, error) {
+	return _TXBridge.Contract.SendToTXChain(&_TXBridge.TransactOpts, amount, txAddress)
 }
 
 // SetAddressPrefix is a paid mutator transaction binding the contract method 0xb8e4e61d.
 //
 // Solidity: function setAddressPrefix(string _addressPrefix) returns()
-func (_TxBridge *TxBridgeTransactor) SetAddressPrefix(opts *bind.TransactOpts, _addressPrefix string) (*types.Transaction, error) {
-	return _TxBridge.contract.Transact(opts, "setAddressPrefix", _addressPrefix)
+func (_TXBridge *TXBridgeTransactor) SetAddressPrefix(opts *bind.TransactOpts, _addressPrefix string) (*types.Transaction, error) {
+	return _TXBridge.contract.Transact(opts, "setAddressPrefix", _addressPrefix)
 }
 
 // SetAddressPrefix is a paid mutator transaction binding the contract method 0xb8e4e61d.
 //
 // Solidity: function setAddressPrefix(string _addressPrefix) returns()
-func (_TxBridge *TxBridgeSession) SetAddressPrefix(_addressPrefix string) (*types.Transaction, error) {
-	return _TxBridge.Contract.SetAddressPrefix(&_TxBridge.TransactOpts, _addressPrefix)
+func (_TXBridge *TXBridgeSession) SetAddressPrefix(_addressPrefix string) (*types.Transaction, error) {
+	return _TXBridge.Contract.SetAddressPrefix(&_TXBridge.TransactOpts, _addressPrefix)
 }
 
 // SetAddressPrefix is a paid mutator transaction binding the contract method 0xb8e4e61d.
 //
 // Solidity: function setAddressPrefix(string _addressPrefix) returns()
-func (_TxBridge *TxBridgeTransactorSession) SetAddressPrefix(_addressPrefix string) (*types.Transaction, error) {
-	return _TxBridge.Contract.SetAddressPrefix(&_TxBridge.TransactOpts, _addressPrefix)
+func (_TXBridge *TXBridgeTransactorSession) SetAddressPrefix(_addressPrefix string) (*types.Transaction, error) {
+	return _TXBridge.Contract.SetAddressPrefix(&_TXBridge.TransactOpts, _addressPrefix)
 }
 
 // SetMaxAmount is a paid mutator transaction binding the contract method 0x4fe47f70.
 //
 // Solidity: function setMaxAmount(uint256 _maxAmount) returns()
-func (_TxBridge *TxBridgeTransactor) SetMaxAmount(opts *bind.TransactOpts, _maxAmount *big.Int) (*types.Transaction, error) {
-	return _TxBridge.contract.Transact(opts, "setMaxAmount", _maxAmount)
+func (_TXBridge *TXBridgeTransactor) SetMaxAmount(opts *bind.TransactOpts, _maxAmount *big.Int) (*types.Transaction, error) {
+	return _TXBridge.contract.Transact(opts, "setMaxAmount", _maxAmount)
 }
 
 // SetMaxAmount is a paid mutator transaction binding the contract method 0x4fe47f70.
 //
 // Solidity: function setMaxAmount(uint256 _maxAmount) returns()
-func (_TxBridge *TxBridgeSession) SetMaxAmount(_maxAmount *big.Int) (*types.Transaction, error) {
-	return _TxBridge.Contract.SetMaxAmount(&_TxBridge.TransactOpts, _maxAmount)
+func (_TXBridge *TXBridgeSession) SetMaxAmount(_maxAmount *big.Int) (*types.Transaction, error) {
+	return _TXBridge.Contract.SetMaxAmount(&_TXBridge.TransactOpts, _maxAmount)
 }
 
 // SetMaxAmount is a paid mutator transaction binding the contract method 0x4fe47f70.
 //
 // Solidity: function setMaxAmount(uint256 _maxAmount) returns()
-func (_TxBridge *TxBridgeTransactorSession) SetMaxAmount(_maxAmount *big.Int) (*types.Transaction, error) {
-	return _TxBridge.Contract.SetMaxAmount(&_TxBridge.TransactOpts, _maxAmount)
+func (_TXBridge *TXBridgeTransactorSession) SetMaxAmount(_maxAmount *big.Int) (*types.Transaction, error) {
+	return _TXBridge.Contract.SetMaxAmount(&_TXBridge.TransactOpts, _maxAmount)
 }
 
 // SetMinAmount is a paid mutator transaction binding the contract method 0x897b0637.
 //
 // Solidity: function setMinAmount(uint256 _minAmount) returns()
-func (_TxBridge *TxBridgeTransactor) SetMinAmount(opts *bind.TransactOpts, _minAmount *big.Int) (*types.Transaction, error) {
-	return _TxBridge.contract.Transact(opts, "setMinAmount", _minAmount)
+func (_TXBridge *TXBridgeTransactor) SetMinAmount(opts *bind.TransactOpts, _minAmount *big.Int) (*types.Transaction, error) {
+	return _TXBridge.contract.Transact(opts, "setMinAmount", _minAmount)
 }
 
 // SetMinAmount is a paid mutator transaction binding the contract method 0x897b0637.
 //
 // Solidity: function setMinAmount(uint256 _minAmount) returns()
-func (_TxBridge *TxBridgeSession) SetMinAmount(_minAmount *big.Int) (*types.Transaction, error) {
-	return _TxBridge.Contract.SetMinAmount(&_TxBridge.TransactOpts, _minAmount)
+func (_TXBridge *TXBridgeSession) SetMinAmount(_minAmount *big.Int) (*types.Transaction, error) {
+	return _TXBridge.Contract.SetMinAmount(&_TXBridge.TransactOpts, _minAmount)
 }
 
 // SetMinAmount is a paid mutator transaction binding the contract method 0x897b0637.
 //
 // Solidity: function setMinAmount(uint256 _minAmount) returns()
-func (_TxBridge *TxBridgeTransactorSession) SetMinAmount(_minAmount *big.Int) (*types.Transaction, error) {
-	return _TxBridge.Contract.SetMinAmount(&_TxBridge.TransactOpts, _minAmount)
+func (_TXBridge *TXBridgeTransactorSession) SetMinAmount(_minAmount *big.Int) (*types.Transaction, error) {
+	return _TXBridge.Contract.SetMinAmount(&_TXBridge.TransactOpts, _minAmount)
 }
 
 // SetToken is a paid mutator transaction binding the contract method 0x144fa6d7.
 //
 // Solidity: function setToken(address _token) returns()
-func (_TxBridge *TxBridgeTransactor) SetToken(opts *bind.TransactOpts, _token common.Address) (*types.Transaction, error) {
-	return _TxBridge.contract.Transact(opts, "setToken", _token)
+func (_TXBridge *TXBridgeTransactor) SetToken(opts *bind.TransactOpts, _token common.Address) (*types.Transaction, error) {
+	return _TXBridge.contract.Transact(opts, "setToken", _token)
 }
 
 // SetToken is a paid mutator transaction binding the contract method 0x144fa6d7.
 //
 // Solidity: function setToken(address _token) returns()
-func (_TxBridge *TxBridgeSession) SetToken(_token common.Address) (*types.Transaction, error) {
-	return _TxBridge.Contract.SetToken(&_TxBridge.TransactOpts, _token)
+func (_TXBridge *TXBridgeSession) SetToken(_token common.Address) (*types.Transaction, error) {
+	return _TXBridge.Contract.SetToken(&_TXBridge.TransactOpts, _token)
 }
 
 // SetToken is a paid mutator transaction binding the contract method 0x144fa6d7.
 //
 // Solidity: function setToken(address _token) returns()
-func (_TxBridge *TxBridgeTransactorSession) SetToken(_token common.Address) (*types.Transaction, error) {
-	return _TxBridge.Contract.SetToken(&_TxBridge.TransactOpts, _token)
+func (_TXBridge *TXBridgeTransactorSession) SetToken(_token common.Address) (*types.Transaction, error) {
+	return _TXBridge.Contract.SetToken(&_TXBridge.TransactOpts, _token)
 }
 
 // Unpause is a paid mutator transaction binding the contract method 0x3f4ba83a.
 //
 // Solidity: function unpause() returns()
-func (_TxBridge *TxBridgeTransactor) Unpause(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _TxBridge.contract.Transact(opts, "unpause")
+func (_TXBridge *TXBridgeTransactor) Unpause(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _TXBridge.contract.Transact(opts, "unpause")
 }
 
 // Unpause is a paid mutator transaction binding the contract method 0x3f4ba83a.
 //
 // Solidity: function unpause() returns()
-func (_TxBridge *TxBridgeSession) Unpause() (*types.Transaction, error) {
-	return _TxBridge.Contract.Unpause(&_TxBridge.TransactOpts)
+func (_TXBridge *TXBridgeSession) Unpause() (*types.Transaction, error) {
+	return _TXBridge.Contract.Unpause(&_TXBridge.TransactOpts)
 }
 
 // Unpause is a paid mutator transaction binding the contract method 0x3f4ba83a.
 //
 // Solidity: function unpause() returns()
-func (_TxBridge *TxBridgeTransactorSession) Unpause() (*types.Transaction, error) {
-	return _TxBridge.Contract.Unpause(&_TxBridge.TransactOpts)
+func (_TXBridge *TXBridgeTransactorSession) Unpause() (*types.Transaction, error) {
+	return _TXBridge.Contract.Unpause(&_TXBridge.TransactOpts)
 }
 
-// TxBridgeInitializedIterator is returned from FilterInitialized and is used to iterate over the raw logs and unpacked data for Initialized events raised by the TxBridge contract.
-type TxBridgeInitializedIterator struct {
-	Event *TxBridgeInitialized // Event containing the contract specifics and raw log
+// TXBridgeInitializedIterator is returned from FilterInitialized and is used to iterate over the raw logs and unpacked data for Initialized events raised by the TXBridge contract.
+type TXBridgeInitializedIterator struct {
+	Event *TXBridgeInitialized // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -768,7 +768,7 @@ type TxBridgeInitializedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxBridgeInitializedIterator) Next() bool {
+func (it *TXBridgeInitializedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -777,7 +777,7 @@ func (it *TxBridgeInitializedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxBridgeInitialized)
+			it.Event = new(TXBridgeInitialized)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -792,7 +792,7 @@ func (it *TxBridgeInitializedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxBridgeInitialized)
+		it.Event = new(TXBridgeInitialized)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -808,19 +808,19 @@ func (it *TxBridgeInitializedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxBridgeInitializedIterator) Error() error {
+func (it *TXBridgeInitializedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxBridgeInitializedIterator) Close() error {
+func (it *TXBridgeInitializedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxBridgeInitialized represents a Initialized event raised by the TxBridge contract.
-type TxBridgeInitialized struct {
+// TXBridgeInitialized represents a Initialized event raised by the TXBridge contract.
+type TXBridgeInitialized struct {
 	Version uint64
 	Raw     types.Log // Blockchain specific contextual infos
 }
@@ -828,21 +828,21 @@ type TxBridgeInitialized struct {
 // FilterInitialized is a free log retrieval operation binding the contract event 0xc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d2.
 //
 // Solidity: event Initialized(uint64 version)
-func (_TxBridge *TxBridgeFilterer) FilterInitialized(opts *bind.FilterOpts) (*TxBridgeInitializedIterator, error) {
+func (_TXBridge *TXBridgeFilterer) FilterInitialized(opts *bind.FilterOpts) (*TXBridgeInitializedIterator, error) {
 
-	logs, sub, err := _TxBridge.contract.FilterLogs(opts, "Initialized")
+	logs, sub, err := _TXBridge.contract.FilterLogs(opts, "Initialized")
 	if err != nil {
 		return nil, err
 	}
-	return &TxBridgeInitializedIterator{contract: _TxBridge.contract, event: "Initialized", logs: logs, sub: sub}, nil
+	return &TXBridgeInitializedIterator{contract: _TXBridge.contract, event: "Initialized", logs: logs, sub: sub}, nil
 }
 
 // WatchInitialized is a free log subscription operation binding the contract event 0xc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d2.
 //
 // Solidity: event Initialized(uint64 version)
-func (_TxBridge *TxBridgeFilterer) WatchInitialized(opts *bind.WatchOpts, sink chan<- *TxBridgeInitialized) (event.Subscription, error) {
+func (_TXBridge *TXBridgeFilterer) WatchInitialized(opts *bind.WatchOpts, sink chan<- *TXBridgeInitialized) (event.Subscription, error) {
 
-	logs, sub, err := _TxBridge.contract.WatchLogs(opts, "Initialized")
+	logs, sub, err := _TXBridge.contract.WatchLogs(opts, "Initialized")
 	if err != nil {
 		return nil, err
 	}
@@ -852,8 +852,8 @@ func (_TxBridge *TxBridgeFilterer) WatchInitialized(opts *bind.WatchOpts, sink c
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxBridgeInitialized)
-				if err := _TxBridge.contract.UnpackLog(event, "Initialized", log); err != nil {
+				event := new(TXBridgeInitialized)
+				if err := _TXBridge.contract.UnpackLog(event, "Initialized", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -877,18 +877,18 @@ func (_TxBridge *TxBridgeFilterer) WatchInitialized(opts *bind.WatchOpts, sink c
 // ParseInitialized is a log parse operation binding the contract event 0xc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d2.
 //
 // Solidity: event Initialized(uint64 version)
-func (_TxBridge *TxBridgeFilterer) ParseInitialized(log types.Log) (*TxBridgeInitialized, error) {
-	event := new(TxBridgeInitialized)
-	if err := _TxBridge.contract.UnpackLog(event, "Initialized", log); err != nil {
+func (_TXBridge *TXBridgeFilterer) ParseInitialized(log types.Log) (*TXBridgeInitialized, error) {
+	event := new(TXBridgeInitialized)
+	if err := _TXBridge.contract.UnpackLog(event, "Initialized", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// TxBridgePausedIterator is returned from FilterPaused and is used to iterate over the raw logs and unpacked data for Paused events raised by the TxBridge contract.
-type TxBridgePausedIterator struct {
-	Event *TxBridgePaused // Event containing the contract specifics and raw log
+// TXBridgePausedIterator is returned from FilterPaused and is used to iterate over the raw logs and unpacked data for Paused events raised by the TXBridge contract.
+type TXBridgePausedIterator struct {
+	Event *TXBridgePaused // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -902,7 +902,7 @@ type TxBridgePausedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxBridgePausedIterator) Next() bool {
+func (it *TXBridgePausedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -911,7 +911,7 @@ func (it *TxBridgePausedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxBridgePaused)
+			it.Event = new(TXBridgePaused)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -926,7 +926,7 @@ func (it *TxBridgePausedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxBridgePaused)
+		it.Event = new(TXBridgePaused)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -942,19 +942,19 @@ func (it *TxBridgePausedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxBridgePausedIterator) Error() error {
+func (it *TXBridgePausedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxBridgePausedIterator) Close() error {
+func (it *TXBridgePausedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxBridgePaused represents a Paused event raised by the TxBridge contract.
-type TxBridgePaused struct {
+// TXBridgePaused represents a Paused event raised by the TXBridge contract.
+type TXBridgePaused struct {
 	Account common.Address
 	Raw     types.Log // Blockchain specific contextual infos
 }
@@ -962,21 +962,21 @@ type TxBridgePaused struct {
 // FilterPaused is a free log retrieval operation binding the contract event 0x62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258.
 //
 // Solidity: event Paused(address account)
-func (_TxBridge *TxBridgeFilterer) FilterPaused(opts *bind.FilterOpts) (*TxBridgePausedIterator, error) {
+func (_TXBridge *TXBridgeFilterer) FilterPaused(opts *bind.FilterOpts) (*TXBridgePausedIterator, error) {
 
-	logs, sub, err := _TxBridge.contract.FilterLogs(opts, "Paused")
+	logs, sub, err := _TXBridge.contract.FilterLogs(opts, "Paused")
 	if err != nil {
 		return nil, err
 	}
-	return &TxBridgePausedIterator{contract: _TxBridge.contract, event: "Paused", logs: logs, sub: sub}, nil
+	return &TXBridgePausedIterator{contract: _TXBridge.contract, event: "Paused", logs: logs, sub: sub}, nil
 }
 
 // WatchPaused is a free log subscription operation binding the contract event 0x62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258.
 //
 // Solidity: event Paused(address account)
-func (_TxBridge *TxBridgeFilterer) WatchPaused(opts *bind.WatchOpts, sink chan<- *TxBridgePaused) (event.Subscription, error) {
+func (_TXBridge *TXBridgeFilterer) WatchPaused(opts *bind.WatchOpts, sink chan<- *TXBridgePaused) (event.Subscription, error) {
 
-	logs, sub, err := _TxBridge.contract.WatchLogs(opts, "Paused")
+	logs, sub, err := _TXBridge.contract.WatchLogs(opts, "Paused")
 	if err != nil {
 		return nil, err
 	}
@@ -986,8 +986,8 @@ func (_TxBridge *TxBridgeFilterer) WatchPaused(opts *bind.WatchOpts, sink chan<-
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxBridgePaused)
-				if err := _TxBridge.contract.UnpackLog(event, "Paused", log); err != nil {
+				event := new(TXBridgePaused)
+				if err := _TXBridge.contract.UnpackLog(event, "Paused", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1011,18 +1011,18 @@ func (_TxBridge *TxBridgeFilterer) WatchPaused(opts *bind.WatchOpts, sink chan<-
 // ParsePaused is a log parse operation binding the contract event 0x62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258.
 //
 // Solidity: event Paused(address account)
-func (_TxBridge *TxBridgeFilterer) ParsePaused(log types.Log) (*TxBridgePaused, error) {
-	event := new(TxBridgePaused)
-	if err := _TxBridge.contract.UnpackLog(event, "Paused", log); err != nil {
+func (_TXBridge *TXBridgeFilterer) ParsePaused(log types.Log) (*TXBridgePaused, error) {
+	event := new(TXBridgePaused)
+	if err := _TXBridge.contract.UnpackLog(event, "Paused", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// TxBridgeRoleAdminChangedIterator is returned from FilterRoleAdminChanged and is used to iterate over the raw logs and unpacked data for RoleAdminChanged events raised by the TxBridge contract.
-type TxBridgeRoleAdminChangedIterator struct {
-	Event *TxBridgeRoleAdminChanged // Event containing the contract specifics and raw log
+// TXBridgeRoleAdminChangedIterator is returned from FilterRoleAdminChanged and is used to iterate over the raw logs and unpacked data for RoleAdminChanged events raised by the TXBridge contract.
+type TXBridgeRoleAdminChangedIterator struct {
+	Event *TXBridgeRoleAdminChanged // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1036,7 +1036,7 @@ type TxBridgeRoleAdminChangedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxBridgeRoleAdminChangedIterator) Next() bool {
+func (it *TXBridgeRoleAdminChangedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1045,7 +1045,7 @@ func (it *TxBridgeRoleAdminChangedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxBridgeRoleAdminChanged)
+			it.Event = new(TXBridgeRoleAdminChanged)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1060,7 +1060,7 @@ func (it *TxBridgeRoleAdminChangedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxBridgeRoleAdminChanged)
+		it.Event = new(TXBridgeRoleAdminChanged)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1076,19 +1076,19 @@ func (it *TxBridgeRoleAdminChangedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxBridgeRoleAdminChangedIterator) Error() error {
+func (it *TXBridgeRoleAdminChangedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxBridgeRoleAdminChangedIterator) Close() error {
+func (it *TXBridgeRoleAdminChangedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxBridgeRoleAdminChanged represents a RoleAdminChanged event raised by the TxBridge contract.
-type TxBridgeRoleAdminChanged struct {
+// TXBridgeRoleAdminChanged represents a RoleAdminChanged event raised by the TXBridge contract.
+type TXBridgeRoleAdminChanged struct {
 	Role              [32]byte
 	PreviousAdminRole [32]byte
 	NewAdminRole      [32]byte
@@ -1098,7 +1098,7 @@ type TxBridgeRoleAdminChanged struct {
 // FilterRoleAdminChanged is a free log retrieval operation binding the contract event 0xbd79b86ffe0ab8e8776151514217cd7cacd52c909f66475c3af44e129f0b00ff.
 //
 // Solidity: event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)
-func (_TxBridge *TxBridgeFilterer) FilterRoleAdminChanged(opts *bind.FilterOpts, role [][32]byte, previousAdminRole [][32]byte, newAdminRole [][32]byte) (*TxBridgeRoleAdminChangedIterator, error) {
+func (_TXBridge *TXBridgeFilterer) FilterRoleAdminChanged(opts *bind.FilterOpts, role [][32]byte, previousAdminRole [][32]byte, newAdminRole [][32]byte) (*TXBridgeRoleAdminChangedIterator, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -1113,17 +1113,17 @@ func (_TxBridge *TxBridgeFilterer) FilterRoleAdminChanged(opts *bind.FilterOpts,
 		newAdminRoleRule = append(newAdminRoleRule, newAdminRoleItem)
 	}
 
-	logs, sub, err := _TxBridge.contract.FilterLogs(opts, "RoleAdminChanged", roleRule, previousAdminRoleRule, newAdminRoleRule)
+	logs, sub, err := _TXBridge.contract.FilterLogs(opts, "RoleAdminChanged", roleRule, previousAdminRoleRule, newAdminRoleRule)
 	if err != nil {
 		return nil, err
 	}
-	return &TxBridgeRoleAdminChangedIterator{contract: _TxBridge.contract, event: "RoleAdminChanged", logs: logs, sub: sub}, nil
+	return &TXBridgeRoleAdminChangedIterator{contract: _TXBridge.contract, event: "RoleAdminChanged", logs: logs, sub: sub}, nil
 }
 
 // WatchRoleAdminChanged is a free log subscription operation binding the contract event 0xbd79b86ffe0ab8e8776151514217cd7cacd52c909f66475c3af44e129f0b00ff.
 //
 // Solidity: event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)
-func (_TxBridge *TxBridgeFilterer) WatchRoleAdminChanged(opts *bind.WatchOpts, sink chan<- *TxBridgeRoleAdminChanged, role [][32]byte, previousAdminRole [][32]byte, newAdminRole [][32]byte) (event.Subscription, error) {
+func (_TXBridge *TXBridgeFilterer) WatchRoleAdminChanged(opts *bind.WatchOpts, sink chan<- *TXBridgeRoleAdminChanged, role [][32]byte, previousAdminRole [][32]byte, newAdminRole [][32]byte) (event.Subscription, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -1138,7 +1138,7 @@ func (_TxBridge *TxBridgeFilterer) WatchRoleAdminChanged(opts *bind.WatchOpts, s
 		newAdminRoleRule = append(newAdminRoleRule, newAdminRoleItem)
 	}
 
-	logs, sub, err := _TxBridge.contract.WatchLogs(opts, "RoleAdminChanged", roleRule, previousAdminRoleRule, newAdminRoleRule)
+	logs, sub, err := _TXBridge.contract.WatchLogs(opts, "RoleAdminChanged", roleRule, previousAdminRoleRule, newAdminRoleRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1148,8 +1148,8 @@ func (_TxBridge *TxBridgeFilterer) WatchRoleAdminChanged(opts *bind.WatchOpts, s
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxBridgeRoleAdminChanged)
-				if err := _TxBridge.contract.UnpackLog(event, "RoleAdminChanged", log); err != nil {
+				event := new(TXBridgeRoleAdminChanged)
+				if err := _TXBridge.contract.UnpackLog(event, "RoleAdminChanged", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1173,18 +1173,18 @@ func (_TxBridge *TxBridgeFilterer) WatchRoleAdminChanged(opts *bind.WatchOpts, s
 // ParseRoleAdminChanged is a log parse operation binding the contract event 0xbd79b86ffe0ab8e8776151514217cd7cacd52c909f66475c3af44e129f0b00ff.
 //
 // Solidity: event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)
-func (_TxBridge *TxBridgeFilterer) ParseRoleAdminChanged(log types.Log) (*TxBridgeRoleAdminChanged, error) {
-	event := new(TxBridgeRoleAdminChanged)
-	if err := _TxBridge.contract.UnpackLog(event, "RoleAdminChanged", log); err != nil {
+func (_TXBridge *TXBridgeFilterer) ParseRoleAdminChanged(log types.Log) (*TXBridgeRoleAdminChanged, error) {
+	event := new(TXBridgeRoleAdminChanged)
+	if err := _TXBridge.contract.UnpackLog(event, "RoleAdminChanged", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// TxBridgeRoleGrantedIterator is returned from FilterRoleGranted and is used to iterate over the raw logs and unpacked data for RoleGranted events raised by the TxBridge contract.
-type TxBridgeRoleGrantedIterator struct {
-	Event *TxBridgeRoleGranted // Event containing the contract specifics and raw log
+// TXBridgeRoleGrantedIterator is returned from FilterRoleGranted and is used to iterate over the raw logs and unpacked data for RoleGranted events raised by the TXBridge contract.
+type TXBridgeRoleGrantedIterator struct {
+	Event *TXBridgeRoleGranted // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1198,7 +1198,7 @@ type TxBridgeRoleGrantedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxBridgeRoleGrantedIterator) Next() bool {
+func (it *TXBridgeRoleGrantedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1207,7 +1207,7 @@ func (it *TxBridgeRoleGrantedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxBridgeRoleGranted)
+			it.Event = new(TXBridgeRoleGranted)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1222,7 +1222,7 @@ func (it *TxBridgeRoleGrantedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxBridgeRoleGranted)
+		it.Event = new(TXBridgeRoleGranted)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1238,19 +1238,19 @@ func (it *TxBridgeRoleGrantedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxBridgeRoleGrantedIterator) Error() error {
+func (it *TXBridgeRoleGrantedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxBridgeRoleGrantedIterator) Close() error {
+func (it *TXBridgeRoleGrantedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxBridgeRoleGranted represents a RoleGranted event raised by the TxBridge contract.
-type TxBridgeRoleGranted struct {
+// TXBridgeRoleGranted represents a RoleGranted event raised by the TXBridge contract.
+type TXBridgeRoleGranted struct {
 	Role    [32]byte
 	Account common.Address
 	Sender  common.Address
@@ -1260,7 +1260,7 @@ type TxBridgeRoleGranted struct {
 // FilterRoleGranted is a free log retrieval operation binding the contract event 0x2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d.
 //
 // Solidity: event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)
-func (_TxBridge *TxBridgeFilterer) FilterRoleGranted(opts *bind.FilterOpts, role [][32]byte, account []common.Address, sender []common.Address) (*TxBridgeRoleGrantedIterator, error) {
+func (_TXBridge *TXBridgeFilterer) FilterRoleGranted(opts *bind.FilterOpts, role [][32]byte, account []common.Address, sender []common.Address) (*TXBridgeRoleGrantedIterator, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -1275,17 +1275,17 @@ func (_TxBridge *TxBridgeFilterer) FilterRoleGranted(opts *bind.FilterOpts, role
 		senderRule = append(senderRule, senderItem)
 	}
 
-	logs, sub, err := _TxBridge.contract.FilterLogs(opts, "RoleGranted", roleRule, accountRule, senderRule)
+	logs, sub, err := _TXBridge.contract.FilterLogs(opts, "RoleGranted", roleRule, accountRule, senderRule)
 	if err != nil {
 		return nil, err
 	}
-	return &TxBridgeRoleGrantedIterator{contract: _TxBridge.contract, event: "RoleGranted", logs: logs, sub: sub}, nil
+	return &TXBridgeRoleGrantedIterator{contract: _TXBridge.contract, event: "RoleGranted", logs: logs, sub: sub}, nil
 }
 
 // WatchRoleGranted is a free log subscription operation binding the contract event 0x2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d.
 //
 // Solidity: event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)
-func (_TxBridge *TxBridgeFilterer) WatchRoleGranted(opts *bind.WatchOpts, sink chan<- *TxBridgeRoleGranted, role [][32]byte, account []common.Address, sender []common.Address) (event.Subscription, error) {
+func (_TXBridge *TXBridgeFilterer) WatchRoleGranted(opts *bind.WatchOpts, sink chan<- *TXBridgeRoleGranted, role [][32]byte, account []common.Address, sender []common.Address) (event.Subscription, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -1300,7 +1300,7 @@ func (_TxBridge *TxBridgeFilterer) WatchRoleGranted(opts *bind.WatchOpts, sink c
 		senderRule = append(senderRule, senderItem)
 	}
 
-	logs, sub, err := _TxBridge.contract.WatchLogs(opts, "RoleGranted", roleRule, accountRule, senderRule)
+	logs, sub, err := _TXBridge.contract.WatchLogs(opts, "RoleGranted", roleRule, accountRule, senderRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1310,8 +1310,8 @@ func (_TxBridge *TxBridgeFilterer) WatchRoleGranted(opts *bind.WatchOpts, sink c
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxBridgeRoleGranted)
-				if err := _TxBridge.contract.UnpackLog(event, "RoleGranted", log); err != nil {
+				event := new(TXBridgeRoleGranted)
+				if err := _TXBridge.contract.UnpackLog(event, "RoleGranted", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1335,18 +1335,18 @@ func (_TxBridge *TxBridgeFilterer) WatchRoleGranted(opts *bind.WatchOpts, sink c
 // ParseRoleGranted is a log parse operation binding the contract event 0x2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d.
 //
 // Solidity: event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)
-func (_TxBridge *TxBridgeFilterer) ParseRoleGranted(log types.Log) (*TxBridgeRoleGranted, error) {
-	event := new(TxBridgeRoleGranted)
-	if err := _TxBridge.contract.UnpackLog(event, "RoleGranted", log); err != nil {
+func (_TXBridge *TXBridgeFilterer) ParseRoleGranted(log types.Log) (*TXBridgeRoleGranted, error) {
+	event := new(TXBridgeRoleGranted)
+	if err := _TXBridge.contract.UnpackLog(event, "RoleGranted", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// TxBridgeRoleRevokedIterator is returned from FilterRoleRevoked and is used to iterate over the raw logs and unpacked data for RoleRevoked events raised by the TxBridge contract.
-type TxBridgeRoleRevokedIterator struct {
-	Event *TxBridgeRoleRevoked // Event containing the contract specifics and raw log
+// TXBridgeRoleRevokedIterator is returned from FilterRoleRevoked and is used to iterate over the raw logs and unpacked data for RoleRevoked events raised by the TXBridge contract.
+type TXBridgeRoleRevokedIterator struct {
+	Event *TXBridgeRoleRevoked // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1360,7 +1360,7 @@ type TxBridgeRoleRevokedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxBridgeRoleRevokedIterator) Next() bool {
+func (it *TXBridgeRoleRevokedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1369,7 +1369,7 @@ func (it *TxBridgeRoleRevokedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxBridgeRoleRevoked)
+			it.Event = new(TXBridgeRoleRevoked)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1384,7 +1384,7 @@ func (it *TxBridgeRoleRevokedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxBridgeRoleRevoked)
+		it.Event = new(TXBridgeRoleRevoked)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1400,19 +1400,19 @@ func (it *TxBridgeRoleRevokedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxBridgeRoleRevokedIterator) Error() error {
+func (it *TXBridgeRoleRevokedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxBridgeRoleRevokedIterator) Close() error {
+func (it *TXBridgeRoleRevokedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxBridgeRoleRevoked represents a RoleRevoked event raised by the TxBridge contract.
-type TxBridgeRoleRevoked struct {
+// TXBridgeRoleRevoked represents a RoleRevoked event raised by the TXBridge contract.
+type TXBridgeRoleRevoked struct {
 	Role    [32]byte
 	Account common.Address
 	Sender  common.Address
@@ -1422,7 +1422,7 @@ type TxBridgeRoleRevoked struct {
 // FilterRoleRevoked is a free log retrieval operation binding the contract event 0xf6391f5c32d9c69d2a47ea670b442974b53935d1edc7fd64eb21e047a839171b.
 //
 // Solidity: event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)
-func (_TxBridge *TxBridgeFilterer) FilterRoleRevoked(opts *bind.FilterOpts, role [][32]byte, account []common.Address, sender []common.Address) (*TxBridgeRoleRevokedIterator, error) {
+func (_TXBridge *TXBridgeFilterer) FilterRoleRevoked(opts *bind.FilterOpts, role [][32]byte, account []common.Address, sender []common.Address) (*TXBridgeRoleRevokedIterator, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -1437,17 +1437,17 @@ func (_TxBridge *TxBridgeFilterer) FilterRoleRevoked(opts *bind.FilterOpts, role
 		senderRule = append(senderRule, senderItem)
 	}
 
-	logs, sub, err := _TxBridge.contract.FilterLogs(opts, "RoleRevoked", roleRule, accountRule, senderRule)
+	logs, sub, err := _TXBridge.contract.FilterLogs(opts, "RoleRevoked", roleRule, accountRule, senderRule)
 	if err != nil {
 		return nil, err
 	}
-	return &TxBridgeRoleRevokedIterator{contract: _TxBridge.contract, event: "RoleRevoked", logs: logs, sub: sub}, nil
+	return &TXBridgeRoleRevokedIterator{contract: _TXBridge.contract, event: "RoleRevoked", logs: logs, sub: sub}, nil
 }
 
 // WatchRoleRevoked is a free log subscription operation binding the contract event 0xf6391f5c32d9c69d2a47ea670b442974b53935d1edc7fd64eb21e047a839171b.
 //
 // Solidity: event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)
-func (_TxBridge *TxBridgeFilterer) WatchRoleRevoked(opts *bind.WatchOpts, sink chan<- *TxBridgeRoleRevoked, role [][32]byte, account []common.Address, sender []common.Address) (event.Subscription, error) {
+func (_TXBridge *TXBridgeFilterer) WatchRoleRevoked(opts *bind.WatchOpts, sink chan<- *TXBridgeRoleRevoked, role [][32]byte, account []common.Address, sender []common.Address) (event.Subscription, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -1462,7 +1462,7 @@ func (_TxBridge *TxBridgeFilterer) WatchRoleRevoked(opts *bind.WatchOpts, sink c
 		senderRule = append(senderRule, senderItem)
 	}
 
-	logs, sub, err := _TxBridge.contract.WatchLogs(opts, "RoleRevoked", roleRule, accountRule, senderRule)
+	logs, sub, err := _TXBridge.contract.WatchLogs(opts, "RoleRevoked", roleRule, accountRule, senderRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1472,8 +1472,8 @@ func (_TxBridge *TxBridgeFilterer) WatchRoleRevoked(opts *bind.WatchOpts, sink c
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxBridgeRoleRevoked)
-				if err := _TxBridge.contract.UnpackLog(event, "RoleRevoked", log); err != nil {
+				event := new(TXBridgeRoleRevoked)
+				if err := _TXBridge.contract.UnpackLog(event, "RoleRevoked", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1497,18 +1497,18 @@ func (_TxBridge *TxBridgeFilterer) WatchRoleRevoked(opts *bind.WatchOpts, sink c
 // ParseRoleRevoked is a log parse operation binding the contract event 0xf6391f5c32d9c69d2a47ea670b442974b53935d1edc7fd64eb21e047a839171b.
 //
 // Solidity: event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)
-func (_TxBridge *TxBridgeFilterer) ParseRoleRevoked(log types.Log) (*TxBridgeRoleRevoked, error) {
-	event := new(TxBridgeRoleRevoked)
-	if err := _TxBridge.contract.UnpackLog(event, "RoleRevoked", log); err != nil {
+func (_TXBridge *TXBridgeFilterer) ParseRoleRevoked(log types.Log) (*TXBridgeRoleRevoked, error) {
+	event := new(TXBridgeRoleRevoked)
+	if err := _TXBridge.contract.UnpackLog(event, "RoleRevoked", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// TxBridgeSentToTXChainIterator is returned from FilterSentToTXChain and is used to iterate over the raw logs and unpacked data for SentToTXChain events raised by the TxBridge contract.
-type TxBridgeSentToTXChainIterator struct {
-	Event *TxBridgeSentToTXChain // Event containing the contract specifics and raw log
+// TXBridgeSentToTXChainIterator is returned from FilterSentToTXChain and is used to iterate over the raw logs and unpacked data for SentToTXChain events raised by the TXBridge contract.
+type TXBridgeSentToTXChainIterator struct {
+	Event *TXBridgeSentToTXChain // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1522,7 +1522,7 @@ type TxBridgeSentToTXChainIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxBridgeSentToTXChainIterator) Next() bool {
+func (it *TXBridgeSentToTXChainIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1531,7 +1531,7 @@ func (it *TxBridgeSentToTXChainIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxBridgeSentToTXChain)
+			it.Event = new(TXBridgeSentToTXChain)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1546,7 +1546,7 @@ func (it *TxBridgeSentToTXChainIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxBridgeSentToTXChain)
+		it.Event = new(TXBridgeSentToTXChain)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1562,19 +1562,19 @@ func (it *TxBridgeSentToTXChainIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxBridgeSentToTXChainIterator) Error() error {
+func (it *TXBridgeSentToTXChainIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxBridgeSentToTXChainIterator) Close() error {
+func (it *TXBridgeSentToTXChainIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxBridgeSentToTXChain represents a SentToTXChain event raised by the TxBridge contract.
-type TxBridgeSentToTXChain struct {
+// TXBridgeSentToTXChain represents a SentToTXChain event raised by the TXBridge contract.
+type TXBridgeSentToTXChain struct {
 	From      common.Address
 	TxAddress string
 	Amount    *big.Int
@@ -1585,31 +1585,31 @@ type TxBridgeSentToTXChain struct {
 // FilterSentToTXChain is a free log retrieval operation binding the contract event 0xa0d66d4ed6a10cb5b9c30a9a41ba884bee23e383f96c44462f6e274f35eb5600.
 //
 // Solidity: event SentToTXChain(address indexed from, string txAddress, uint256 amount, uint256 timestamp)
-func (_TxBridge *TxBridgeFilterer) FilterSentToTXChain(opts *bind.FilterOpts, from []common.Address) (*TxBridgeSentToTXChainIterator, error) {
+func (_TXBridge *TXBridgeFilterer) FilterSentToTXChain(opts *bind.FilterOpts, from []common.Address) (*TXBridgeSentToTXChainIterator, error) {
 
 	var fromRule []interface{}
 	for _, fromItem := range from {
 		fromRule = append(fromRule, fromItem)
 	}
 
-	logs, sub, err := _TxBridge.contract.FilterLogs(opts, "SentToTXChain", fromRule)
+	logs, sub, err := _TXBridge.contract.FilterLogs(opts, "SentToTXChain", fromRule)
 	if err != nil {
 		return nil, err
 	}
-	return &TxBridgeSentToTXChainIterator{contract: _TxBridge.contract, event: "SentToTXChain", logs: logs, sub: sub}, nil
+	return &TXBridgeSentToTXChainIterator{contract: _TXBridge.contract, event: "SentToTXChain", logs: logs, sub: sub}, nil
 }
 
 // WatchSentToTXChain is a free log subscription operation binding the contract event 0xa0d66d4ed6a10cb5b9c30a9a41ba884bee23e383f96c44462f6e274f35eb5600.
 //
 // Solidity: event SentToTXChain(address indexed from, string txAddress, uint256 amount, uint256 timestamp)
-func (_TxBridge *TxBridgeFilterer) WatchSentToTXChain(opts *bind.WatchOpts, sink chan<- *TxBridgeSentToTXChain, from []common.Address) (event.Subscription, error) {
+func (_TXBridge *TXBridgeFilterer) WatchSentToTXChain(opts *bind.WatchOpts, sink chan<- *TXBridgeSentToTXChain, from []common.Address) (event.Subscription, error) {
 
 	var fromRule []interface{}
 	for _, fromItem := range from {
 		fromRule = append(fromRule, fromItem)
 	}
 
-	logs, sub, err := _TxBridge.contract.WatchLogs(opts, "SentToTXChain", fromRule)
+	logs, sub, err := _TXBridge.contract.WatchLogs(opts, "SentToTXChain", fromRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1619,8 +1619,8 @@ func (_TxBridge *TxBridgeFilterer) WatchSentToTXChain(opts *bind.WatchOpts, sink
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxBridgeSentToTXChain)
-				if err := _TxBridge.contract.UnpackLog(event, "SentToTXChain", log); err != nil {
+				event := new(TXBridgeSentToTXChain)
+				if err := _TXBridge.contract.UnpackLog(event, "SentToTXChain", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1644,18 +1644,18 @@ func (_TxBridge *TxBridgeFilterer) WatchSentToTXChain(opts *bind.WatchOpts, sink
 // ParseSentToTXChain is a log parse operation binding the contract event 0xa0d66d4ed6a10cb5b9c30a9a41ba884bee23e383f96c44462f6e274f35eb5600.
 //
 // Solidity: event SentToTXChain(address indexed from, string txAddress, uint256 amount, uint256 timestamp)
-func (_TxBridge *TxBridgeFilterer) ParseSentToTXChain(log types.Log) (*TxBridgeSentToTXChain, error) {
-	event := new(TxBridgeSentToTXChain)
-	if err := _TxBridge.contract.UnpackLog(event, "SentToTXChain", log); err != nil {
+func (_TXBridge *TXBridgeFilterer) ParseSentToTXChain(log types.Log) (*TXBridgeSentToTXChain, error) {
+	event := new(TXBridgeSentToTXChain)
+	if err := _TXBridge.contract.UnpackLog(event, "SentToTXChain", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// TxBridgeTokenUpdatedIterator is returned from FilterTokenUpdated and is used to iterate over the raw logs and unpacked data for TokenUpdated events raised by the TxBridge contract.
-type TxBridgeTokenUpdatedIterator struct {
-	Event *TxBridgeTokenUpdated // Event containing the contract specifics and raw log
+// TXBridgeTokenUpdatedIterator is returned from FilterTokenUpdated and is used to iterate over the raw logs and unpacked data for TokenUpdated events raised by the TXBridge contract.
+type TXBridgeTokenUpdatedIterator struct {
+	Event *TXBridgeTokenUpdated // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1669,7 +1669,7 @@ type TxBridgeTokenUpdatedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxBridgeTokenUpdatedIterator) Next() bool {
+func (it *TXBridgeTokenUpdatedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1678,7 +1678,7 @@ func (it *TxBridgeTokenUpdatedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxBridgeTokenUpdated)
+			it.Event = new(TXBridgeTokenUpdated)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1693,7 +1693,7 @@ func (it *TxBridgeTokenUpdatedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxBridgeTokenUpdated)
+		it.Event = new(TXBridgeTokenUpdated)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1709,19 +1709,19 @@ func (it *TxBridgeTokenUpdatedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxBridgeTokenUpdatedIterator) Error() error {
+func (it *TXBridgeTokenUpdatedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxBridgeTokenUpdatedIterator) Close() error {
+func (it *TXBridgeTokenUpdatedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxBridgeTokenUpdated represents a TokenUpdated event raised by the TxBridge contract.
-type TxBridgeTokenUpdated struct {
+// TXBridgeTokenUpdated represents a TokenUpdated event raised by the TXBridge contract.
+type TXBridgeTokenUpdated struct {
 	OldToken common.Address
 	NewToken common.Address
 	Raw      types.Log // Blockchain specific contextual infos
@@ -1730,21 +1730,21 @@ type TxBridgeTokenUpdated struct {
 // FilterTokenUpdated is a free log retrieval operation binding the contract event 0x0b1186973f810894b87ab0bfbee422fddcaad21b46dc705a561451bbb6bac117.
 //
 // Solidity: event TokenUpdated(address oldToken, address newToken)
-func (_TxBridge *TxBridgeFilterer) FilterTokenUpdated(opts *bind.FilterOpts) (*TxBridgeTokenUpdatedIterator, error) {
+func (_TXBridge *TXBridgeFilterer) FilterTokenUpdated(opts *bind.FilterOpts) (*TXBridgeTokenUpdatedIterator, error) {
 
-	logs, sub, err := _TxBridge.contract.FilterLogs(opts, "TokenUpdated")
+	logs, sub, err := _TXBridge.contract.FilterLogs(opts, "TokenUpdated")
 	if err != nil {
 		return nil, err
 	}
-	return &TxBridgeTokenUpdatedIterator{contract: _TxBridge.contract, event: "TokenUpdated", logs: logs, sub: sub}, nil
+	return &TXBridgeTokenUpdatedIterator{contract: _TXBridge.contract, event: "TokenUpdated", logs: logs, sub: sub}, nil
 }
 
 // WatchTokenUpdated is a free log subscription operation binding the contract event 0x0b1186973f810894b87ab0bfbee422fddcaad21b46dc705a561451bbb6bac117.
 //
 // Solidity: event TokenUpdated(address oldToken, address newToken)
-func (_TxBridge *TxBridgeFilterer) WatchTokenUpdated(opts *bind.WatchOpts, sink chan<- *TxBridgeTokenUpdated) (event.Subscription, error) {
+func (_TXBridge *TXBridgeFilterer) WatchTokenUpdated(opts *bind.WatchOpts, sink chan<- *TXBridgeTokenUpdated) (event.Subscription, error) {
 
-	logs, sub, err := _TxBridge.contract.WatchLogs(opts, "TokenUpdated")
+	logs, sub, err := _TXBridge.contract.WatchLogs(opts, "TokenUpdated")
 	if err != nil {
 		return nil, err
 	}
@@ -1754,8 +1754,8 @@ func (_TxBridge *TxBridgeFilterer) WatchTokenUpdated(opts *bind.WatchOpts, sink 
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxBridgeTokenUpdated)
-				if err := _TxBridge.contract.UnpackLog(event, "TokenUpdated", log); err != nil {
+				event := new(TXBridgeTokenUpdated)
+				if err := _TXBridge.contract.UnpackLog(event, "TokenUpdated", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1779,18 +1779,18 @@ func (_TxBridge *TxBridgeFilterer) WatchTokenUpdated(opts *bind.WatchOpts, sink 
 // ParseTokenUpdated is a log parse operation binding the contract event 0x0b1186973f810894b87ab0bfbee422fddcaad21b46dc705a561451bbb6bac117.
 //
 // Solidity: event TokenUpdated(address oldToken, address newToken)
-func (_TxBridge *TxBridgeFilterer) ParseTokenUpdated(log types.Log) (*TxBridgeTokenUpdated, error) {
-	event := new(TxBridgeTokenUpdated)
-	if err := _TxBridge.contract.UnpackLog(event, "TokenUpdated", log); err != nil {
+func (_TXBridge *TXBridgeFilterer) ParseTokenUpdated(log types.Log) (*TXBridgeTokenUpdated, error) {
+	event := new(TXBridgeTokenUpdated)
+	if err := _TXBridge.contract.UnpackLog(event, "TokenUpdated", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// TxBridgeUnpausedIterator is returned from FilterUnpaused and is used to iterate over the raw logs and unpacked data for Unpaused events raised by the TxBridge contract.
-type TxBridgeUnpausedIterator struct {
-	Event *TxBridgeUnpaused // Event containing the contract specifics and raw log
+// TXBridgeUnpausedIterator is returned from FilterUnpaused and is used to iterate over the raw logs and unpacked data for Unpaused events raised by the TXBridge contract.
+type TXBridgeUnpausedIterator struct {
+	Event *TXBridgeUnpaused // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1804,7 +1804,7 @@ type TxBridgeUnpausedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxBridgeUnpausedIterator) Next() bool {
+func (it *TXBridgeUnpausedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1813,7 +1813,7 @@ func (it *TxBridgeUnpausedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxBridgeUnpaused)
+			it.Event = new(TXBridgeUnpaused)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1828,7 +1828,7 @@ func (it *TxBridgeUnpausedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxBridgeUnpaused)
+		it.Event = new(TXBridgeUnpaused)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1844,19 +1844,19 @@ func (it *TxBridgeUnpausedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxBridgeUnpausedIterator) Error() error {
+func (it *TXBridgeUnpausedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxBridgeUnpausedIterator) Close() error {
+func (it *TXBridgeUnpausedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxBridgeUnpaused represents a Unpaused event raised by the TxBridge contract.
-type TxBridgeUnpaused struct {
+// TXBridgeUnpaused represents a Unpaused event raised by the TXBridge contract.
+type TXBridgeUnpaused struct {
 	Account common.Address
 	Raw     types.Log // Blockchain specific contextual infos
 }
@@ -1864,21 +1864,21 @@ type TxBridgeUnpaused struct {
 // FilterUnpaused is a free log retrieval operation binding the contract event 0x5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa.
 //
 // Solidity: event Unpaused(address account)
-func (_TxBridge *TxBridgeFilterer) FilterUnpaused(opts *bind.FilterOpts) (*TxBridgeUnpausedIterator, error) {
+func (_TXBridge *TXBridgeFilterer) FilterUnpaused(opts *bind.FilterOpts) (*TXBridgeUnpausedIterator, error) {
 
-	logs, sub, err := _TxBridge.contract.FilterLogs(opts, "Unpaused")
+	logs, sub, err := _TXBridge.contract.FilterLogs(opts, "Unpaused")
 	if err != nil {
 		return nil, err
 	}
-	return &TxBridgeUnpausedIterator{contract: _TxBridge.contract, event: "Unpaused", logs: logs, sub: sub}, nil
+	return &TXBridgeUnpausedIterator{contract: _TXBridge.contract, event: "Unpaused", logs: logs, sub: sub}, nil
 }
 
 // WatchUnpaused is a free log subscription operation binding the contract event 0x5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa.
 //
 // Solidity: event Unpaused(address account)
-func (_TxBridge *TxBridgeFilterer) WatchUnpaused(opts *bind.WatchOpts, sink chan<- *TxBridgeUnpaused) (event.Subscription, error) {
+func (_TXBridge *TXBridgeFilterer) WatchUnpaused(opts *bind.WatchOpts, sink chan<- *TXBridgeUnpaused) (event.Subscription, error) {
 
-	logs, sub, err := _TxBridge.contract.WatchLogs(opts, "Unpaused")
+	logs, sub, err := _TXBridge.contract.WatchLogs(opts, "Unpaused")
 	if err != nil {
 		return nil, err
 	}
@@ -1888,8 +1888,8 @@ func (_TxBridge *TxBridgeFilterer) WatchUnpaused(opts *bind.WatchOpts, sink chan
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxBridgeUnpaused)
-				if err := _TxBridge.contract.UnpackLog(event, "Unpaused", log); err != nil {
+				event := new(TXBridgeUnpaused)
+				if err := _TXBridge.contract.UnpackLog(event, "Unpaused", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1913,9 +1913,9 @@ func (_TxBridge *TxBridgeFilterer) WatchUnpaused(opts *bind.WatchOpts, sink chan
 // ParseUnpaused is a log parse operation binding the contract event 0x5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa.
 //
 // Solidity: event Unpaused(address account)
-func (_TxBridge *TxBridgeFilterer) ParseUnpaused(log types.Log) (*TxBridgeUnpaused, error) {
-	event := new(TxBridgeUnpaused)
-	if err := _TxBridge.contract.UnpackLog(event, "Unpaused", log); err != nil {
+func (_TXBridge *TXBridgeFilterer) ParseUnpaused(log types.Log) (*TXBridgeUnpaused, error) {
+	event := new(TXBridgeUnpaused)
+	if err := _TXBridge.contract.UnpackLog(event, "Unpaused", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

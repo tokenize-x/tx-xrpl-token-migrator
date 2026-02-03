@@ -12,7 +12,7 @@ import (
 )
 
 type BSCScanner interface {
-	Subscribe(ctx context.Context, ch chan<- *abi.TxBridgeSentToTXChain) error
+	Subscribe(ctx context.Context, ch chan<- *abi.TXBridgeSentToTXChain) error
 }
 
 type BSCFinderConfig struct {
@@ -40,7 +40,7 @@ func NewBSCFinder(cfg BSCFinderConfig, log logger.Logger, scanner BSCScanner) *B
 
 // subscribes to BSC bridge events and sends valid transactions to the channel.
 func (f *BSCFinder) SubscribeTXSendTransactions(ctx context.Context, ch chan<- PendingTXSendTransaction) error {
-	eventsCh := make(chan *abi.TxBridgeSentToTXChain)
+	eventsCh := make(chan *abi.TXBridgeSentToTXChain)
 
 	if err := f.scanner.Subscribe(ctx, eventsCh); err != nil {
 		return err
@@ -64,7 +64,7 @@ func (f *BSCFinder) SubscribeTXSendTransactions(ctx context.Context, ch chan<- P
 	return nil
 }
 
-func (f *BSCFinder) buildPendingTransaction(event *abi.TxBridgeSentToTXChain) (PendingTXSendTransaction, bool) {
+func (f *BSCFinder) buildPendingTransaction(event *abi.TXBridgeSentToTXChain) (PendingTXSendTransaction, bool) {
 	txHash := event.Raw.TxHash.Hex()
 
 	destAddr, err := sdk.AccAddressFromBech32(event.TxAddress)
