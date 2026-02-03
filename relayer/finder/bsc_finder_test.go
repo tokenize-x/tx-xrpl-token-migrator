@@ -29,7 +29,7 @@ func TestBSCFinderBuildPendingTransaction(t *testing.T) {
 	txAddress := sdk.AccAddress(ed25519.GenPrivKey().PubKey().Address())
 
 	// Amount in 6 decimals (1.5 tokens = 1500000)
-	validEvent := &abi.TxBridgeSentToTxChain{
+	validEvent := &abi.TXBridgeSentToTXChain{
 		From:      common.HexToAddress("0x1234567890123456789012345678901234567890"),
 		TxAddress: txAddress.String(),
 		Amount:    big.NewInt(1500000), // 1.5 tokens in 6 decimals
@@ -41,13 +41,13 @@ func TestBSCFinderBuildPendingTransaction(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		eventFunc   func(*abi.TxBridgeSentToTxChain) *abi.TxBridgeSentToTxChain
+		eventFunc   func(*abi.TXBridgeSentToTXChain) *abi.TXBridgeSentToTXChain
 		wantMatches bool
 		want        PendingTXSendTransaction
 	}{
 		{
 			name: "positive_valid_event",
-			eventFunc: func(e *abi.TxBridgeSentToTxChain) *abi.TxBridgeSentToTxChain {
+			eventFunc: func(e *abi.TXBridgeSentToTXChain) *abi.TXBridgeSentToTXChain {
 				return e
 			},
 			wantMatches: true,
@@ -59,7 +59,7 @@ func TestBSCFinderBuildPendingTransaction(t *testing.T) {
 		},
 		{
 			name: "negative_invalid_bech32_address",
-			eventFunc: func(e *abi.TxBridgeSentToTxChain) *abi.TxBridgeSentToTxChain {
+			eventFunc: func(e *abi.TXBridgeSentToTXChain) *abi.TXBridgeSentToTXChain {
 				e.TxAddress = "invalid_address"
 				return e
 			},
@@ -68,7 +68,7 @@ func TestBSCFinderBuildPendingTransaction(t *testing.T) {
 		},
 		{
 			name: "negative_wrong_prefix_address",
-			eventFunc: func(e *abi.TxBridgeSentToTxChain) *abi.TxBridgeSentToTxChain {
+			eventFunc: func(e *abi.TXBridgeSentToTXChain) *abi.TXBridgeSentToTXChain {
 				// devcore prefix instead of core
 				e.TxAddress = "devcore17l2fxde2662s2p8pgmzu04jcvflnnlq4l30hff"
 				return e
@@ -78,7 +78,7 @@ func TestBSCFinderBuildPendingTransaction(t *testing.T) {
 		},
 		{
 			name: "negative_zero_amount",
-			eventFunc: func(e *abi.TxBridgeSentToTxChain) *abi.TxBridgeSentToTxChain {
+			eventFunc: func(e *abi.TXBridgeSentToTXChain) *abi.TXBridgeSentToTXChain {
 				e.Amount = big.NewInt(0)
 				return e
 			},
@@ -87,7 +87,7 @@ func TestBSCFinderBuildPendingTransaction(t *testing.T) {
 		},
 		{
 			name: "negative_nil_amount",
-			eventFunc: func(e *abi.TxBridgeSentToTxChain) *abi.TxBridgeSentToTxChain {
+			eventFunc: func(e *abi.TXBridgeSentToTXChain) *abi.TXBridgeSentToTXChain {
 				e.Amount = nil
 				return e
 			},
@@ -96,7 +96,7 @@ func TestBSCFinderBuildPendingTransaction(t *testing.T) {
 		},
 		{
 			name: "negative_amount",
-			eventFunc: func(e *abi.TxBridgeSentToTxChain) *abi.TxBridgeSentToTxChain {
+			eventFunc: func(e *abi.TXBridgeSentToTXChain) *abi.TXBridgeSentToTXChain {
 				e.Amount = big.NewInt(-1000000)
 				return e
 			},
@@ -105,7 +105,7 @@ func TestBSCFinderBuildPendingTransaction(t *testing.T) {
 		},
 		{
 			name: "negative_invalid_checksum",
-			eventFunc: func(e *abi.TxBridgeSentToTxChain) *abi.TxBridgeSentToTxChain {
+			eventFunc: func(e *abi.TXBridgeSentToTXChain) *abi.TXBridgeSentToTXChain {
 				// Valid format but wrong checksum (changed last char)
 				e.TxAddress = "core1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqm9l4xz"
 				return e
@@ -115,7 +115,7 @@ func TestBSCFinderBuildPendingTransaction(t *testing.T) {
 		},
 		{
 			name: "positive_minimum_amount",
-			eventFunc: func(e *abi.TxBridgeSentToTxChain) *abi.TxBridgeSentToTxChain {
+			eventFunc: func(e *abi.TXBridgeSentToTXChain) *abi.TXBridgeSentToTXChain {
 				e.Amount = big.NewInt(1) // 1 unit (0.000001 tokens)
 				return e
 			},
@@ -128,7 +128,7 @@ func TestBSCFinderBuildPendingTransaction(t *testing.T) {
 		},
 		{
 			name: "positive_large_amount",
-			eventFunc: func(e *abi.TxBridgeSentToTxChain) *abi.TxBridgeSentToTxChain {
+			eventFunc: func(e *abi.TXBridgeSentToTXChain) *abi.TXBridgeSentToTXChain {
 				e.Amount = big.NewInt(1000000000000) // 1 million tokens
 				return e
 			},

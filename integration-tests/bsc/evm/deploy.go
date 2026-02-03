@@ -35,8 +35,8 @@ type ContractArtifact struct {
 type DeployedContracts struct {
 	TokenAddress  common.Address
 	BridgeAddress common.Address
-	Token         *bscabi.TxToken
-	Bridge        *bscabi.TxBridge
+	Token         *bscabi.TXToken
+	Bridge        *bscabi.TXBridge
 }
 
 // holds configuration for the bridge contract.
@@ -153,7 +153,7 @@ func encodeProxyConstructor(implementation common.Address, initData []byte) ([]b
 }
 
 // deploys the TXToken contract through a proxy.
-func DeployTXToken(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, name, symbol string) (common.Address, *bscabi.TxToken, error) {
+func DeployTXToken(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, name, symbol string) (common.Address, *bscabi.TXToken, error) {
 	auth, err := getTransactOpts(ctx, client, privateKey, chainID)
 	if err != nil {
 		return common.Address{}, nil, err
@@ -175,7 +175,7 @@ func DeployTXToken(ctx context.Context, client *ethclient.Client, privateKey *ec
 	owner := crypto.PubkeyToAddress(privateKey.PublicKey)
 
 	// encode initialize call
-	tokenABI, err := bscabi.TxTokenMetaData.GetAbi()
+	tokenABI, err := bscabi.TXTokenMetaData.GetAbi()
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to get token ABI")
 	}
@@ -203,7 +203,7 @@ func DeployTXToken(ctx context.Context, client *ethclient.Client, privateKey *ec
 	}
 
 	// create binding to proxy
-	token, err := bscabi.NewTxToken(proxyAddress, client)
+	token, err := bscabi.NewTXToken(proxyAddress, client)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to create token binding")
 	}
@@ -212,7 +212,7 @@ func DeployTXToken(ctx context.Context, client *ethclient.Client, privateKey *ec
 }
 
 // deploys the TXBridge contract through a proxy.
-func DeployTXBridge(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, tokenAddress common.Address, cfg BridgeConfig) (common.Address, *bscabi.TxBridge, error) {
+func DeployTXBridge(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, tokenAddress common.Address, cfg BridgeConfig) (common.Address, *bscabi.TXBridge, error) {
 	auth, err := getTransactOpts(ctx, client, privateKey, chainID)
 	if err != nil {
 		return common.Address{}, nil, err
@@ -230,7 +230,7 @@ func DeployTXBridge(ctx context.Context, client *ethclient.Client, privateKey *e
 
 	admin := crypto.PubkeyToAddress(privateKey.PublicKey)
 
-	bridgeABI, err := bscabi.TxBridgeMetaData.GetAbi()
+	bridgeABI, err := bscabi.TXBridgeMetaData.GetAbi()
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to get bridge ABI")
 	}
@@ -261,7 +261,7 @@ func DeployTXBridge(ctx context.Context, client *ethclient.Client, privateKey *e
 		return common.Address{}, nil, errors.Wrap(err, "failed to deploy bridge proxy")
 	}
 
-	bridge, err := bscabi.NewTxBridge(proxyAddress, client)
+	bridge, err := bscabi.NewTXBridge(proxyAddress, client)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to create bridge binding")
 	}
@@ -318,7 +318,7 @@ func SetupBridgeEnvironment(ctx context.Context, client *ethclient.Client, priva
 }
 
 // mints tokens to a specified address.
-func MintTokens(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, token *bscabi.TxToken, to common.Address, amount *big.Int) error {
+func MintTokens(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, token *bscabi.TXToken, to common.Address, amount *big.Int) error {
 	auth, err := getTransactOpts(ctx, client, privateKey, chainID)
 	if err != nil {
 		return err
