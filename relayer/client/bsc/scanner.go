@@ -65,6 +65,14 @@ func (s *Scanner) Subscribe(ctx context.Context, ch chan<- *abi.TxBridgeSentToTx
 	return nil
 }
 
+func (s *Scanner) GetCurrentBlock(ctx context.Context) (uint64, error) {
+	return s.client.BlockNumber(ctx)
+}
+
+func (s *Scanner) Close() {
+	s.client.Close()
+}
+
 func (s *Scanner) scanHistorical(ctx context.Context, from, to uint64, ch chan<- *abi.TxBridgeSentToTxChain) {
 	if from >= to {
 		return
@@ -156,12 +164,4 @@ func (s *Scanner) scanRangeWithCount(ctx context.Context, from, to uint64, ch ch
 	}
 
 	return count, iter.Error()
-}
-
-func (s *Scanner) GetCurrentBlock(ctx context.Context) (uint64, error) {
-	return s.client.BlockNumber(ctx)
-}
-
-func (s *Scanner) Close() {
-	s.client.Close()
 }

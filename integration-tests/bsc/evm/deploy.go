@@ -95,7 +95,7 @@ func getTransactOpts(ctx context.Context, client *ethclient.Client, privateKey *
 }
 
 // deploys a contract and returns its address.
-func deployContract(ctx context.Context, client *ethclient.Client, auth *bind.TransactOpts, bytecode string, constructorArgs ...[]byte) (common.Address, *types.Transaction, error) {
+func deployContract(ctx context.Context, client *ethclient.Client, auth *bind.TransactOpts, bytecode string, constructorArgs ...[]byte) (common.Address, error) {
 	bytecode = strings.TrimPrefix(bytecode, "0x")
 
 	// combine bytecode with constructor args
@@ -114,23 +114,23 @@ func deployContract(ctx context.Context, client *ethclient.Client, auth *bind.Tr
 
 	signedTx, err := auth.Signer(auth.From, tx)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "failed to sign transaction")
+		return common.Address{}, errors.Wrap(err, "failed to sign transaction")
 	}
 
 	if err := client.SendTransaction(ctx, signedTx); err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "failed to send transaction")
+		return common.Address{}, errors.Wrap(err, "failed to send transaction")
 	}
 
 	receipt, err := bind.WaitMined(ctx, client, signedTx)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "failed to wait for mining")
+		return common.Address{}, errors.Wrap(err, "failed to wait for mining")
 	}
 
 	if receipt.Status != types.ReceiptStatusSuccessful {
-		return common.Address{}, nil, errors.Errorf("contract deployment failed: tx=%s, gas_used=%d", receipt.TxHash.Hex(), receipt.GasUsed)
+		return common.Address{}, errors.Errorf("contract deployment failed: tx=%s, gas_used=%d", receipt.TxHash.Hex(), receipt.GasUsed)
 	}
 
-	return receipt.ContractAddress, signedTx, nil
+	return receipt.ContractAddress, nil
 }
 
 // encodeInitializeData encodes initialization call data for a proxy.
@@ -166,7 +166,7 @@ func DeployTXToken(ctx context.Context, client *ethclient.Client, privateKey *ec
 	}
 
 	// deploy implementation
-	implAddress, _, err := deployContract(ctx, client, auth, artifact.Bytecode)
+	implAddress, err := deployContract(ctx, client, auth, artifact.Bytecode)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to deploy token implementation")
 	}
@@ -197,7 +197,7 @@ func DeployTXToken(ctx context.Context, client *ethclient.Client, privateKey *ec
 		return common.Address{}, nil, err
 	}
 
-	proxyAddress, _, err := deployContract(ctx, client, auth, erc1967ProxyBytecode, proxyArgs)
+	proxyAddress, err := deployContract(ctx, client, auth, erc1967ProxyBytecode, proxyArgs)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to deploy token proxy")
 	}
@@ -223,7 +223,7 @@ func DeployTXBridge(ctx context.Context, client *ethclient.Client, privateKey *e
 		return common.Address{}, nil, err
 	}
 
-	implAddress, _, err := deployContract(ctx, client, auth, artifact.Bytecode)
+	implAddress, err := deployContract(ctx, client, auth, artifact.Bytecode)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to deploy bridge implementation")
 	}
@@ -256,7 +256,7 @@ func DeployTXBridge(ctx context.Context, client *ethclient.Client, privateKey *e
 		return common.Address{}, nil, err
 	}
 
-	proxyAddress, _, err := deployContract(ctx, client, auth, erc1967ProxyBytecode, proxyArgs)
+	proxyAddress, err := deployContract(ctx, client, auth, erc1967ProxyBytecode, proxyArgs)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "failed to deploy bridge proxy")
 	}

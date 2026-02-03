@@ -100,32 +100,6 @@ func StartAnvil(cfg AnvilConfig) (*Anvil, error) {
 	return anvil, nil
 }
 
-// waits for Anvil to be ready to accept connections.
-func (a *Anvil) waitReady(timeout time.Duration) error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	ticker := time.NewTicker(100 * time.Millisecond)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return errors.New("timeout waiting for anvil to be ready")
-		case <-ticker.C:
-			client, err := ethclient.Dial(a.rpcURL)
-			if err != nil {
-				continue
-			}
-			_, err = client.ChainID(ctx)
-			client.Close()
-			if err == nil {
-				return nil
-			}
-		}
-	}
-}
-
 // stops the Anvil instance.
 func (a *Anvil) Stop() error {
 	if a.cmd != nil && a.cmd.Process != nil {
@@ -151,6 +125,32 @@ func (a *Anvil) RPCURL() string {
 // returns the chain ID as *big.Int.
 func (a *Anvil) ChainID() *big.Int {
 	return big.NewInt(a.cfg.ChainID)
+}
+
+// waits for Anvil to be ready to accept connections.
+func (a *Anvil) waitReady(timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.New("timeout waiting for anvil to be ready")
+		case <-ticker.C:
+			client, err := ethclient.Dial(a.rpcURL)
+			if err != nil {
+				continue
+			}
+			_, err = client.ChainID(ctx)
+			client.Close()
+			if err == nil {
+				return nil
+			}
+		}
+	}
 }
 
 // returns the private key for the given account index.
