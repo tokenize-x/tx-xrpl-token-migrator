@@ -122,7 +122,7 @@ func TestBSCLiveScanner(t *testing.T) {
 	requireT.NoError(err)
 
 	// Subscribe to events
-	eventCh := make(chan *bscabi.TxBridgeSentToTxChain, 10)
+	eventCh := make(chan *bscabi.TXBridgeSentToTXChain, 10)
 	scanCtx, scanCancel := context.WithTimeout(ctx, 10*time.Second)
 	defer scanCancel()
 
@@ -130,7 +130,7 @@ func TestBSCLiveScanner(t *testing.T) {
 	requireT.NoError(err)
 
 	// Wait for event
-	t.Log("Waiting for SentToTxChain event...")
+	t.Log("Waiting for SentToTXChain event...")
 	select {
 	case event := <-eventCh:
 		t.Logf("Received event: from=%s, amount=%s, txAddress=%s",
