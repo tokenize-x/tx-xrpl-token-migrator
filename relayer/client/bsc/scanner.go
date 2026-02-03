@@ -50,8 +50,8 @@ func NewScanner(cfg ScannerConfig, log logger.Logger) (*Scanner, error) {
 	}, nil
 }
 
-// starts scanning for SentToTxChain events and sends them to the channel.
-func (s *Scanner) Subscribe(ctx context.Context, ch chan<- *abi.TxBridgeSentToTxChain) error {
+// starts scanning for SentToTXChain events and sends them to the channel.
+func (s *Scanner) Subscribe(ctx context.Context, ch chan<- *abi.TxBridgeSentToTXChain) error {
 	currentBlock, err := s.client.BlockNumber(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to get current block")
@@ -65,7 +65,7 @@ func (s *Scanner) Subscribe(ctx context.Context, ch chan<- *abi.TxBridgeSentToTx
 	return nil
 }
 
-func (s *Scanner) scanHistorical(ctx context.Context, from, to uint64, ch chan<- *abi.TxBridgeSentToTxChain) {
+func (s *Scanner) scanHistorical(ctx context.Context, from, to uint64, ch chan<- *abi.TxBridgeSentToTXChain) {
 	if from >= to {
 		return
 	}
@@ -96,7 +96,7 @@ func (s *Scanner) scanHistorical(ctx context.Context, from, to uint64, ch chan<-
 	s.log.Info("BSC historical scan completed")
 }
 
-func (s *Scanner) scanRecent(ctx context.Context, from uint64, ch chan<- *abi.TxBridgeSentToTxChain) {
+func (s *Scanner) scanRecent(ctx context.Context, from uint64, ch chan<- *abi.TxBridgeSentToTXChain) {
 	lastBlock := from
 	s.log.Info("starting BSC recent block polling", zap.Uint64("from", from))
 
@@ -129,19 +129,19 @@ func (s *Scanner) scanRecent(ctx context.Context, from uint64, ch chan<- *abi.Tx
 	}
 }
 
-func (s *Scanner) scanRange(ctx context.Context, from, to uint64, ch chan<- *abi.TxBridgeSentToTxChain) error {
+func (s *Scanner) scanRange(ctx context.Context, from, to uint64, ch chan<- *abi.TxBridgeSentToTXChain) error {
 	_, err := s.scanRangeWithCount(ctx, from, to, ch)
 	return err
 }
 
-func (s *Scanner) scanRangeWithCount(ctx context.Context, from, to uint64, ch chan<- *abi.TxBridgeSentToTxChain) (int, error) {
-	iter, err := s.filterer.FilterSentToTxChain(&bind.FilterOpts{
+func (s *Scanner) scanRangeWithCount(ctx context.Context, from, to uint64, ch chan<- *abi.TxBridgeSentToTXChain) (int, error) {
+	iter, err := s.filterer.FilterSentToTXChain(&bind.FilterOpts{
 		Start:   from,
 		End:     &to,
 		Context: ctx,
 	}, nil)
 	if err != nil {
-		return 0, errors.Wrap(err, "failed to filter SentToTxChain events")
+		return 0, errors.Wrap(err, "failed to filter SentToTXChain events")
 	}
 	defer iter.Close()
 

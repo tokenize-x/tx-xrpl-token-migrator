@@ -10,13 +10,13 @@ The BSC bridge enables one-way token migration from BNB Smart Chain to TX Chain.
 
 | Contract | Address | Explorer |
 |----------|---------|----------|
-| TxToken | `0x02A4Df72317C6D2b5D60afdA3c6B143a0bca94d7` | [View](https://testnet.bscscan.com/address/0x02A4Df72317C6D2b5D60afdA3c6B143a0bca94d7#readProxyContract) |
-| TxBridge | `0x30C960905C626531442617caa326B74e5e996A77` | [View](https://testnet.bscscan.com/address/0x30C960905C626531442617caa326B74e5e996A77#code) |
+| TXToken | `0xD892E89B0704f2C0ADE0f01d3eA7A475b2184406` | [View](https://testnet.bscscan.com/address/0x0xD892E89B0704f2C0ADE0f01d3eA7A475b2184406#readProxyContract) |
+| TXBridge | `0x4B3B9ae26D1Ea90d0Cc996cA76De248DB48cC0B1` | [View](https://testnet.bscscan.com/address/0x4B3B9ae26D1Ea90d0Cc996cA76De248DB48cC0B1#code) |
 
 ### How It Works
 
-1. User calls `sendToTxChain(amount, txAddress)` on TxBridge contract (BSC)
-2. Contract burns tokens and emits `SentToTxChain` event with the destination bech32 address
+1. User calls `sendToTXChain(amount, txAddress)` on TXBridge contract (BSC)
+2. Contract burns tokens and emits `SentToTXChain` event with the destination bech32 address
 3. Relayer scans for events using `--bsc-start-block` as historical start point
 4. Events are converted to TX send transactions and submitted to TX Chain
 
@@ -47,8 +47,8 @@ integration-tests/bsc/
 ABI JSON files are exported from Solidity compilation. Go bindings are generated using `abigen`:
 
 ```bash
-abigen --abi=TXToken.json --pkg=abi --type=TxToken --out=txtoken.go
-abigen --abi=TXBridge.json --pkg=abi --type=TxBridge --out=txbridge.go
+abigen --abi=TXToken.json --pkg=abi --type=TXToken --out=txtoken.go
+abigen --abi=TXBridge.json --pkg=abi --type=TXBridge --out=txbridge.go
 ```
 
 ### Running BSC Integration Tests
