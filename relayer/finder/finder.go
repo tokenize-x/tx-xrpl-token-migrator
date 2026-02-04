@@ -9,9 +9,10 @@ import (
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	rippledata "github.com/rubblelabs/ripple/data"
+	"go.uber.org/zap"
+
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/xrpl"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
-	"go.uber.org/zap"
 )
 
 // PendingTXSendTransaction represents the pending transaction to be sent to the TX blockchain.

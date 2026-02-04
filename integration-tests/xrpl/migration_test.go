@@ -6,10 +6,9 @@ import (
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
+	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/stretchr/testify/require"
-
-	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 )

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/big"
 	"os/exec"
+	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -72,12 +73,12 @@ func StartAnvil(cfg AnvilConfig) (*Anvil, error) {
 	rpcURL := fmt.Sprintf("http://localhost:%d", cfg.Port)
 
 	args := []string{
-		"--port", fmt.Sprintf("%d", cfg.Port),
-		"--chain-id", fmt.Sprintf("%d", cfg.ChainID),
+		"--port", strconv.Itoa(cfg.Port),
+		"--chain-id", strconv.FormatInt(cfg.ChainID, 10),
 	}
 
 	if cfg.BlockTime > 0 {
-		args = append(args, "--block-time", fmt.Sprintf("%d", cfg.BlockTime))
+		args = append(args, "--block-time", strconv.Itoa(cfg.BlockTime))
 	}
 
 	cmd := exec.Command("anvil", args...)

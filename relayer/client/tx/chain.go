@@ -7,16 +7,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sdkclient "github.com/cosmos/cosmos-sdk/client"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
-	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 	"go.uber.org/zap"
 
-	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 )
 
 // ChainClientConfig represent the ChainClient config.

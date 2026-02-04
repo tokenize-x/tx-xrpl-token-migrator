@@ -8,9 +8,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc/abi"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
-	"go.uber.org/zap"
 )
 
 // configuration for the BSC event scanner.

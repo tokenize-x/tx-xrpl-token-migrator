@@ -5,10 +5,11 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"go.uber.org/zap"
+
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc/abi"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
-	"go.uber.org/zap"
 )
 
 type BSCScanner interface {
