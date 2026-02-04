@@ -98,7 +98,7 @@ func StartAnvil(cfg AnvilConfig) (*Anvil, error) {
 	}
 
 	if err := anvil.waitReady(10 * time.Second); err != nil {
-		anvil.Stop()
+		_ = anvil.Stop()
 		return nil, errors.Wrap(err, "anvil failed to start")
 	}
 
