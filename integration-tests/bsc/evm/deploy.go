@@ -1,5 +1,7 @@
 //go:build integrationtests
 
+// Package evm provides EVM/BSC integration test utilities.
+//
 //nolint:lll // contains bytecode and long function signatures
 package evm
 
@@ -26,13 +28,13 @@ import (
 // Compiled from @openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol using forge.
 const erc1967ProxyBytecode = "0x608060405234801561000f575f80fd5b506040516106af3803806106af8339818101604052810190610031919061054d565b818161004161009e60201b60201c565b15801561004e57505f8151145b15610085576040517fc28a273c00000000000000000000000000000000000000000000000000000000815260040160405180910390fd5b61009582826100a260201b60201c565b505050506105cf565b5f90565b6100b18261012660201b60201c565b8173ffffffffffffffffffffffffffffffffffffffff167fbc7cd75a20ee27fd9adebab32041f755214dbc6bffa90cc0225b39da2e5c2d3b60405160405180910390a25f815111156101135761010d82826101f560201b60201c565b50610122565b61012161030460201b60201c565b5b5050565b5f8173ffffffffffffffffffffffffffffffffffffffff163b0361018157806040517f4c9c8ce300000000000000000000000000000000000000000000000000000000815260040161017891906105b6565b60405180910390fd5b806101b37f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc5f1b61034060201b60201c565b5f015f6101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555050565b60605f610208848461034960201b60201c565b905080801561024457505f61022161035d60201b60201c565b118061024357505f8473ffffffffffffffffffffffffffffffffffffffff163b115b5b1561025f5761025761036460201b60201c565b9150506102fe565b80156102a257836040517f9996b31500000000000000000000000000000000000000000000000000000000815260040161029991906105b6565b60405180910390fd5b5f6102b161035d60201b60201c565b11156102ca576102c561038160201b60201c565b6102fc565b6040517fd6bda27500000000000000000000000000000000000000000000000000000000815260040160405180910390fd5b505b92915050565b5f34111561033e576040517fb398979f00000000000000000000000000000000000000000000000000000000815260040160405180910390fd5b565b5f819050919050565b5f805f835160208501865af4905092915050565b5f3d905090565b606060405190503d81523d5f602083013e3d602001810160405290565b6040513d5f823e3d81fd5b5f604051905090565b5f80fd5b5f80fd5b5f73ffffffffffffffffffffffffffffffffffffffff82169050919050565b5f6103c68261039d565b9050919050565b6103d6816103bc565b81146103e0575f80fd5b50565b5f815190506103f1816103cd565b92915050565b5f80fd5b5f80fd5b5f601f19601f8301169050919050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52604160045260245ffd5b610445826103ff565b810181811067ffffffffffffffff821117156104645761046361040f565b5b80604052505050565b5f61047661038c565b9050610482828261043c565b919050565b5f67ffffffffffffffff8211156104a1576104a061040f565b5b6104aa826103ff565b9050602081019050919050565b5f5b838110156104d45780820151818401526020810190506104b9565b5f8484015250505050565b5f6104f16104ec84610487565b61046d565b90508281526020810184848401111561050d5761050c6103fb565b5b6105188482856104b7565b509392505050565b5f82601f830112610534576105336103f7565b5b81516105448482602086016104df565b91505092915050565b5f806040838503121561056357610562610395565b5b5f610570858286016103e3565b925050602083015167ffffffffffffffff81111561059157610590610399565b5b61059d85828601610520565b9150509250929050565b6105b0816103bc565b82525050565b5f6020820190506105c95f8301846105a7565b92915050565b60d4806105db5f395ff3fe6080604052600a600c565b005b60186014601a565b6026565b565b5f60216044565b905090565b365f80375f80365f845af43d5f803e805f81146040573d5ff35b3d5ffd5b5f606e7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc5f1b6095565b5f015f9054906101000a900473ffffffffffffffffffffffffffffffffffffffff16905090565b5f81905091905056fea26469706673582212207f5275895ccd6a9019243ddfdd82dc77ec91c8df50b415bd6eaa24218a0c5cce64736f6c63430008180033"
 
-// represents a Hardhat/Foundry compiled contract artifact.
+// ContractArtifact represents a Hardhat/Foundry compiled contract artifact.
 type ContractArtifact struct {
 	ABI      json.RawMessage `json:"abi"`
 	Bytecode string          `json:"bytecode"`
 }
 
-// holds addresses of deployed contracts.
+// DeployedContracts holds addresses of deployed contracts.
 type DeployedContracts struct {
 	TokenAddress  common.Address
 	BridgeAddress common.Address
@@ -40,14 +42,14 @@ type DeployedContracts struct {
 	Bridge        *bscabi.TxBridge
 }
 
-// holds configuration for the bridge contract.
+// BridgeConfig holds configuration for the bridge contract.
 type BridgeConfig struct {
 	MinAmount     *big.Int
 	MaxAmount     *big.Int
 	AddressPrefix string
 }
 
-// returns default bridge configuration for testing.
+// DefaultBridgeConfig returns default bridge configuration for testing.
 func DefaultBridgeConfig() BridgeConfig {
 	return BridgeConfig{
 		MinAmount:     big.NewInt(1000000),     // 1 token (6 decimals)
@@ -153,7 +155,7 @@ func encodeProxyConstructor(implementation common.Address, initData []byte) ([]b
 	return args.Pack(implementation, initData)
 }
 
-// deploys the TXToken contract through a proxy.
+// DeployTXToken deploys the TXToken contract through a proxy.
 func DeployTXToken(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, name, symbol string) (common.Address, *bscabi.TxToken, error) {
 	auth, err := getTransactOpts(ctx, client, privateKey, chainID)
 	if err != nil {
@@ -212,7 +214,7 @@ func DeployTXToken(ctx context.Context, client *ethclient.Client, privateKey *ec
 	return proxyAddress, token, nil
 }
 
-// deploys the TXBridge contract through a proxy.
+// DeployTXBridge deploys the TXBridge contract through a proxy.
 func DeployTXBridge(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, tokenAddress common.Address, cfg BridgeConfig) (common.Address, *bscabi.TxBridge, error) {
 	auth, err := getTransactOpts(ctx, client, privateKey, chainID)
 	if err != nil {
@@ -270,7 +272,7 @@ func DeployTXBridge(ctx context.Context, client *ethclient.Client, privateKey *e
 	return proxyAddress, bridge, nil
 }
 
-// deploys both contracts and configures them.
+// SetupBridgeEnvironment deploys both contracts and configures them.
 func SetupBridgeEnvironment(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, cfg BridgeConfig) (*DeployedContracts, error) {
 	tokenAddress, token, err := DeployTXToken(ctx, client, privateKey, chainID, "tx Token", "TX")
 	if err != nil {
@@ -318,7 +320,7 @@ func SetupBridgeEnvironment(ctx context.Context, client *ethclient.Client, priva
 	}, nil
 }
 
-// mints tokens to a specified address.
+// MintTokens mints tokens to a specified address.
 func MintTokens(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, chainID *big.Int, token *bscabi.TxToken, to common.Address, amount *big.Int) error {
 	auth, err := getTransactOpts(ctx, client, privateKey, chainID)
 	if err != nil {

@@ -1,5 +1,6 @@
 //go:build integrationtests
 
+// Package bsc provides BSC integration tests.
 package bsc
 
 import (

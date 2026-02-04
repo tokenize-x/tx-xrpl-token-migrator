@@ -17,13 +17,13 @@ import (
 )
 
 const (
-	// default port for Anvil.
+	// DefaultAnvilPort is the default port for Anvil.
 	DefaultAnvilPort = 8545
 
-	// default chain ID for Anvil.
+	// DefaultAnvilChainID is the default chain ID for Anvil.
 	DefaultAnvilChainID = 31337
 
-	// block time for Anvil.
+	// AnvilBlockTime is the block time for Anvil.
 	AnvilBlockTime = 1
 )
 
@@ -49,12 +49,14 @@ var (
 	}
 )
 
+// AnvilConfig holds configuration for Anvil.
 type AnvilConfig struct {
 	Port      int
 	ChainID   int64
 	BlockTime int
 }
 
+// DefaultAnvilConfig returns the default Anvil configuration.
 func DefaultAnvilConfig() AnvilConfig {
 	return AnvilConfig{
 		Port:      DefaultAnvilPort,
@@ -63,12 +65,14 @@ func DefaultAnvilConfig() AnvilConfig {
 	}
 }
 
+// Anvil represents a running Anvil instance.
 type Anvil struct {
 	cfg    AnvilConfig
 	cmd    *exec.Cmd
 	rpcURL string
 }
 
+// StartAnvil starts a new Anvil instance.
 func StartAnvil(cfg AnvilConfig) (*Anvil, error) {
 	rpcURL := fmt.Sprintf("http://localhost:%d", cfg.Port)
 
@@ -101,7 +105,7 @@ func StartAnvil(cfg AnvilConfig) (*Anvil, error) {
 	return anvil, nil
 }
 
-// stops the Anvil instance.
+// Stop stops the Anvil instance.
 func (a *Anvil) Stop() error {
 	if a.cmd != nil && a.cmd.Process != nil {
 		if err := a.cmd.Process.Kill(); err != nil {
@@ -113,17 +117,17 @@ func (a *Anvil) Stop() error {
 	return nil
 }
 
-// returns an ethclient connected to Anvil.
+// Client returns an ethclient connected to Anvil.
 func (a *Anvil) Client() (*ethclient.Client, error) {
 	return ethclient.Dial(a.rpcURL)
 }
 
-// returns the RPC URL for Anvil.
+// RPCURL returns the RPC URL for Anvil.
 func (a *Anvil) RPCURL() string {
 	return a.rpcURL
 }
 
-// returns the chain ID as *big.Int.
+// ChainID returns the chain ID as *big.Int.
 func (a *Anvil) ChainID() *big.Int {
 	return big.NewInt(a.cfg.ChainID)
 }
@@ -154,7 +158,7 @@ func (a *Anvil) waitReady(timeout time.Duration) error {
 	}
 }
 
-// returns the private key for the given account index.
+// GetPrivateKey returns the private key for the given account index.
 func GetPrivateKey(accountIndex int) (*ecdsa.PrivateKey, error) {
 	if accountIndex < 0 || accountIndex >= len(AnvilPrivateKeys) {
 		return nil, errors.Errorf("account index %d out of range (0-%d)", accountIndex, len(AnvilPrivateKeys)-1)
@@ -162,7 +166,7 @@ func GetPrivateKey(accountIndex int) (*ecdsa.PrivateKey, error) {
 	return crypto.HexToECDSA(AnvilPrivateKeys[accountIndex])
 }
 
-// returns the address for the given account index.
+// GetAddress returns the address for the given account index.
 func GetAddress(accountIndex int) (string, error) {
 	if accountIndex < 0 || accountIndex >= len(AnvilAddresses) {
 		return "", errors.Errorf("account index %d out of range (0-%d)", accountIndex, len(AnvilAddresses)-1)

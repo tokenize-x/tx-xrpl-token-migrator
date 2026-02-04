@@ -486,7 +486,7 @@ func buildAndStartDevEnv(
 	instances := lo.Map(
 		[]sdk.AccAddress{trustedAddress1, trustedAddress2, trustedAddress3},
 		//nolint:contextcheck // buildTestingServices intentionally uses context.Background()
-		func(trustedAddress sdk.AccAddress, index int) *service.Services {
+		func(trustedAddress sdk.AccAddress, _ int) *service.Services {
 			return buildTestingServices(
 				t,
 				zaptest.NewLogger(t),

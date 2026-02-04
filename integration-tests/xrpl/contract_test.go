@@ -1,5 +1,6 @@
 //go:build integrationtests
 
+// Package xrpl provides XRPL integration tests.
 package xrpl
 
 import (
@@ -671,7 +672,7 @@ func TestWASMUpdateTrustedAddresses(t *testing.T) {
 
 	cfg, err := contractClient.GetContractConfig(ctx)
 	requireT.NoError(err)
-	requireT.ElementsMatch(lo.Map(newTrustedAddresses, func(item sdk.AccAddress, index int) string {
+	requireT.ElementsMatch(lo.Map(newTrustedAddresses, func(item sdk.AccAddress, _ int) string {
 		return item.String()
 	}), cfg.TrustedAddresses)
 }

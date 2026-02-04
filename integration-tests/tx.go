@@ -1,5 +1,6 @@
 //go:build integrationtests
 
+// Package integrationtests provides common utilities for integration tests.
 package integrationtests
 
 import (
