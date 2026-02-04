@@ -172,7 +172,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 		},
 		{
 			name: "negative_empty",
-			xrplTxFunc: func(tx xrpl.Transaction) xrpl.Transaction {
+			xrplTxFunc: func(_ xrpl.Transaction) xrpl.Transaction {
 				return xrpl.Transaction{}
 			},
 			wantMatches: false,

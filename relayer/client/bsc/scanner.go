@@ -1,3 +1,4 @@
+// Package bsc provides BSC blockchain client and event scanning functionality.
 package bsc
 
 import (
@@ -14,7 +15,7 @@ import (
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 )
 
-// configuration for the BSC event scanner.
+// ScannerConfig is configuration for the BSC event scanner.
 type ScannerConfig struct {
 	RPCURL        string
 	BridgeAddress common.Address
@@ -31,6 +32,7 @@ type Scanner struct {
 	filterer *abi.TxBridgeFilterer
 }
 
+// NewScanner creates a new BSC event scanner.
 func NewScanner(cfg ScannerConfig, log logger.Logger) (*Scanner, error) {
 	client, err := ethclient.Dial(cfg.RPCURL)
 	if err != nil {
@@ -51,7 +53,7 @@ func NewScanner(cfg ScannerConfig, log logger.Logger) (*Scanner, error) {
 	}, nil
 }
 
-// starts scanning for SentToTxChain events and sends them to the channel.
+// Subscribe starts scanning for SentToTxChain events and sends them to the channel.
 func (s *Scanner) Subscribe(ctx context.Context, ch chan<- *abi.TxBridgeSentToTxChain) error {
 	currentBlock, err := s.client.BlockNumber(ctx)
 	if err != nil {
@@ -66,10 +68,12 @@ func (s *Scanner) Subscribe(ctx context.Context, ch chan<- *abi.TxBridgeSentToTx
 	return nil
 }
 
+// GetCurrentBlock returns the current block number from BSC.
 func (s *Scanner) GetCurrentBlock(ctx context.Context) (uint64, error) {
 	return s.client.BlockNumber(ctx)
 }
 
+// Close closes the BSC client connection.
 func (s *Scanner) Close() {
 	s.client.Close()
 }

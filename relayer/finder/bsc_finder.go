@@ -1,3 +1,4 @@
+// Package finder provides transaction finding and filtering functionality for XRPL and BSC bridges.
 package finder
 
 import (
@@ -12,16 +13,18 @@ import (
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 )
 
+// BSCScanner defines the interface for BSC event scanning.
 type BSCScanner interface {
 	Subscribe(ctx context.Context, ch chan<- *abi.TxBridgeSentToTxChain) error
 }
 
+// BSCFinderConfig holds configuration for BSCFinder.
 type BSCFinderConfig struct {
 	TXDenom    string
 	TXDecimals int
 }
 
-// finds valid BSC bridge transactions and converts them to PendingTXSendTransaction.
+// BSCFinder finds valid BSC bridge transactions and converts them to PendingTXSendTransaction.
 type BSCFinder struct {
 	cfg     BSCFinderConfig
 	log     logger.Logger
@@ -31,6 +34,7 @@ type BSCFinder struct {
 // ensure bsc.Scanner implements the BSCScanner interface.
 var _ BSCScanner = (*bsc.Scanner)(nil)
 
+// NewBSCFinder creates a new BSCFinder instance.
 func NewBSCFinder(cfg BSCFinderConfig, log logger.Logger, scanner BSCScanner) *BSCFinder {
 	return &BSCFinder{
 		cfg:     cfg,
@@ -39,7 +43,7 @@ func NewBSCFinder(cfg BSCFinderConfig, log logger.Logger, scanner BSCScanner) *B
 	}
 }
 
-// subscribes to BSC bridge events and sends valid transactions to the channel.
+// SubscribeTXSendTransactions subscribes to BSC bridge events and sends valid transactions to the channel.
 func (f *BSCFinder) SubscribeTXSendTransactions(ctx context.Context, ch chan<- PendingTXSendTransaction) error {
 	eventsCh := make(chan *abi.TxBridgeSentToTxChain)
 
