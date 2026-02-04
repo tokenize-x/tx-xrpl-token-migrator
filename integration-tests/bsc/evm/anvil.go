@@ -22,7 +22,7 @@ const (
 	// default chain ID for Anvil.
 	DefaultAnvilChainID = 31337
 
-	// block time for Anvil
+	// block time for Anvil.
 	AnvilBlockTime = 1
 )
 

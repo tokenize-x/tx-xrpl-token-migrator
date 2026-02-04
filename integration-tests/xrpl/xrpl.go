@@ -36,12 +36,16 @@ const (
 // ********** XRPLChain **********
 
 // XRPLChainConfig is a config required for the XRPL chain to be created.
+//
+//nolint:revive // existing naming convention
 type XRPLChainConfig struct {
 	RPCAddress  string
 	FundingSeed string
 }
 
 // XRPLChain is XRPL chain for the testing.
+//
+//nolint:revive // existing naming convention
 type XRPLChain struct {
 	cfg       XRPLChainConfig
 	signer    *xrpl.KeyringTxSigner

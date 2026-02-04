@@ -78,7 +78,8 @@ func (s *Scanner) scanHistorical(ctx context.Context, from, to uint64, ch chan<-
 		return
 	}
 
-	s.log.Info("starting BSC historical scan", zap.Uint64("from", from), zap.Uint64("to", to))
+	s.log.Info("starting BSC historical scan",
+		zap.Uint64("from", from), zap.Uint64("to", to))
 
 	batchSize := uint64(10000)
 	for start := from; start < to; start += batchSize {
@@ -132,7 +133,8 @@ func (s *Scanner) scanRecent(ctx context.Context, from uint64, ch chan<- *abi.Tx
 			continue
 		}
 
-		s.log.Info("polled BSC blocks", zap.Uint64("from", lastBlock+1), zap.Uint64("to", safeBlock), zap.Int("events", count))
+		s.log.Info("polled BSC blocks",
+			zap.Uint64("from", lastBlock+1), zap.Uint64("to", safeBlock), zap.Int("events", count))
 		lastBlock = safeBlock
 	}
 }
@@ -142,7 +144,9 @@ func (s *Scanner) scanRange(ctx context.Context, from, to uint64, ch chan<- *abi
 	return err
 }
 
-func (s *Scanner) scanRangeWithCount(ctx context.Context, from, to uint64, ch chan<- *abi.TxBridgeSentToTxChain) (int, error) {
+func (s *Scanner) scanRangeWithCount(
+	ctx context.Context, from, to uint64, ch chan<- *abi.TxBridgeSentToTxChain,
+) (int, error) {
 	iter, err := s.filterer.FilterSentToTxChain(&bind.FilterOpts{
 		Start:   from,
 		End:     &to,

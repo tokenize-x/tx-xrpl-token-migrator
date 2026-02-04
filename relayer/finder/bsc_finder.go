@@ -27,7 +27,7 @@ type BSCFinder struct {
 	scanner BSCScanner
 }
 
-// ensure bsc.Scanner implements the BSCScanner interface
+// ensure bsc.Scanner implements the BSCScanner interface.
 var _ BSCScanner = (*bsc.Scanner)(nil)
 
 func NewBSCFinder(cfg BSCFinderConfig, log logger.Logger, scanner BSCScanner) *BSCFinder {
