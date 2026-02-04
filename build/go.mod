@@ -6,9 +6,6 @@ replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alp
 
 require github.com/tokenize-x/tx-crust v0.0.0-20260129072642-443b98cfb118
 
-// Use local tx-crust with TXCrustModule fix
-replace github.com/tokenize-x/tx-crust => /Users/can/Projects/Coreum-repos/tx-crust
-
 require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/samber/lo v1.49.1 // indirect
