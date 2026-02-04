@@ -29,113 +29,113 @@ var (
 	_ = abi.ConvertType
 )
 
-// TxTokenMetaData contains all meta data concerning the TxToken contract.
-var TxTokenMetaData = &bind.MetaData{
+// TXTokenMetaData contains all meta data concerning the TXToken contract.
+var TXTokenMetaData = &bind.MetaData{
 	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AccessControlBadConfirmation\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"neededRole\",\"type\":\"bytes32\"}],\"name\":\"AccessControlUnauthorizedAccount\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ECDSAInvalidSignature\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"length\",\"type\":\"uint256\"}],\"name\":\"ECDSAInvalidSignatureLength\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"s\",\"type\":\"bytes32\"}],\"name\":\"ECDSAInvalidSignatureS\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"allowance\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"needed\",\"type\":\"uint256\"}],\"name\":\"ERC20InsufficientAllowance\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"balance\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"needed\",\"type\":\"uint256\"}],\"name\":\"ERC20InsufficientBalance\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"approver\",\"type\":\"address\"}],\"name\":\"ERC20InvalidApprover\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"receiver\",\"type\":\"address\"}],\"name\":\"ERC20InvalidReceiver\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"ERC20InvalidSender\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"}],\"name\":\"ERC20InvalidSpender\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"deadline\",\"type\":\"uint256\"}],\"name\":\"ERC2612ExpiredSignature\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"signer\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"ERC2612InvalidSigner\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"EnforcedPause\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ExpectedPause\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"currentNonce\",\"type\":\"uint256\"}],\"name\":\"InvalidAccountNonce\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidInitialization\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotInitializing\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"CrosschainBurn\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"CrosschainMint\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"EIP712DomainChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"version\",\"type\":\"uint64\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Paused\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"previousAdminRole\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"newAdminRole\",\"type\":\"bytes32\"}],\"name\":\"RoleAdminChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleGranted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleRevoked\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Unpaused\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"BRIDGE_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"DEFAULT_ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"DOMAIN_SEPARATOR\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"burn\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"crosschainBurn\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"crosschainMint\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"eip712Domain\",\"outputs\":[{\"internalType\":\"bytes1\",\"name\":\"fields\",\"type\":\"bytes1\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"version\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"chainId\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"verifyingContract\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"salt\",\"type\":\"bytes32\"},{\"internalType\":\"uint256[]\",\"name\":\"extensions\",\"type\":\"uint256[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleAdmin\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"grantRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"hasRole\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"symbol\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"initialOwner\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"mint\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"nonces\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deadline\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"v\",\"type\":\"uint8\"},{\"internalType\":\"bytes32\",\"name\":\"r\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"s\",\"type\":\"bytes32\"}],\"name\":\"permit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"callerConfirmation\",\"type\":\"address\"}],\"name\":\"renounceRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"revokeRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
-// TxTokenABI is the input ABI used to generate the binding from.
-// Deprecated: Use TxTokenMetaData.ABI instead.
-var TxTokenABI = TxTokenMetaData.ABI
+// TXTokenABI is the input ABI used to generate the binding from.
+// Deprecated: Use TXTokenMetaData.ABI instead.
+var TXTokenABI = TXTokenMetaData.ABI
 
-// TxToken is an auto generated Go binding around an Ethereum contract.
-type TxToken struct {
-	TxTokenCaller     // Read-only binding to the contract
-	TxTokenTransactor // Write-only binding to the contract
-	TxTokenFilterer   // Log filterer for contract events
+// TXToken is an auto generated Go binding around an Ethereum contract.
+type TXToken struct {
+	TXTokenCaller     // Read-only binding to the contract
+	TXTokenTransactor // Write-only binding to the contract
+	TXTokenFilterer   // Log filterer for contract events
 }
 
-// TxTokenCaller is an auto generated read-only Go binding around an Ethereum contract.
-type TxTokenCaller struct {
+// TXTokenCaller is an auto generated read-only Go binding around an Ethereum contract.
+type TXTokenCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// TxTokenTransactor is an auto generated write-only Go binding around an Ethereum contract.
-type TxTokenTransactor struct {
+// TXTokenTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type TXTokenTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// TxTokenFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
-type TxTokenFilterer struct {
+// TXTokenFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type TXTokenFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// TxTokenSession is an auto generated Go binding around an Ethereum contract,
+// TXTokenSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.
-type TxTokenSession struct {
-	Contract     *TxToken          // Generic contract binding to set the session for
+type TXTokenSession struct {
+	Contract     *TXToken          // Generic contract binding to set the session for
 	CallOpts     bind.CallOpts     // Call options to use throughout this session
 	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
 }
 
-// TxTokenCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// TXTokenCallerSession is an auto generated read-only Go binding around an Ethereum contract,
 // with pre-set call options.
-type TxTokenCallerSession struct {
-	Contract *TxTokenCaller // Generic contract caller binding to set the session for
+type TXTokenCallerSession struct {
+	Contract *TXTokenCaller // Generic contract caller binding to set the session for
 	CallOpts bind.CallOpts  // Call options to use throughout this session
 }
 
-// TxTokenTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// TXTokenTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
 // with pre-set transact options.
-type TxTokenTransactorSession struct {
-	Contract     *TxTokenTransactor // Generic contract transactor binding to set the session for
+type TXTokenTransactorSession struct {
+	Contract     *TXTokenTransactor // Generic contract transactor binding to set the session for
 	TransactOpts bind.TransactOpts  // Transaction auth options to use throughout this session
 }
 
-// TxTokenRaw is an auto generated low-level Go binding around an Ethereum contract.
-type TxTokenRaw struct {
-	Contract *TxToken // Generic contract binding to access the raw methods on
+// TXTokenRaw is an auto generated low-level Go binding around an Ethereum contract.
+type TXTokenRaw struct {
+	Contract *TXToken // Generic contract binding to access the raw methods on
 }
 
-// TxTokenCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
-type TxTokenCallerRaw struct {
-	Contract *TxTokenCaller // Generic read-only contract binding to access the raw methods on
+// TXTokenCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type TXTokenCallerRaw struct {
+	Contract *TXTokenCaller // Generic read-only contract binding to access the raw methods on
 }
 
-// TxTokenTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
-type TxTokenTransactorRaw struct {
-	Contract *TxTokenTransactor // Generic write-only contract binding to access the raw methods on
+// TXTokenTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type TXTokenTransactorRaw struct {
+	Contract *TXTokenTransactor // Generic write-only contract binding to access the raw methods on
 }
 
-// NewTxToken creates a new instance of TxToken, bound to a specific deployed contract.
-func NewTxToken(address common.Address, backend bind.ContractBackend) (*TxToken, error) {
-	contract, err := bindTxToken(address, backend, backend, backend)
+// NewTXToken creates a new instance of TXToken, bound to a specific deployed contract.
+func NewTXToken(address common.Address, backend bind.ContractBackend) (*TXToken, error) {
+	contract, err := bindTXToken(address, backend, backend, backend)
 	if err != nil {
 		return nil, err
 	}
-	return &TxToken{TxTokenCaller: TxTokenCaller{contract: contract}, TxTokenTransactor: TxTokenTransactor{contract: contract}, TxTokenFilterer: TxTokenFilterer{contract: contract}}, nil
+	return &TXToken{TXTokenCaller: TXTokenCaller{contract: contract}, TXTokenTransactor: TXTokenTransactor{contract: contract}, TXTokenFilterer: TXTokenFilterer{contract: contract}}, nil
 }
 
-// NewTxTokenCaller creates a new read-only instance of TxToken, bound to a specific deployed contract.
-func NewTxTokenCaller(address common.Address, caller bind.ContractCaller) (*TxTokenCaller, error) {
-	contract, err := bindTxToken(address, caller, nil, nil)
+// NewTXTokenCaller creates a new read-only instance of TXToken, bound to a specific deployed contract.
+func NewTXTokenCaller(address common.Address, caller bind.ContractCaller) (*TXTokenCaller, error) {
+	contract, err := bindTXToken(address, caller, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &TxTokenCaller{contract: contract}, nil
+	return &TXTokenCaller{contract: contract}, nil
 }
 
-// NewTxTokenTransactor creates a new write-only instance of TxToken, bound to a specific deployed contract.
-func NewTxTokenTransactor(address common.Address, transactor bind.ContractTransactor) (*TxTokenTransactor, error) {
-	contract, err := bindTxToken(address, nil, transactor, nil)
+// NewTXTokenTransactor creates a new write-only instance of TXToken, bound to a specific deployed contract.
+func NewTXTokenTransactor(address common.Address, transactor bind.ContractTransactor) (*TXTokenTransactor, error) {
+	contract, err := bindTXToken(address, nil, transactor, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &TxTokenTransactor{contract: contract}, nil
+	return &TXTokenTransactor{contract: contract}, nil
 }
 
-// NewTxTokenFilterer creates a new log filterer instance of TxToken, bound to a specific deployed contract.
-func NewTxTokenFilterer(address common.Address, filterer bind.ContractFilterer) (*TxTokenFilterer, error) {
-	contract, err := bindTxToken(address, nil, nil, filterer)
+// NewTXTokenFilterer creates a new log filterer instance of TXToken, bound to a specific deployed contract.
+func NewTXTokenFilterer(address common.Address, filterer bind.ContractFilterer) (*TXTokenFilterer, error) {
+	contract, err := bindTXToken(address, nil, nil, filterer)
 	if err != nil {
 		return nil, err
 	}
-	return &TxTokenFilterer{contract: contract}, nil
+	return &TXTokenFilterer{contract: contract}, nil
 }
 
-// bindTxToken binds a generic wrapper to an already deployed contract.
-func bindTxToken(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
-	parsed, err := TxTokenMetaData.GetAbi()
+// bindTXToken binds a generic wrapper to an already deployed contract.
+func bindTXToken(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := TXTokenMetaData.GetAbi()
 	if err != nil {
 		return nil, err
 	}
@@ -146,46 +146,46 @@ func bindTxToken(address common.Address, caller bind.ContractCaller, transactor 
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_TxToken *TxTokenRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _TxToken.Contract.TxTokenCaller.contract.Call(opts, result, method, params...)
+func (_TXToken *TXTokenRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _TXToken.Contract.TXTokenCaller.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_TxToken *TxTokenRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _TxToken.Contract.TxTokenTransactor.contract.Transfer(opts)
+func (_TXToken *TXTokenRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _TXToken.Contract.TXTokenTransactor.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_TxToken *TxTokenRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _TxToken.Contract.TxTokenTransactor.contract.Transact(opts, method, params...)
+func (_TXToken *TXTokenRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _TXToken.Contract.TXTokenTransactor.contract.Transact(opts, method, params...)
 }
 
 // Call invokes the (constant) contract method with params as input values and
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_TxToken *TxTokenCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _TxToken.Contract.contract.Call(opts, result, method, params...)
+func (_TXToken *TXTokenCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _TXToken.Contract.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_TxToken *TxTokenTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _TxToken.Contract.contract.Transfer(opts)
+func (_TXToken *TXTokenTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _TXToken.Contract.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_TxToken *TxTokenTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _TxToken.Contract.contract.Transact(opts, method, params...)
+func (_TXToken *TXTokenTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _TXToken.Contract.contract.Transact(opts, method, params...)
 }
 
 // BRIDGEROLE is a free data retrieval call binding the contract method 0xb5bfddea.
 //
 // Solidity: function BRIDGE_ROLE() view returns(bytes32)
-func (_TxToken *TxTokenCaller) BRIDGEROLE(opts *bind.CallOpts) ([32]byte, error) {
+func (_TXToken *TXTokenCaller) BRIDGEROLE(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
-	err := _TxToken.contract.Call(opts, &out, "BRIDGE_ROLE")
+	err := _TXToken.contract.Call(opts, &out, "BRIDGE_ROLE")
 
 	if err != nil {
 		return *new([32]byte), err
@@ -200,23 +200,23 @@ func (_TxToken *TxTokenCaller) BRIDGEROLE(opts *bind.CallOpts) ([32]byte, error)
 // BRIDGEROLE is a free data retrieval call binding the contract method 0xb5bfddea.
 //
 // Solidity: function BRIDGE_ROLE() view returns(bytes32)
-func (_TxToken *TxTokenSession) BRIDGEROLE() ([32]byte, error) {
-	return _TxToken.Contract.BRIDGEROLE(&_TxToken.CallOpts)
+func (_TXToken *TXTokenSession) BRIDGEROLE() ([32]byte, error) {
+	return _TXToken.Contract.BRIDGEROLE(&_TXToken.CallOpts)
 }
 
 // BRIDGEROLE is a free data retrieval call binding the contract method 0xb5bfddea.
 //
 // Solidity: function BRIDGE_ROLE() view returns(bytes32)
-func (_TxToken *TxTokenCallerSession) BRIDGEROLE() ([32]byte, error) {
-	return _TxToken.Contract.BRIDGEROLE(&_TxToken.CallOpts)
+func (_TXToken *TXTokenCallerSession) BRIDGEROLE() ([32]byte, error) {
+	return _TXToken.Contract.BRIDGEROLE(&_TXToken.CallOpts)
 }
 
 // DEFAULTADMINROLE is a free data retrieval call binding the contract method 0xa217fddf.
 //
 // Solidity: function DEFAULT_ADMIN_ROLE() view returns(bytes32)
-func (_TxToken *TxTokenCaller) DEFAULTADMINROLE(opts *bind.CallOpts) ([32]byte, error) {
+func (_TXToken *TXTokenCaller) DEFAULTADMINROLE(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
-	err := _TxToken.contract.Call(opts, &out, "DEFAULT_ADMIN_ROLE")
+	err := _TXToken.contract.Call(opts, &out, "DEFAULT_ADMIN_ROLE")
 
 	if err != nil {
 		return *new([32]byte), err
@@ -231,23 +231,23 @@ func (_TxToken *TxTokenCaller) DEFAULTADMINROLE(opts *bind.CallOpts) ([32]byte, 
 // DEFAULTADMINROLE is a free data retrieval call binding the contract method 0xa217fddf.
 //
 // Solidity: function DEFAULT_ADMIN_ROLE() view returns(bytes32)
-func (_TxToken *TxTokenSession) DEFAULTADMINROLE() ([32]byte, error) {
-	return _TxToken.Contract.DEFAULTADMINROLE(&_TxToken.CallOpts)
+func (_TXToken *TXTokenSession) DEFAULTADMINROLE() ([32]byte, error) {
+	return _TXToken.Contract.DEFAULTADMINROLE(&_TXToken.CallOpts)
 }
 
 // DEFAULTADMINROLE is a free data retrieval call binding the contract method 0xa217fddf.
 //
 // Solidity: function DEFAULT_ADMIN_ROLE() view returns(bytes32)
-func (_TxToken *TxTokenCallerSession) DEFAULTADMINROLE() ([32]byte, error) {
-	return _TxToken.Contract.DEFAULTADMINROLE(&_TxToken.CallOpts)
+func (_TXToken *TXTokenCallerSession) DEFAULTADMINROLE() ([32]byte, error) {
+	return _TXToken.Contract.DEFAULTADMINROLE(&_TXToken.CallOpts)
 }
 
 // DOMAINSEPARATOR is a free data retrieval call binding the contract method 0x3644e515.
 //
 // Solidity: function DOMAIN_SEPARATOR() view returns(bytes32)
-func (_TxToken *TxTokenCaller) DOMAINSEPARATOR(opts *bind.CallOpts) ([32]byte, error) {
+func (_TXToken *TXTokenCaller) DOMAINSEPARATOR(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
-	err := _TxToken.contract.Call(opts, &out, "DOMAIN_SEPARATOR")
+	err := _TXToken.contract.Call(opts, &out, "DOMAIN_SEPARATOR")
 
 	if err != nil {
 		return *new([32]byte), err
@@ -262,23 +262,23 @@ func (_TxToken *TxTokenCaller) DOMAINSEPARATOR(opts *bind.CallOpts) ([32]byte, e
 // DOMAINSEPARATOR is a free data retrieval call binding the contract method 0x3644e515.
 //
 // Solidity: function DOMAIN_SEPARATOR() view returns(bytes32)
-func (_TxToken *TxTokenSession) DOMAINSEPARATOR() ([32]byte, error) {
-	return _TxToken.Contract.DOMAINSEPARATOR(&_TxToken.CallOpts)
+func (_TXToken *TXTokenSession) DOMAINSEPARATOR() ([32]byte, error) {
+	return _TXToken.Contract.DOMAINSEPARATOR(&_TXToken.CallOpts)
 }
 
 // DOMAINSEPARATOR is a free data retrieval call binding the contract method 0x3644e515.
 //
 // Solidity: function DOMAIN_SEPARATOR() view returns(bytes32)
-func (_TxToken *TxTokenCallerSession) DOMAINSEPARATOR() ([32]byte, error) {
-	return _TxToken.Contract.DOMAINSEPARATOR(&_TxToken.CallOpts)
+func (_TXToken *TXTokenCallerSession) DOMAINSEPARATOR() ([32]byte, error) {
+	return _TXToken.Contract.DOMAINSEPARATOR(&_TXToken.CallOpts)
 }
 
 // Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
 // Solidity: function allowance(address owner, address spender) view returns(uint256)
-func (_TxToken *TxTokenCaller) Allowance(opts *bind.CallOpts, owner common.Address, spender common.Address) (*big.Int, error) {
+func (_TXToken *TXTokenCaller) Allowance(opts *bind.CallOpts, owner common.Address, spender common.Address) (*big.Int, error) {
 	var out []interface{}
-	err := _TxToken.contract.Call(opts, &out, "allowance", owner, spender)
+	err := _TXToken.contract.Call(opts, &out, "allowance", owner, spender)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -293,23 +293,23 @@ func (_TxToken *TxTokenCaller) Allowance(opts *bind.CallOpts, owner common.Addre
 // Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
 // Solidity: function allowance(address owner, address spender) view returns(uint256)
-func (_TxToken *TxTokenSession) Allowance(owner common.Address, spender common.Address) (*big.Int, error) {
-	return _TxToken.Contract.Allowance(&_TxToken.CallOpts, owner, spender)
+func (_TXToken *TXTokenSession) Allowance(owner common.Address, spender common.Address) (*big.Int, error) {
+	return _TXToken.Contract.Allowance(&_TXToken.CallOpts, owner, spender)
 }
 
 // Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
 // Solidity: function allowance(address owner, address spender) view returns(uint256)
-func (_TxToken *TxTokenCallerSession) Allowance(owner common.Address, spender common.Address) (*big.Int, error) {
-	return _TxToken.Contract.Allowance(&_TxToken.CallOpts, owner, spender)
+func (_TXToken *TXTokenCallerSession) Allowance(owner common.Address, spender common.Address) (*big.Int, error) {
+	return _TXToken.Contract.Allowance(&_TXToken.CallOpts, owner, spender)
 }
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
 // Solidity: function balanceOf(address account) view returns(uint256)
-func (_TxToken *TxTokenCaller) BalanceOf(opts *bind.CallOpts, account common.Address) (*big.Int, error) {
+func (_TXToken *TXTokenCaller) BalanceOf(opts *bind.CallOpts, account common.Address) (*big.Int, error) {
 	var out []interface{}
-	err := _TxToken.contract.Call(opts, &out, "balanceOf", account)
+	err := _TXToken.contract.Call(opts, &out, "balanceOf", account)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -324,23 +324,23 @@ func (_TxToken *TxTokenCaller) BalanceOf(opts *bind.CallOpts, account common.Add
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
 // Solidity: function balanceOf(address account) view returns(uint256)
-func (_TxToken *TxTokenSession) BalanceOf(account common.Address) (*big.Int, error) {
-	return _TxToken.Contract.BalanceOf(&_TxToken.CallOpts, account)
+func (_TXToken *TXTokenSession) BalanceOf(account common.Address) (*big.Int, error) {
+	return _TXToken.Contract.BalanceOf(&_TXToken.CallOpts, account)
 }
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
 // Solidity: function balanceOf(address account) view returns(uint256)
-func (_TxToken *TxTokenCallerSession) BalanceOf(account common.Address) (*big.Int, error) {
-	return _TxToken.Contract.BalanceOf(&_TxToken.CallOpts, account)
+func (_TXToken *TXTokenCallerSession) BalanceOf(account common.Address) (*big.Int, error) {
+	return _TXToken.Contract.BalanceOf(&_TXToken.CallOpts, account)
 }
 
 // Decimals is a free data retrieval call binding the contract method 0x313ce567.
 //
 // Solidity: function decimals() pure returns(uint8)
-func (_TxToken *TxTokenCaller) Decimals(opts *bind.CallOpts) (uint8, error) {
+func (_TXToken *TXTokenCaller) Decimals(opts *bind.CallOpts) (uint8, error) {
 	var out []interface{}
-	err := _TxToken.contract.Call(opts, &out, "decimals")
+	err := _TXToken.contract.Call(opts, &out, "decimals")
 
 	if err != nil {
 		return *new(uint8), err
@@ -355,21 +355,21 @@ func (_TxToken *TxTokenCaller) Decimals(opts *bind.CallOpts) (uint8, error) {
 // Decimals is a free data retrieval call binding the contract method 0x313ce567.
 //
 // Solidity: function decimals() pure returns(uint8)
-func (_TxToken *TxTokenSession) Decimals() (uint8, error) {
-	return _TxToken.Contract.Decimals(&_TxToken.CallOpts)
+func (_TXToken *TXTokenSession) Decimals() (uint8, error) {
+	return _TXToken.Contract.Decimals(&_TXToken.CallOpts)
 }
 
 // Decimals is a free data retrieval call binding the contract method 0x313ce567.
 //
 // Solidity: function decimals() pure returns(uint8)
-func (_TxToken *TxTokenCallerSession) Decimals() (uint8, error) {
-	return _TxToken.Contract.Decimals(&_TxToken.CallOpts)
+func (_TXToken *TXTokenCallerSession) Decimals() (uint8, error) {
+	return _TXToken.Contract.Decimals(&_TXToken.CallOpts)
 }
 
 // Eip712Domain is a free data retrieval call binding the contract method 0x84b0196e.
 //
 // Solidity: function eip712Domain() view returns(bytes1 fields, string name, string version, uint256 chainId, address verifyingContract, bytes32 salt, uint256[] extensions)
-func (_TxToken *TxTokenCaller) Eip712Domain(opts *bind.CallOpts) (struct {
+func (_TXToken *TXTokenCaller) Eip712Domain(opts *bind.CallOpts) (struct {
 	Fields            [1]byte
 	Name              string
 	Version           string
@@ -379,7 +379,7 @@ func (_TxToken *TxTokenCaller) Eip712Domain(opts *bind.CallOpts) (struct {
 	Extensions        []*big.Int
 }, error) {
 	var out []interface{}
-	err := _TxToken.contract.Call(opts, &out, "eip712Domain")
+	err := _TXToken.contract.Call(opts, &out, "eip712Domain")
 
 	outstruct := new(struct {
 		Fields            [1]byte
@@ -409,7 +409,7 @@ func (_TxToken *TxTokenCaller) Eip712Domain(opts *bind.CallOpts) (struct {
 // Eip712Domain is a free data retrieval call binding the contract method 0x84b0196e.
 //
 // Solidity: function eip712Domain() view returns(bytes1 fields, string name, string version, uint256 chainId, address verifyingContract, bytes32 salt, uint256[] extensions)
-func (_TxToken *TxTokenSession) Eip712Domain() (struct {
+func (_TXToken *TXTokenSession) Eip712Domain() (struct {
 	Fields            [1]byte
 	Name              string
 	Version           string
@@ -418,13 +418,13 @@ func (_TxToken *TxTokenSession) Eip712Domain() (struct {
 	Salt              [32]byte
 	Extensions        []*big.Int
 }, error) {
-	return _TxToken.Contract.Eip712Domain(&_TxToken.CallOpts)
+	return _TXToken.Contract.Eip712Domain(&_TXToken.CallOpts)
 }
 
 // Eip712Domain is a free data retrieval call binding the contract method 0x84b0196e.
 //
 // Solidity: function eip712Domain() view returns(bytes1 fields, string name, string version, uint256 chainId, address verifyingContract, bytes32 salt, uint256[] extensions)
-func (_TxToken *TxTokenCallerSession) Eip712Domain() (struct {
+func (_TXToken *TXTokenCallerSession) Eip712Domain() (struct {
 	Fields            [1]byte
 	Name              string
 	Version           string
@@ -433,15 +433,15 @@ func (_TxToken *TxTokenCallerSession) Eip712Domain() (struct {
 	Salt              [32]byte
 	Extensions        []*big.Int
 }, error) {
-	return _TxToken.Contract.Eip712Domain(&_TxToken.CallOpts)
+	return _TXToken.Contract.Eip712Domain(&_TXToken.CallOpts)
 }
 
 // GetRoleAdmin is a free data retrieval call binding the contract method 0x248a9ca3.
 //
 // Solidity: function getRoleAdmin(bytes32 role) view returns(bytes32)
-func (_TxToken *TxTokenCaller) GetRoleAdmin(opts *bind.CallOpts, role [32]byte) ([32]byte, error) {
+func (_TXToken *TXTokenCaller) GetRoleAdmin(opts *bind.CallOpts, role [32]byte) ([32]byte, error) {
 	var out []interface{}
-	err := _TxToken.contract.Call(opts, &out, "getRoleAdmin", role)
+	err := _TXToken.contract.Call(opts, &out, "getRoleAdmin", role)
 
 	if err != nil {
 		return *new([32]byte), err
@@ -456,23 +456,23 @@ func (_TxToken *TxTokenCaller) GetRoleAdmin(opts *bind.CallOpts, role [32]byte) 
 // GetRoleAdmin is a free data retrieval call binding the contract method 0x248a9ca3.
 //
 // Solidity: function getRoleAdmin(bytes32 role) view returns(bytes32)
-func (_TxToken *TxTokenSession) GetRoleAdmin(role [32]byte) ([32]byte, error) {
-	return _TxToken.Contract.GetRoleAdmin(&_TxToken.CallOpts, role)
+func (_TXToken *TXTokenSession) GetRoleAdmin(role [32]byte) ([32]byte, error) {
+	return _TXToken.Contract.GetRoleAdmin(&_TXToken.CallOpts, role)
 }
 
 // GetRoleAdmin is a free data retrieval call binding the contract method 0x248a9ca3.
 //
 // Solidity: function getRoleAdmin(bytes32 role) view returns(bytes32)
-func (_TxToken *TxTokenCallerSession) GetRoleAdmin(role [32]byte) ([32]byte, error) {
-	return _TxToken.Contract.GetRoleAdmin(&_TxToken.CallOpts, role)
+func (_TXToken *TXTokenCallerSession) GetRoleAdmin(role [32]byte) ([32]byte, error) {
+	return _TXToken.Contract.GetRoleAdmin(&_TXToken.CallOpts, role)
 }
 
 // HasRole is a free data retrieval call binding the contract method 0x91d14854.
 //
 // Solidity: function hasRole(bytes32 role, address account) view returns(bool)
-func (_TxToken *TxTokenCaller) HasRole(opts *bind.CallOpts, role [32]byte, account common.Address) (bool, error) {
+func (_TXToken *TXTokenCaller) HasRole(opts *bind.CallOpts, role [32]byte, account common.Address) (bool, error) {
 	var out []interface{}
-	err := _TxToken.contract.Call(opts, &out, "hasRole", role, account)
+	err := _TXToken.contract.Call(opts, &out, "hasRole", role, account)
 
 	if err != nil {
 		return *new(bool), err
@@ -487,23 +487,23 @@ func (_TxToken *TxTokenCaller) HasRole(opts *bind.CallOpts, role [32]byte, accou
 // HasRole is a free data retrieval call binding the contract method 0x91d14854.
 //
 // Solidity: function hasRole(bytes32 role, address account) view returns(bool)
-func (_TxToken *TxTokenSession) HasRole(role [32]byte, account common.Address) (bool, error) {
-	return _TxToken.Contract.HasRole(&_TxToken.CallOpts, role, account)
+func (_TXToken *TXTokenSession) HasRole(role [32]byte, account common.Address) (bool, error) {
+	return _TXToken.Contract.HasRole(&_TXToken.CallOpts, role, account)
 }
 
 // HasRole is a free data retrieval call binding the contract method 0x91d14854.
 //
 // Solidity: function hasRole(bytes32 role, address account) view returns(bool)
-func (_TxToken *TxTokenCallerSession) HasRole(role [32]byte, account common.Address) (bool, error) {
-	return _TxToken.Contract.HasRole(&_TxToken.CallOpts, role, account)
+func (_TXToken *TXTokenCallerSession) HasRole(role [32]byte, account common.Address) (bool, error) {
+	return _TXToken.Contract.HasRole(&_TXToken.CallOpts, role, account)
 }
 
 // Name is a free data retrieval call binding the contract method 0x06fdde03.
 //
 // Solidity: function name() view returns(string)
-func (_TxToken *TxTokenCaller) Name(opts *bind.CallOpts) (string, error) {
+func (_TXToken *TXTokenCaller) Name(opts *bind.CallOpts) (string, error) {
 	var out []interface{}
-	err := _TxToken.contract.Call(opts, &out, "name")
+	err := _TXToken.contract.Call(opts, &out, "name")
 
 	if err != nil {
 		return *new(string), err
@@ -518,23 +518,23 @@ func (_TxToken *TxTokenCaller) Name(opts *bind.CallOpts) (string, error) {
 // Name is a free data retrieval call binding the contract method 0x06fdde03.
 //
 // Solidity: function name() view returns(string)
-func (_TxToken *TxTokenSession) Name() (string, error) {
-	return _TxToken.Contract.Name(&_TxToken.CallOpts)
+func (_TXToken *TXTokenSession) Name() (string, error) {
+	return _TXToken.Contract.Name(&_TXToken.CallOpts)
 }
 
 // Name is a free data retrieval call binding the contract method 0x06fdde03.
 //
 // Solidity: function name() view returns(string)
-func (_TxToken *TxTokenCallerSession) Name() (string, error) {
-	return _TxToken.Contract.Name(&_TxToken.CallOpts)
+func (_TXToken *TXTokenCallerSession) Name() (string, error) {
+	return _TXToken.Contract.Name(&_TXToken.CallOpts)
 }
 
 // Nonces is a free data retrieval call binding the contract method 0x7ecebe00.
 //
 // Solidity: function nonces(address owner) view returns(uint256)
-func (_TxToken *TxTokenCaller) Nonces(opts *bind.CallOpts, owner common.Address) (*big.Int, error) {
+func (_TXToken *TXTokenCaller) Nonces(opts *bind.CallOpts, owner common.Address) (*big.Int, error) {
 	var out []interface{}
-	err := _TxToken.contract.Call(opts, &out, "nonces", owner)
+	err := _TXToken.contract.Call(opts, &out, "nonces", owner)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -549,23 +549,23 @@ func (_TxToken *TxTokenCaller) Nonces(opts *bind.CallOpts, owner common.Address)
 // Nonces is a free data retrieval call binding the contract method 0x7ecebe00.
 //
 // Solidity: function nonces(address owner) view returns(uint256)
-func (_TxToken *TxTokenSession) Nonces(owner common.Address) (*big.Int, error) {
-	return _TxToken.Contract.Nonces(&_TxToken.CallOpts, owner)
+func (_TXToken *TXTokenSession) Nonces(owner common.Address) (*big.Int, error) {
+	return _TXToken.Contract.Nonces(&_TXToken.CallOpts, owner)
 }
 
 // Nonces is a free data retrieval call binding the contract method 0x7ecebe00.
 //
 // Solidity: function nonces(address owner) view returns(uint256)
-func (_TxToken *TxTokenCallerSession) Nonces(owner common.Address) (*big.Int, error) {
-	return _TxToken.Contract.Nonces(&_TxToken.CallOpts, owner)
+func (_TXToken *TXTokenCallerSession) Nonces(owner common.Address) (*big.Int, error) {
+	return _TXToken.Contract.Nonces(&_TXToken.CallOpts, owner)
 }
 
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
 // Solidity: function paused() view returns(bool)
-func (_TxToken *TxTokenCaller) Paused(opts *bind.CallOpts) (bool, error) {
+func (_TXToken *TXTokenCaller) Paused(opts *bind.CallOpts) (bool, error) {
 	var out []interface{}
-	err := _TxToken.contract.Call(opts, &out, "paused")
+	err := _TXToken.contract.Call(opts, &out, "paused")
 
 	if err != nil {
 		return *new(bool), err
@@ -580,23 +580,23 @@ func (_TxToken *TxTokenCaller) Paused(opts *bind.CallOpts) (bool, error) {
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
 // Solidity: function paused() view returns(bool)
-func (_TxToken *TxTokenSession) Paused() (bool, error) {
-	return _TxToken.Contract.Paused(&_TxToken.CallOpts)
+func (_TXToken *TXTokenSession) Paused() (bool, error) {
+	return _TXToken.Contract.Paused(&_TXToken.CallOpts)
 }
 
 // Paused is a free data retrieval call binding the contract method 0x5c975abb.
 //
 // Solidity: function paused() view returns(bool)
-func (_TxToken *TxTokenCallerSession) Paused() (bool, error) {
-	return _TxToken.Contract.Paused(&_TxToken.CallOpts)
+func (_TXToken *TXTokenCallerSession) Paused() (bool, error) {
+	return _TXToken.Contract.Paused(&_TXToken.CallOpts)
 }
 
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
 //
 // Solidity: function supportsInterface(bytes4 interfaceId) view returns(bool)
-func (_TxToken *TxTokenCaller) SupportsInterface(opts *bind.CallOpts, interfaceId [4]byte) (bool, error) {
+func (_TXToken *TXTokenCaller) SupportsInterface(opts *bind.CallOpts, interfaceId [4]byte) (bool, error) {
 	var out []interface{}
-	err := _TxToken.contract.Call(opts, &out, "supportsInterface", interfaceId)
+	err := _TXToken.contract.Call(opts, &out, "supportsInterface", interfaceId)
 
 	if err != nil {
 		return *new(bool), err
@@ -611,23 +611,23 @@ func (_TxToken *TxTokenCaller) SupportsInterface(opts *bind.CallOpts, interfaceI
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
 //
 // Solidity: function supportsInterface(bytes4 interfaceId) view returns(bool)
-func (_TxToken *TxTokenSession) SupportsInterface(interfaceId [4]byte) (bool, error) {
-	return _TxToken.Contract.SupportsInterface(&_TxToken.CallOpts, interfaceId)
+func (_TXToken *TXTokenSession) SupportsInterface(interfaceId [4]byte) (bool, error) {
+	return _TXToken.Contract.SupportsInterface(&_TXToken.CallOpts, interfaceId)
 }
 
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
 //
 // Solidity: function supportsInterface(bytes4 interfaceId) view returns(bool)
-func (_TxToken *TxTokenCallerSession) SupportsInterface(interfaceId [4]byte) (bool, error) {
-	return _TxToken.Contract.SupportsInterface(&_TxToken.CallOpts, interfaceId)
+func (_TXToken *TXTokenCallerSession) SupportsInterface(interfaceId [4]byte) (bool, error) {
+	return _TXToken.Contract.SupportsInterface(&_TXToken.CallOpts, interfaceId)
 }
 
 // Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 //
 // Solidity: function symbol() view returns(string)
-func (_TxToken *TxTokenCaller) Symbol(opts *bind.CallOpts) (string, error) {
+func (_TXToken *TXTokenCaller) Symbol(opts *bind.CallOpts) (string, error) {
 	var out []interface{}
-	err := _TxToken.contract.Call(opts, &out, "symbol")
+	err := _TXToken.contract.Call(opts, &out, "symbol")
 
 	if err != nil {
 		return *new(string), err
@@ -642,23 +642,23 @@ func (_TxToken *TxTokenCaller) Symbol(opts *bind.CallOpts) (string, error) {
 // Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 //
 // Solidity: function symbol() view returns(string)
-func (_TxToken *TxTokenSession) Symbol() (string, error) {
-	return _TxToken.Contract.Symbol(&_TxToken.CallOpts)
+func (_TXToken *TXTokenSession) Symbol() (string, error) {
+	return _TXToken.Contract.Symbol(&_TXToken.CallOpts)
 }
 
 // Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 //
 // Solidity: function symbol() view returns(string)
-func (_TxToken *TxTokenCallerSession) Symbol() (string, error) {
-	return _TxToken.Contract.Symbol(&_TxToken.CallOpts)
+func (_TXToken *TXTokenCallerSession) Symbol() (string, error) {
+	return _TXToken.Contract.Symbol(&_TXToken.CallOpts)
 }
 
 // TotalSupply is a free data retrieval call binding the contract method 0x18160ddd.
 //
 // Solidity: function totalSupply() view returns(uint256)
-func (_TxToken *TxTokenCaller) TotalSupply(opts *bind.CallOpts) (*big.Int, error) {
+func (_TXToken *TXTokenCaller) TotalSupply(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _TxToken.contract.Call(opts, &out, "totalSupply")
+	err := _TXToken.contract.Call(opts, &out, "totalSupply")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -673,314 +673,314 @@ func (_TxToken *TxTokenCaller) TotalSupply(opts *bind.CallOpts) (*big.Int, error
 // TotalSupply is a free data retrieval call binding the contract method 0x18160ddd.
 //
 // Solidity: function totalSupply() view returns(uint256)
-func (_TxToken *TxTokenSession) TotalSupply() (*big.Int, error) {
-	return _TxToken.Contract.TotalSupply(&_TxToken.CallOpts)
+func (_TXToken *TXTokenSession) TotalSupply() (*big.Int, error) {
+	return _TXToken.Contract.TotalSupply(&_TXToken.CallOpts)
 }
 
 // TotalSupply is a free data retrieval call binding the contract method 0x18160ddd.
 //
 // Solidity: function totalSupply() view returns(uint256)
-func (_TxToken *TxTokenCallerSession) TotalSupply() (*big.Int, error) {
-	return _TxToken.Contract.TotalSupply(&_TxToken.CallOpts)
+func (_TXToken *TXTokenCallerSession) TotalSupply() (*big.Int, error) {
+	return _TXToken.Contract.TotalSupply(&_TXToken.CallOpts)
 }
 
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 //
 // Solidity: function approve(address spender, uint256 value) returns(bool)
-func (_TxToken *TxTokenTransactor) Approve(opts *bind.TransactOpts, spender common.Address, value *big.Int) (*types.Transaction, error) {
-	return _TxToken.contract.Transact(opts, "approve", spender, value)
+func (_TXToken *TXTokenTransactor) Approve(opts *bind.TransactOpts, spender common.Address, value *big.Int) (*types.Transaction, error) {
+	return _TXToken.contract.Transact(opts, "approve", spender, value)
 }
 
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 //
 // Solidity: function approve(address spender, uint256 value) returns(bool)
-func (_TxToken *TxTokenSession) Approve(spender common.Address, value *big.Int) (*types.Transaction, error) {
-	return _TxToken.Contract.Approve(&_TxToken.TransactOpts, spender, value)
+func (_TXToken *TXTokenSession) Approve(spender common.Address, value *big.Int) (*types.Transaction, error) {
+	return _TXToken.Contract.Approve(&_TXToken.TransactOpts, spender, value)
 }
 
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 //
 // Solidity: function approve(address spender, uint256 value) returns(bool)
-func (_TxToken *TxTokenTransactorSession) Approve(spender common.Address, value *big.Int) (*types.Transaction, error) {
-	return _TxToken.Contract.Approve(&_TxToken.TransactOpts, spender, value)
+func (_TXToken *TXTokenTransactorSession) Approve(spender common.Address, value *big.Int) (*types.Transaction, error) {
+	return _TXToken.Contract.Approve(&_TXToken.TransactOpts, spender, value)
 }
 
 // Burn is a paid mutator transaction binding the contract method 0x9dc29fac.
 //
 // Solidity: function burn(address from, uint256 amount) returns()
-func (_TxToken *TxTokenTransactor) Burn(opts *bind.TransactOpts, from common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _TxToken.contract.Transact(opts, "burn", from, amount)
+func (_TXToken *TXTokenTransactor) Burn(opts *bind.TransactOpts, from common.Address, amount *big.Int) (*types.Transaction, error) {
+	return _TXToken.contract.Transact(opts, "burn", from, amount)
 }
 
 // Burn is a paid mutator transaction binding the contract method 0x9dc29fac.
 //
 // Solidity: function burn(address from, uint256 amount) returns()
-func (_TxToken *TxTokenSession) Burn(from common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _TxToken.Contract.Burn(&_TxToken.TransactOpts, from, amount)
+func (_TXToken *TXTokenSession) Burn(from common.Address, amount *big.Int) (*types.Transaction, error) {
+	return _TXToken.Contract.Burn(&_TXToken.TransactOpts, from, amount)
 }
 
 // Burn is a paid mutator transaction binding the contract method 0x9dc29fac.
 //
 // Solidity: function burn(address from, uint256 amount) returns()
-func (_TxToken *TxTokenTransactorSession) Burn(from common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _TxToken.Contract.Burn(&_TxToken.TransactOpts, from, amount)
+func (_TXToken *TXTokenTransactorSession) Burn(from common.Address, amount *big.Int) (*types.Transaction, error) {
+	return _TXToken.Contract.Burn(&_TXToken.TransactOpts, from, amount)
 }
 
 // CrosschainBurn is a paid mutator transaction binding the contract method 0x2b8c49e3.
 //
 // Solidity: function crosschainBurn(address from, uint256 value) returns()
-func (_TxToken *TxTokenTransactor) CrosschainBurn(opts *bind.TransactOpts, from common.Address, value *big.Int) (*types.Transaction, error) {
-	return _TxToken.contract.Transact(opts, "crosschainBurn", from, value)
+func (_TXToken *TXTokenTransactor) CrosschainBurn(opts *bind.TransactOpts, from common.Address, value *big.Int) (*types.Transaction, error) {
+	return _TXToken.contract.Transact(opts, "crosschainBurn", from, value)
 }
 
 // CrosschainBurn is a paid mutator transaction binding the contract method 0x2b8c49e3.
 //
 // Solidity: function crosschainBurn(address from, uint256 value) returns()
-func (_TxToken *TxTokenSession) CrosschainBurn(from common.Address, value *big.Int) (*types.Transaction, error) {
-	return _TxToken.Contract.CrosschainBurn(&_TxToken.TransactOpts, from, value)
+func (_TXToken *TXTokenSession) CrosschainBurn(from common.Address, value *big.Int) (*types.Transaction, error) {
+	return _TXToken.Contract.CrosschainBurn(&_TXToken.TransactOpts, from, value)
 }
 
 // CrosschainBurn is a paid mutator transaction binding the contract method 0x2b8c49e3.
 //
 // Solidity: function crosschainBurn(address from, uint256 value) returns()
-func (_TxToken *TxTokenTransactorSession) CrosschainBurn(from common.Address, value *big.Int) (*types.Transaction, error) {
-	return _TxToken.Contract.CrosschainBurn(&_TxToken.TransactOpts, from, value)
+func (_TXToken *TXTokenTransactorSession) CrosschainBurn(from common.Address, value *big.Int) (*types.Transaction, error) {
+	return _TXToken.Contract.CrosschainBurn(&_TXToken.TransactOpts, from, value)
 }
 
 // CrosschainMint is a paid mutator transaction binding the contract method 0x18bf5077.
 //
 // Solidity: function crosschainMint(address to, uint256 value) returns()
-func (_TxToken *TxTokenTransactor) CrosschainMint(opts *bind.TransactOpts, to common.Address, value *big.Int) (*types.Transaction, error) {
-	return _TxToken.contract.Transact(opts, "crosschainMint", to, value)
+func (_TXToken *TXTokenTransactor) CrosschainMint(opts *bind.TransactOpts, to common.Address, value *big.Int) (*types.Transaction, error) {
+	return _TXToken.contract.Transact(opts, "crosschainMint", to, value)
 }
 
 // CrosschainMint is a paid mutator transaction binding the contract method 0x18bf5077.
 //
 // Solidity: function crosschainMint(address to, uint256 value) returns()
-func (_TxToken *TxTokenSession) CrosschainMint(to common.Address, value *big.Int) (*types.Transaction, error) {
-	return _TxToken.Contract.CrosschainMint(&_TxToken.TransactOpts, to, value)
+func (_TXToken *TXTokenSession) CrosschainMint(to common.Address, value *big.Int) (*types.Transaction, error) {
+	return _TXToken.Contract.CrosschainMint(&_TXToken.TransactOpts, to, value)
 }
 
 // CrosschainMint is a paid mutator transaction binding the contract method 0x18bf5077.
 //
 // Solidity: function crosschainMint(address to, uint256 value) returns()
-func (_TxToken *TxTokenTransactorSession) CrosschainMint(to common.Address, value *big.Int) (*types.Transaction, error) {
-	return _TxToken.Contract.CrosschainMint(&_TxToken.TransactOpts, to, value)
+func (_TXToken *TXTokenTransactorSession) CrosschainMint(to common.Address, value *big.Int) (*types.Transaction, error) {
+	return _TXToken.Contract.CrosschainMint(&_TXToken.TransactOpts, to, value)
 }
 
 // GrantRole is a paid mutator transaction binding the contract method 0x2f2ff15d.
 //
 // Solidity: function grantRole(bytes32 role, address account) returns()
-func (_TxToken *TxTokenTransactor) GrantRole(opts *bind.TransactOpts, role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _TxToken.contract.Transact(opts, "grantRole", role, account)
+func (_TXToken *TXTokenTransactor) GrantRole(opts *bind.TransactOpts, role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _TXToken.contract.Transact(opts, "grantRole", role, account)
 }
 
 // GrantRole is a paid mutator transaction binding the contract method 0x2f2ff15d.
 //
 // Solidity: function grantRole(bytes32 role, address account) returns()
-func (_TxToken *TxTokenSession) GrantRole(role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _TxToken.Contract.GrantRole(&_TxToken.TransactOpts, role, account)
+func (_TXToken *TXTokenSession) GrantRole(role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _TXToken.Contract.GrantRole(&_TXToken.TransactOpts, role, account)
 }
 
 // GrantRole is a paid mutator transaction binding the contract method 0x2f2ff15d.
 //
 // Solidity: function grantRole(bytes32 role, address account) returns()
-func (_TxToken *TxTokenTransactorSession) GrantRole(role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _TxToken.Contract.GrantRole(&_TxToken.TransactOpts, role, account)
+func (_TXToken *TXTokenTransactorSession) GrantRole(role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _TXToken.Contract.GrantRole(&_TXToken.TransactOpts, role, account)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0x077f224a.
 //
 // Solidity: function initialize(string name, string symbol, address initialOwner) returns()
-func (_TxToken *TxTokenTransactor) Initialize(opts *bind.TransactOpts, name string, symbol string, initialOwner common.Address) (*types.Transaction, error) {
-	return _TxToken.contract.Transact(opts, "initialize", name, symbol, initialOwner)
+func (_TXToken *TXTokenTransactor) Initialize(opts *bind.TransactOpts, name string, symbol string, initialOwner common.Address) (*types.Transaction, error) {
+	return _TXToken.contract.Transact(opts, "initialize", name, symbol, initialOwner)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0x077f224a.
 //
 // Solidity: function initialize(string name, string symbol, address initialOwner) returns()
-func (_TxToken *TxTokenSession) Initialize(name string, symbol string, initialOwner common.Address) (*types.Transaction, error) {
-	return _TxToken.Contract.Initialize(&_TxToken.TransactOpts, name, symbol, initialOwner)
+func (_TXToken *TXTokenSession) Initialize(name string, symbol string, initialOwner common.Address) (*types.Transaction, error) {
+	return _TXToken.Contract.Initialize(&_TXToken.TransactOpts, name, symbol, initialOwner)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0x077f224a.
 //
 // Solidity: function initialize(string name, string symbol, address initialOwner) returns()
-func (_TxToken *TxTokenTransactorSession) Initialize(name string, symbol string, initialOwner common.Address) (*types.Transaction, error) {
-	return _TxToken.Contract.Initialize(&_TxToken.TransactOpts, name, symbol, initialOwner)
+func (_TXToken *TXTokenTransactorSession) Initialize(name string, symbol string, initialOwner common.Address) (*types.Transaction, error) {
+	return _TXToken.Contract.Initialize(&_TXToken.TransactOpts, name, symbol, initialOwner)
 }
 
 // Mint is a paid mutator transaction binding the contract method 0x40c10f19.
 //
 // Solidity: function mint(address to, uint256 amount) returns()
-func (_TxToken *TxTokenTransactor) Mint(opts *bind.TransactOpts, to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _TxToken.contract.Transact(opts, "mint", to, amount)
+func (_TXToken *TXTokenTransactor) Mint(opts *bind.TransactOpts, to common.Address, amount *big.Int) (*types.Transaction, error) {
+	return _TXToken.contract.Transact(opts, "mint", to, amount)
 }
 
 // Mint is a paid mutator transaction binding the contract method 0x40c10f19.
 //
 // Solidity: function mint(address to, uint256 amount) returns()
-func (_TxToken *TxTokenSession) Mint(to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _TxToken.Contract.Mint(&_TxToken.TransactOpts, to, amount)
+func (_TXToken *TXTokenSession) Mint(to common.Address, amount *big.Int) (*types.Transaction, error) {
+	return _TXToken.Contract.Mint(&_TXToken.TransactOpts, to, amount)
 }
 
 // Mint is a paid mutator transaction binding the contract method 0x40c10f19.
 //
 // Solidity: function mint(address to, uint256 amount) returns()
-func (_TxToken *TxTokenTransactorSession) Mint(to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _TxToken.Contract.Mint(&_TxToken.TransactOpts, to, amount)
+func (_TXToken *TXTokenTransactorSession) Mint(to common.Address, amount *big.Int) (*types.Transaction, error) {
+	return _TXToken.Contract.Mint(&_TXToken.TransactOpts, to, amount)
 }
 
 // Pause is a paid mutator transaction binding the contract method 0x8456cb59.
 //
 // Solidity: function pause() returns()
-func (_TxToken *TxTokenTransactor) Pause(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _TxToken.contract.Transact(opts, "pause")
+func (_TXToken *TXTokenTransactor) Pause(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _TXToken.contract.Transact(opts, "pause")
 }
 
 // Pause is a paid mutator transaction binding the contract method 0x8456cb59.
 //
 // Solidity: function pause() returns()
-func (_TxToken *TxTokenSession) Pause() (*types.Transaction, error) {
-	return _TxToken.Contract.Pause(&_TxToken.TransactOpts)
+func (_TXToken *TXTokenSession) Pause() (*types.Transaction, error) {
+	return _TXToken.Contract.Pause(&_TXToken.TransactOpts)
 }
 
 // Pause is a paid mutator transaction binding the contract method 0x8456cb59.
 //
 // Solidity: function pause() returns()
-func (_TxToken *TxTokenTransactorSession) Pause() (*types.Transaction, error) {
-	return _TxToken.Contract.Pause(&_TxToken.TransactOpts)
+func (_TXToken *TXTokenTransactorSession) Pause() (*types.Transaction, error) {
+	return _TXToken.Contract.Pause(&_TXToken.TransactOpts)
 }
 
 // Permit is a paid mutator transaction binding the contract method 0xd505accf.
 //
 // Solidity: function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) returns()
-func (_TxToken *TxTokenTransactor) Permit(opts *bind.TransactOpts, owner common.Address, spender common.Address, value *big.Int, deadline *big.Int, v uint8, r [32]byte, s [32]byte) (*types.Transaction, error) {
-	return _TxToken.contract.Transact(opts, "permit", owner, spender, value, deadline, v, r, s)
+func (_TXToken *TXTokenTransactor) Permit(opts *bind.TransactOpts, owner common.Address, spender common.Address, value *big.Int, deadline *big.Int, v uint8, r [32]byte, s [32]byte) (*types.Transaction, error) {
+	return _TXToken.contract.Transact(opts, "permit", owner, spender, value, deadline, v, r, s)
 }
 
 // Permit is a paid mutator transaction binding the contract method 0xd505accf.
 //
 // Solidity: function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) returns()
-func (_TxToken *TxTokenSession) Permit(owner common.Address, spender common.Address, value *big.Int, deadline *big.Int, v uint8, r [32]byte, s [32]byte) (*types.Transaction, error) {
-	return _TxToken.Contract.Permit(&_TxToken.TransactOpts, owner, spender, value, deadline, v, r, s)
+func (_TXToken *TXTokenSession) Permit(owner common.Address, spender common.Address, value *big.Int, deadline *big.Int, v uint8, r [32]byte, s [32]byte) (*types.Transaction, error) {
+	return _TXToken.Contract.Permit(&_TXToken.TransactOpts, owner, spender, value, deadline, v, r, s)
 }
 
 // Permit is a paid mutator transaction binding the contract method 0xd505accf.
 //
 // Solidity: function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) returns()
-func (_TxToken *TxTokenTransactorSession) Permit(owner common.Address, spender common.Address, value *big.Int, deadline *big.Int, v uint8, r [32]byte, s [32]byte) (*types.Transaction, error) {
-	return _TxToken.Contract.Permit(&_TxToken.TransactOpts, owner, spender, value, deadline, v, r, s)
+func (_TXToken *TXTokenTransactorSession) Permit(owner common.Address, spender common.Address, value *big.Int, deadline *big.Int, v uint8, r [32]byte, s [32]byte) (*types.Transaction, error) {
+	return _TXToken.Contract.Permit(&_TXToken.TransactOpts, owner, spender, value, deadline, v, r, s)
 }
 
 // RenounceRole is a paid mutator transaction binding the contract method 0x36568abe.
 //
 // Solidity: function renounceRole(bytes32 role, address callerConfirmation) returns()
-func (_TxToken *TxTokenTransactor) RenounceRole(opts *bind.TransactOpts, role [32]byte, callerConfirmation common.Address) (*types.Transaction, error) {
-	return _TxToken.contract.Transact(opts, "renounceRole", role, callerConfirmation)
+func (_TXToken *TXTokenTransactor) RenounceRole(opts *bind.TransactOpts, role [32]byte, callerConfirmation common.Address) (*types.Transaction, error) {
+	return _TXToken.contract.Transact(opts, "renounceRole", role, callerConfirmation)
 }
 
 // RenounceRole is a paid mutator transaction binding the contract method 0x36568abe.
 //
 // Solidity: function renounceRole(bytes32 role, address callerConfirmation) returns()
-func (_TxToken *TxTokenSession) RenounceRole(role [32]byte, callerConfirmation common.Address) (*types.Transaction, error) {
-	return _TxToken.Contract.RenounceRole(&_TxToken.TransactOpts, role, callerConfirmation)
+func (_TXToken *TXTokenSession) RenounceRole(role [32]byte, callerConfirmation common.Address) (*types.Transaction, error) {
+	return _TXToken.Contract.RenounceRole(&_TXToken.TransactOpts, role, callerConfirmation)
 }
 
 // RenounceRole is a paid mutator transaction binding the contract method 0x36568abe.
 //
 // Solidity: function renounceRole(bytes32 role, address callerConfirmation) returns()
-func (_TxToken *TxTokenTransactorSession) RenounceRole(role [32]byte, callerConfirmation common.Address) (*types.Transaction, error) {
-	return _TxToken.Contract.RenounceRole(&_TxToken.TransactOpts, role, callerConfirmation)
+func (_TXToken *TXTokenTransactorSession) RenounceRole(role [32]byte, callerConfirmation common.Address) (*types.Transaction, error) {
+	return _TXToken.Contract.RenounceRole(&_TXToken.TransactOpts, role, callerConfirmation)
 }
 
 // RevokeRole is a paid mutator transaction binding the contract method 0xd547741f.
 //
 // Solidity: function revokeRole(bytes32 role, address account) returns()
-func (_TxToken *TxTokenTransactor) RevokeRole(opts *bind.TransactOpts, role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _TxToken.contract.Transact(opts, "revokeRole", role, account)
+func (_TXToken *TXTokenTransactor) RevokeRole(opts *bind.TransactOpts, role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _TXToken.contract.Transact(opts, "revokeRole", role, account)
 }
 
 // RevokeRole is a paid mutator transaction binding the contract method 0xd547741f.
 //
 // Solidity: function revokeRole(bytes32 role, address account) returns()
-func (_TxToken *TxTokenSession) RevokeRole(role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _TxToken.Contract.RevokeRole(&_TxToken.TransactOpts, role, account)
+func (_TXToken *TXTokenSession) RevokeRole(role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _TXToken.Contract.RevokeRole(&_TXToken.TransactOpts, role, account)
 }
 
 // RevokeRole is a paid mutator transaction binding the contract method 0xd547741f.
 //
 // Solidity: function revokeRole(bytes32 role, address account) returns()
-func (_TxToken *TxTokenTransactorSession) RevokeRole(role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _TxToken.Contract.RevokeRole(&_TxToken.TransactOpts, role, account)
+func (_TXToken *TXTokenTransactorSession) RevokeRole(role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _TXToken.Contract.RevokeRole(&_TXToken.TransactOpts, role, account)
 }
 
 // Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 //
 // Solidity: function transfer(address to, uint256 value) returns(bool)
-func (_TxToken *TxTokenTransactor) Transfer(opts *bind.TransactOpts, to common.Address, value *big.Int) (*types.Transaction, error) {
-	return _TxToken.contract.Transact(opts, "transfer", to, value)
+func (_TXToken *TXTokenTransactor) Transfer(opts *bind.TransactOpts, to common.Address, value *big.Int) (*types.Transaction, error) {
+	return _TXToken.contract.Transact(opts, "transfer", to, value)
 }
 
 // Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 //
 // Solidity: function transfer(address to, uint256 value) returns(bool)
-func (_TxToken *TxTokenSession) Transfer(to common.Address, value *big.Int) (*types.Transaction, error) {
-	return _TxToken.Contract.Transfer(&_TxToken.TransactOpts, to, value)
+func (_TXToken *TXTokenSession) Transfer(to common.Address, value *big.Int) (*types.Transaction, error) {
+	return _TXToken.Contract.Transfer(&_TXToken.TransactOpts, to, value)
 }
 
 // Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 //
 // Solidity: function transfer(address to, uint256 value) returns(bool)
-func (_TxToken *TxTokenTransactorSession) Transfer(to common.Address, value *big.Int) (*types.Transaction, error) {
-	return _TxToken.Contract.Transfer(&_TxToken.TransactOpts, to, value)
+func (_TXToken *TXTokenTransactorSession) Transfer(to common.Address, value *big.Int) (*types.Transaction, error) {
+	return _TXToken.Contract.Transfer(&_TXToken.TransactOpts, to, value)
 }
 
 // TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 //
 // Solidity: function transferFrom(address from, address to, uint256 value) returns(bool)
-func (_TxToken *TxTokenTransactor) TransferFrom(opts *bind.TransactOpts, from common.Address, to common.Address, value *big.Int) (*types.Transaction, error) {
-	return _TxToken.contract.Transact(opts, "transferFrom", from, to, value)
+func (_TXToken *TXTokenTransactor) TransferFrom(opts *bind.TransactOpts, from common.Address, to common.Address, value *big.Int) (*types.Transaction, error) {
+	return _TXToken.contract.Transact(opts, "transferFrom", from, to, value)
 }
 
 // TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 //
 // Solidity: function transferFrom(address from, address to, uint256 value) returns(bool)
-func (_TxToken *TxTokenSession) TransferFrom(from common.Address, to common.Address, value *big.Int) (*types.Transaction, error) {
-	return _TxToken.Contract.TransferFrom(&_TxToken.TransactOpts, from, to, value)
+func (_TXToken *TXTokenSession) TransferFrom(from common.Address, to common.Address, value *big.Int) (*types.Transaction, error) {
+	return _TXToken.Contract.TransferFrom(&_TXToken.TransactOpts, from, to, value)
 }
 
 // TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 //
 // Solidity: function transferFrom(address from, address to, uint256 value) returns(bool)
-func (_TxToken *TxTokenTransactorSession) TransferFrom(from common.Address, to common.Address, value *big.Int) (*types.Transaction, error) {
-	return _TxToken.Contract.TransferFrom(&_TxToken.TransactOpts, from, to, value)
+func (_TXToken *TXTokenTransactorSession) TransferFrom(from common.Address, to common.Address, value *big.Int) (*types.Transaction, error) {
+	return _TXToken.Contract.TransferFrom(&_TXToken.TransactOpts, from, to, value)
 }
 
 // Unpause is a paid mutator transaction binding the contract method 0x3f4ba83a.
 //
 // Solidity: function unpause() returns()
-func (_TxToken *TxTokenTransactor) Unpause(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _TxToken.contract.Transact(opts, "unpause")
+func (_TXToken *TXTokenTransactor) Unpause(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _TXToken.contract.Transact(opts, "unpause")
 }
 
 // Unpause is a paid mutator transaction binding the contract method 0x3f4ba83a.
 //
 // Solidity: function unpause() returns()
-func (_TxToken *TxTokenSession) Unpause() (*types.Transaction, error) {
-	return _TxToken.Contract.Unpause(&_TxToken.TransactOpts)
+func (_TXToken *TXTokenSession) Unpause() (*types.Transaction, error) {
+	return _TXToken.Contract.Unpause(&_TXToken.TransactOpts)
 }
 
 // Unpause is a paid mutator transaction binding the contract method 0x3f4ba83a.
 //
 // Solidity: function unpause() returns()
-func (_TxToken *TxTokenTransactorSession) Unpause() (*types.Transaction, error) {
-	return _TxToken.Contract.Unpause(&_TxToken.TransactOpts)
+func (_TXToken *TXTokenTransactorSession) Unpause() (*types.Transaction, error) {
+	return _TXToken.Contract.Unpause(&_TXToken.TransactOpts)
 }
 
-// TxTokenApprovalIterator is returned from FilterApproval and is used to iterate over the raw logs and unpacked data for Approval events raised by the TxToken contract.
-type TxTokenApprovalIterator struct {
-	Event *TxTokenApproval // Event containing the contract specifics and raw log
+// TXTokenApprovalIterator is returned from FilterApproval and is used to iterate over the raw logs and unpacked data for Approval events raised by the TXToken contract.
+type TXTokenApprovalIterator struct {
+	Event *TXTokenApproval // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -994,7 +994,7 @@ type TxTokenApprovalIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxTokenApprovalIterator) Next() bool {
+func (it *TXTokenApprovalIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1003,7 +1003,7 @@ func (it *TxTokenApprovalIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxTokenApproval)
+			it.Event = new(TXTokenApproval)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1018,7 +1018,7 @@ func (it *TxTokenApprovalIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxTokenApproval)
+		it.Event = new(TXTokenApproval)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1034,19 +1034,19 @@ func (it *TxTokenApprovalIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxTokenApprovalIterator) Error() error {
+func (it *TXTokenApprovalIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxTokenApprovalIterator) Close() error {
+func (it *TXTokenApprovalIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxTokenApproval represents a Approval event raised by the TxToken contract.
-type TxTokenApproval struct {
+// TXTokenApproval represents a Approval event raised by the TXToken contract.
+type TXTokenApproval struct {
 	Owner   common.Address
 	Spender common.Address
 	Value   *big.Int
@@ -1056,7 +1056,7 @@ type TxTokenApproval struct {
 // FilterApproval is a free log retrieval operation binding the contract event 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925.
 //
 // Solidity: event Approval(address indexed owner, address indexed spender, uint256 value)
-func (_TxToken *TxTokenFilterer) FilterApproval(opts *bind.FilterOpts, owner []common.Address, spender []common.Address) (*TxTokenApprovalIterator, error) {
+func (_TXToken *TXTokenFilterer) FilterApproval(opts *bind.FilterOpts, owner []common.Address, spender []common.Address) (*TXTokenApprovalIterator, error) {
 
 	var ownerRule []interface{}
 	for _, ownerItem := range owner {
@@ -1067,17 +1067,17 @@ func (_TxToken *TxTokenFilterer) FilterApproval(opts *bind.FilterOpts, owner []c
 		spenderRule = append(spenderRule, spenderItem)
 	}
 
-	logs, sub, err := _TxToken.contract.FilterLogs(opts, "Approval", ownerRule, spenderRule)
+	logs, sub, err := _TXToken.contract.FilterLogs(opts, "Approval", ownerRule, spenderRule)
 	if err != nil {
 		return nil, err
 	}
-	return &TxTokenApprovalIterator{contract: _TxToken.contract, event: "Approval", logs: logs, sub: sub}, nil
+	return &TXTokenApprovalIterator{contract: _TXToken.contract, event: "Approval", logs: logs, sub: sub}, nil
 }
 
 // WatchApproval is a free log subscription operation binding the contract event 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925.
 //
 // Solidity: event Approval(address indexed owner, address indexed spender, uint256 value)
-func (_TxToken *TxTokenFilterer) WatchApproval(opts *bind.WatchOpts, sink chan<- *TxTokenApproval, owner []common.Address, spender []common.Address) (event.Subscription, error) {
+func (_TXToken *TXTokenFilterer) WatchApproval(opts *bind.WatchOpts, sink chan<- *TXTokenApproval, owner []common.Address, spender []common.Address) (event.Subscription, error) {
 
 	var ownerRule []interface{}
 	for _, ownerItem := range owner {
@@ -1088,7 +1088,7 @@ func (_TxToken *TxTokenFilterer) WatchApproval(opts *bind.WatchOpts, sink chan<-
 		spenderRule = append(spenderRule, spenderItem)
 	}
 
-	logs, sub, err := _TxToken.contract.WatchLogs(opts, "Approval", ownerRule, spenderRule)
+	logs, sub, err := _TXToken.contract.WatchLogs(opts, "Approval", ownerRule, spenderRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1098,8 +1098,8 @@ func (_TxToken *TxTokenFilterer) WatchApproval(opts *bind.WatchOpts, sink chan<-
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxTokenApproval)
-				if err := _TxToken.contract.UnpackLog(event, "Approval", log); err != nil {
+				event := new(TXTokenApproval)
+				if err := _TXToken.contract.UnpackLog(event, "Approval", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1123,18 +1123,18 @@ func (_TxToken *TxTokenFilterer) WatchApproval(opts *bind.WatchOpts, sink chan<-
 // ParseApproval is a log parse operation binding the contract event 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925.
 //
 // Solidity: event Approval(address indexed owner, address indexed spender, uint256 value)
-func (_TxToken *TxTokenFilterer) ParseApproval(log types.Log) (*TxTokenApproval, error) {
-	event := new(TxTokenApproval)
-	if err := _TxToken.contract.UnpackLog(event, "Approval", log); err != nil {
+func (_TXToken *TXTokenFilterer) ParseApproval(log types.Log) (*TXTokenApproval, error) {
+	event := new(TXTokenApproval)
+	if err := _TXToken.contract.UnpackLog(event, "Approval", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// TxTokenCrosschainBurnIterator is returned from FilterCrosschainBurn and is used to iterate over the raw logs and unpacked data for CrosschainBurn events raised by the TxToken contract.
-type TxTokenCrosschainBurnIterator struct {
-	Event *TxTokenCrosschainBurn // Event containing the contract specifics and raw log
+// TXTokenCrosschainBurnIterator is returned from FilterCrosschainBurn and is used to iterate over the raw logs and unpacked data for CrosschainBurn events raised by the TXToken contract.
+type TXTokenCrosschainBurnIterator struct {
+	Event *TXTokenCrosschainBurn // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1148,7 +1148,7 @@ type TxTokenCrosschainBurnIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxTokenCrosschainBurnIterator) Next() bool {
+func (it *TXTokenCrosschainBurnIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1157,7 +1157,7 @@ func (it *TxTokenCrosschainBurnIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxTokenCrosschainBurn)
+			it.Event = new(TXTokenCrosschainBurn)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1172,7 +1172,7 @@ func (it *TxTokenCrosschainBurnIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxTokenCrosschainBurn)
+		it.Event = new(TXTokenCrosschainBurn)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1188,19 +1188,19 @@ func (it *TxTokenCrosschainBurnIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxTokenCrosschainBurnIterator) Error() error {
+func (it *TXTokenCrosschainBurnIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxTokenCrosschainBurnIterator) Close() error {
+func (it *TXTokenCrosschainBurnIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxTokenCrosschainBurn represents a CrosschainBurn event raised by the TxToken contract.
-type TxTokenCrosschainBurn struct {
+// TXTokenCrosschainBurn represents a CrosschainBurn event raised by the TXToken contract.
+type TXTokenCrosschainBurn struct {
 	From   common.Address
 	Amount *big.Int
 	Sender common.Address
@@ -1210,7 +1210,7 @@ type TxTokenCrosschainBurn struct {
 // FilterCrosschainBurn is a free log retrieval operation binding the contract event 0xb90795a66650155983e242cac3e1ac1a4dc26f8ed2987f3ce416a34e00111fd4.
 //
 // Solidity: event CrosschainBurn(address indexed from, uint256 amount, address indexed sender)
-func (_TxToken *TxTokenFilterer) FilterCrosschainBurn(opts *bind.FilterOpts, from []common.Address, sender []common.Address) (*TxTokenCrosschainBurnIterator, error) {
+func (_TXToken *TXTokenFilterer) FilterCrosschainBurn(opts *bind.FilterOpts, from []common.Address, sender []common.Address) (*TXTokenCrosschainBurnIterator, error) {
 
 	var fromRule []interface{}
 	for _, fromItem := range from {
@@ -1222,17 +1222,17 @@ func (_TxToken *TxTokenFilterer) FilterCrosschainBurn(opts *bind.FilterOpts, fro
 		senderRule = append(senderRule, senderItem)
 	}
 
-	logs, sub, err := _TxToken.contract.FilterLogs(opts, "CrosschainBurn", fromRule, senderRule)
+	logs, sub, err := _TXToken.contract.FilterLogs(opts, "CrosschainBurn", fromRule, senderRule)
 	if err != nil {
 		return nil, err
 	}
-	return &TxTokenCrosschainBurnIterator{contract: _TxToken.contract, event: "CrosschainBurn", logs: logs, sub: sub}, nil
+	return &TXTokenCrosschainBurnIterator{contract: _TXToken.contract, event: "CrosschainBurn", logs: logs, sub: sub}, nil
 }
 
 // WatchCrosschainBurn is a free log subscription operation binding the contract event 0xb90795a66650155983e242cac3e1ac1a4dc26f8ed2987f3ce416a34e00111fd4.
 //
 // Solidity: event CrosschainBurn(address indexed from, uint256 amount, address indexed sender)
-func (_TxToken *TxTokenFilterer) WatchCrosschainBurn(opts *bind.WatchOpts, sink chan<- *TxTokenCrosschainBurn, from []common.Address, sender []common.Address) (event.Subscription, error) {
+func (_TXToken *TXTokenFilterer) WatchCrosschainBurn(opts *bind.WatchOpts, sink chan<- *TXTokenCrosschainBurn, from []common.Address, sender []common.Address) (event.Subscription, error) {
 
 	var fromRule []interface{}
 	for _, fromItem := range from {
@@ -1244,7 +1244,7 @@ func (_TxToken *TxTokenFilterer) WatchCrosschainBurn(opts *bind.WatchOpts, sink 
 		senderRule = append(senderRule, senderItem)
 	}
 
-	logs, sub, err := _TxToken.contract.WatchLogs(opts, "CrosschainBurn", fromRule, senderRule)
+	logs, sub, err := _TXToken.contract.WatchLogs(opts, "CrosschainBurn", fromRule, senderRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1254,8 +1254,8 @@ func (_TxToken *TxTokenFilterer) WatchCrosschainBurn(opts *bind.WatchOpts, sink 
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxTokenCrosschainBurn)
-				if err := _TxToken.contract.UnpackLog(event, "CrosschainBurn", log); err != nil {
+				event := new(TXTokenCrosschainBurn)
+				if err := _TXToken.contract.UnpackLog(event, "CrosschainBurn", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1279,18 +1279,18 @@ func (_TxToken *TxTokenFilterer) WatchCrosschainBurn(opts *bind.WatchOpts, sink 
 // ParseCrosschainBurn is a log parse operation binding the contract event 0xb90795a66650155983e242cac3e1ac1a4dc26f8ed2987f3ce416a34e00111fd4.
 //
 // Solidity: event CrosschainBurn(address indexed from, uint256 amount, address indexed sender)
-func (_TxToken *TxTokenFilterer) ParseCrosschainBurn(log types.Log) (*TxTokenCrosschainBurn, error) {
-	event := new(TxTokenCrosschainBurn)
-	if err := _TxToken.contract.UnpackLog(event, "CrosschainBurn", log); err != nil {
+func (_TXToken *TXTokenFilterer) ParseCrosschainBurn(log types.Log) (*TXTokenCrosschainBurn, error) {
+	event := new(TXTokenCrosschainBurn)
+	if err := _TXToken.contract.UnpackLog(event, "CrosschainBurn", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// TxTokenCrosschainMintIterator is returned from FilterCrosschainMint and is used to iterate over the raw logs and unpacked data for CrosschainMint events raised by the TxToken contract.
-type TxTokenCrosschainMintIterator struct {
-	Event *TxTokenCrosschainMint // Event containing the contract specifics and raw log
+// TXTokenCrosschainMintIterator is returned from FilterCrosschainMint and is used to iterate over the raw logs and unpacked data for CrosschainMint events raised by the TXToken contract.
+type TXTokenCrosschainMintIterator struct {
+	Event *TXTokenCrosschainMint // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1304,7 +1304,7 @@ type TxTokenCrosschainMintIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxTokenCrosschainMintIterator) Next() bool {
+func (it *TXTokenCrosschainMintIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1313,7 +1313,7 @@ func (it *TxTokenCrosschainMintIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxTokenCrosschainMint)
+			it.Event = new(TXTokenCrosschainMint)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1328,7 +1328,7 @@ func (it *TxTokenCrosschainMintIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxTokenCrosschainMint)
+		it.Event = new(TXTokenCrosschainMint)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1344,19 +1344,19 @@ func (it *TxTokenCrosschainMintIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxTokenCrosschainMintIterator) Error() error {
+func (it *TXTokenCrosschainMintIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxTokenCrosschainMintIterator) Close() error {
+func (it *TXTokenCrosschainMintIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxTokenCrosschainMint represents a CrosschainMint event raised by the TxToken contract.
-type TxTokenCrosschainMint struct {
+// TXTokenCrosschainMint represents a CrosschainMint event raised by the TXToken contract.
+type TXTokenCrosschainMint struct {
 	To     common.Address
 	Amount *big.Int
 	Sender common.Address
@@ -1366,7 +1366,7 @@ type TxTokenCrosschainMint struct {
 // FilterCrosschainMint is a free log retrieval operation binding the contract event 0xde22baff038e3a3e08407cbdf617deed74e869a7ba517df611e33131c6e6ea04.
 //
 // Solidity: event CrosschainMint(address indexed to, uint256 amount, address indexed sender)
-func (_TxToken *TxTokenFilterer) FilterCrosschainMint(opts *bind.FilterOpts, to []common.Address, sender []common.Address) (*TxTokenCrosschainMintIterator, error) {
+func (_TXToken *TXTokenFilterer) FilterCrosschainMint(opts *bind.FilterOpts, to []common.Address, sender []common.Address) (*TXTokenCrosschainMintIterator, error) {
 
 	var toRule []interface{}
 	for _, toItem := range to {
@@ -1378,17 +1378,17 @@ func (_TxToken *TxTokenFilterer) FilterCrosschainMint(opts *bind.FilterOpts, to 
 		senderRule = append(senderRule, senderItem)
 	}
 
-	logs, sub, err := _TxToken.contract.FilterLogs(opts, "CrosschainMint", toRule, senderRule)
+	logs, sub, err := _TXToken.contract.FilterLogs(opts, "CrosschainMint", toRule, senderRule)
 	if err != nil {
 		return nil, err
 	}
-	return &TxTokenCrosschainMintIterator{contract: _TxToken.contract, event: "CrosschainMint", logs: logs, sub: sub}, nil
+	return &TXTokenCrosschainMintIterator{contract: _TXToken.contract, event: "CrosschainMint", logs: logs, sub: sub}, nil
 }
 
 // WatchCrosschainMint is a free log subscription operation binding the contract event 0xde22baff038e3a3e08407cbdf617deed74e869a7ba517df611e33131c6e6ea04.
 //
 // Solidity: event CrosschainMint(address indexed to, uint256 amount, address indexed sender)
-func (_TxToken *TxTokenFilterer) WatchCrosschainMint(opts *bind.WatchOpts, sink chan<- *TxTokenCrosschainMint, to []common.Address, sender []common.Address) (event.Subscription, error) {
+func (_TXToken *TXTokenFilterer) WatchCrosschainMint(opts *bind.WatchOpts, sink chan<- *TXTokenCrosschainMint, to []common.Address, sender []common.Address) (event.Subscription, error) {
 
 	var toRule []interface{}
 	for _, toItem := range to {
@@ -1400,7 +1400,7 @@ func (_TxToken *TxTokenFilterer) WatchCrosschainMint(opts *bind.WatchOpts, sink 
 		senderRule = append(senderRule, senderItem)
 	}
 
-	logs, sub, err := _TxToken.contract.WatchLogs(opts, "CrosschainMint", toRule, senderRule)
+	logs, sub, err := _TXToken.contract.WatchLogs(opts, "CrosschainMint", toRule, senderRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1410,8 +1410,8 @@ func (_TxToken *TxTokenFilterer) WatchCrosschainMint(opts *bind.WatchOpts, sink 
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxTokenCrosschainMint)
-				if err := _TxToken.contract.UnpackLog(event, "CrosschainMint", log); err != nil {
+				event := new(TXTokenCrosschainMint)
+				if err := _TXToken.contract.UnpackLog(event, "CrosschainMint", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1435,18 +1435,18 @@ func (_TxToken *TxTokenFilterer) WatchCrosschainMint(opts *bind.WatchOpts, sink 
 // ParseCrosschainMint is a log parse operation binding the contract event 0xde22baff038e3a3e08407cbdf617deed74e869a7ba517df611e33131c6e6ea04.
 //
 // Solidity: event CrosschainMint(address indexed to, uint256 amount, address indexed sender)
-func (_TxToken *TxTokenFilterer) ParseCrosschainMint(log types.Log) (*TxTokenCrosschainMint, error) {
-	event := new(TxTokenCrosschainMint)
-	if err := _TxToken.contract.UnpackLog(event, "CrosschainMint", log); err != nil {
+func (_TXToken *TXTokenFilterer) ParseCrosschainMint(log types.Log) (*TXTokenCrosschainMint, error) {
+	event := new(TXTokenCrosschainMint)
+	if err := _TXToken.contract.UnpackLog(event, "CrosschainMint", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// TxTokenEIP712DomainChangedIterator is returned from FilterEIP712DomainChanged and is used to iterate over the raw logs and unpacked data for EIP712DomainChanged events raised by the TxToken contract.
-type TxTokenEIP712DomainChangedIterator struct {
-	Event *TxTokenEIP712DomainChanged // Event containing the contract specifics and raw log
+// TXTokenEIP712DomainChangedIterator is returned from FilterEIP712DomainChanged and is used to iterate over the raw logs and unpacked data for EIP712DomainChanged events raised by the TXToken contract.
+type TXTokenEIP712DomainChangedIterator struct {
+	Event *TXTokenEIP712DomainChanged // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1460,7 +1460,7 @@ type TxTokenEIP712DomainChangedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxTokenEIP712DomainChangedIterator) Next() bool {
+func (it *TXTokenEIP712DomainChangedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1469,7 +1469,7 @@ func (it *TxTokenEIP712DomainChangedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxTokenEIP712DomainChanged)
+			it.Event = new(TXTokenEIP712DomainChanged)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1484,7 +1484,7 @@ func (it *TxTokenEIP712DomainChangedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxTokenEIP712DomainChanged)
+		it.Event = new(TXTokenEIP712DomainChanged)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1500,40 +1500,40 @@ func (it *TxTokenEIP712DomainChangedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxTokenEIP712DomainChangedIterator) Error() error {
+func (it *TXTokenEIP712DomainChangedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxTokenEIP712DomainChangedIterator) Close() error {
+func (it *TXTokenEIP712DomainChangedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxTokenEIP712DomainChanged represents a EIP712DomainChanged event raised by the TxToken contract.
-type TxTokenEIP712DomainChanged struct {
+// TXTokenEIP712DomainChanged represents a EIP712DomainChanged event raised by the TXToken contract.
+type TXTokenEIP712DomainChanged struct {
 	Raw types.Log // Blockchain specific contextual infos
 }
 
 // FilterEIP712DomainChanged is a free log retrieval operation binding the contract event 0x0a6387c9ea3628b88a633bb4f3b151770f70085117a15f9bf3787cda53f13d31.
 //
 // Solidity: event EIP712DomainChanged()
-func (_TxToken *TxTokenFilterer) FilterEIP712DomainChanged(opts *bind.FilterOpts) (*TxTokenEIP712DomainChangedIterator, error) {
+func (_TXToken *TXTokenFilterer) FilterEIP712DomainChanged(opts *bind.FilterOpts) (*TXTokenEIP712DomainChangedIterator, error) {
 
-	logs, sub, err := _TxToken.contract.FilterLogs(opts, "EIP712DomainChanged")
+	logs, sub, err := _TXToken.contract.FilterLogs(opts, "EIP712DomainChanged")
 	if err != nil {
 		return nil, err
 	}
-	return &TxTokenEIP712DomainChangedIterator{contract: _TxToken.contract, event: "EIP712DomainChanged", logs: logs, sub: sub}, nil
+	return &TXTokenEIP712DomainChangedIterator{contract: _TXToken.contract, event: "EIP712DomainChanged", logs: logs, sub: sub}, nil
 }
 
 // WatchEIP712DomainChanged is a free log subscription operation binding the contract event 0x0a6387c9ea3628b88a633bb4f3b151770f70085117a15f9bf3787cda53f13d31.
 //
 // Solidity: event EIP712DomainChanged()
-func (_TxToken *TxTokenFilterer) WatchEIP712DomainChanged(opts *bind.WatchOpts, sink chan<- *TxTokenEIP712DomainChanged) (event.Subscription, error) {
+func (_TXToken *TXTokenFilterer) WatchEIP712DomainChanged(opts *bind.WatchOpts, sink chan<- *TXTokenEIP712DomainChanged) (event.Subscription, error) {
 
-	logs, sub, err := _TxToken.contract.WatchLogs(opts, "EIP712DomainChanged")
+	logs, sub, err := _TXToken.contract.WatchLogs(opts, "EIP712DomainChanged")
 	if err != nil {
 		return nil, err
 	}
@@ -1543,8 +1543,8 @@ func (_TxToken *TxTokenFilterer) WatchEIP712DomainChanged(opts *bind.WatchOpts, 
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxTokenEIP712DomainChanged)
-				if err := _TxToken.contract.UnpackLog(event, "EIP712DomainChanged", log); err != nil {
+				event := new(TXTokenEIP712DomainChanged)
+				if err := _TXToken.contract.UnpackLog(event, "EIP712DomainChanged", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1568,18 +1568,18 @@ func (_TxToken *TxTokenFilterer) WatchEIP712DomainChanged(opts *bind.WatchOpts, 
 // ParseEIP712DomainChanged is a log parse operation binding the contract event 0x0a6387c9ea3628b88a633bb4f3b151770f70085117a15f9bf3787cda53f13d31.
 //
 // Solidity: event EIP712DomainChanged()
-func (_TxToken *TxTokenFilterer) ParseEIP712DomainChanged(log types.Log) (*TxTokenEIP712DomainChanged, error) {
-	event := new(TxTokenEIP712DomainChanged)
-	if err := _TxToken.contract.UnpackLog(event, "EIP712DomainChanged", log); err != nil {
+func (_TXToken *TXTokenFilterer) ParseEIP712DomainChanged(log types.Log) (*TXTokenEIP712DomainChanged, error) {
+	event := new(TXTokenEIP712DomainChanged)
+	if err := _TXToken.contract.UnpackLog(event, "EIP712DomainChanged", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// TxTokenInitializedIterator is returned from FilterInitialized and is used to iterate over the raw logs and unpacked data for Initialized events raised by the TxToken contract.
-type TxTokenInitializedIterator struct {
-	Event *TxTokenInitialized // Event containing the contract specifics and raw log
+// TXTokenInitializedIterator is returned from FilterInitialized and is used to iterate over the raw logs and unpacked data for Initialized events raised by the TXToken contract.
+type TXTokenInitializedIterator struct {
+	Event *TXTokenInitialized // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1593,7 +1593,7 @@ type TxTokenInitializedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxTokenInitializedIterator) Next() bool {
+func (it *TXTokenInitializedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1602,7 +1602,7 @@ func (it *TxTokenInitializedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxTokenInitialized)
+			it.Event = new(TXTokenInitialized)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1617,7 +1617,7 @@ func (it *TxTokenInitializedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxTokenInitialized)
+		it.Event = new(TXTokenInitialized)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1633,19 +1633,19 @@ func (it *TxTokenInitializedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxTokenInitializedIterator) Error() error {
+func (it *TXTokenInitializedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxTokenInitializedIterator) Close() error {
+func (it *TXTokenInitializedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxTokenInitialized represents a Initialized event raised by the TxToken contract.
-type TxTokenInitialized struct {
+// TXTokenInitialized represents a Initialized event raised by the TXToken contract.
+type TXTokenInitialized struct {
 	Version uint64
 	Raw     types.Log // Blockchain specific contextual infos
 }
@@ -1653,21 +1653,21 @@ type TxTokenInitialized struct {
 // FilterInitialized is a free log retrieval operation binding the contract event 0xc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d2.
 //
 // Solidity: event Initialized(uint64 version)
-func (_TxToken *TxTokenFilterer) FilterInitialized(opts *bind.FilterOpts) (*TxTokenInitializedIterator, error) {
+func (_TXToken *TXTokenFilterer) FilterInitialized(opts *bind.FilterOpts) (*TXTokenInitializedIterator, error) {
 
-	logs, sub, err := _TxToken.contract.FilterLogs(opts, "Initialized")
+	logs, sub, err := _TXToken.contract.FilterLogs(opts, "Initialized")
 	if err != nil {
 		return nil, err
 	}
-	return &TxTokenInitializedIterator{contract: _TxToken.contract, event: "Initialized", logs: logs, sub: sub}, nil
+	return &TXTokenInitializedIterator{contract: _TXToken.contract, event: "Initialized", logs: logs, sub: sub}, nil
 }
 
 // WatchInitialized is a free log subscription operation binding the contract event 0xc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d2.
 //
 // Solidity: event Initialized(uint64 version)
-func (_TxToken *TxTokenFilterer) WatchInitialized(opts *bind.WatchOpts, sink chan<- *TxTokenInitialized) (event.Subscription, error) {
+func (_TXToken *TXTokenFilterer) WatchInitialized(opts *bind.WatchOpts, sink chan<- *TXTokenInitialized) (event.Subscription, error) {
 
-	logs, sub, err := _TxToken.contract.WatchLogs(opts, "Initialized")
+	logs, sub, err := _TXToken.contract.WatchLogs(opts, "Initialized")
 	if err != nil {
 		return nil, err
 	}
@@ -1677,8 +1677,8 @@ func (_TxToken *TxTokenFilterer) WatchInitialized(opts *bind.WatchOpts, sink cha
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxTokenInitialized)
-				if err := _TxToken.contract.UnpackLog(event, "Initialized", log); err != nil {
+				event := new(TXTokenInitialized)
+				if err := _TXToken.contract.UnpackLog(event, "Initialized", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1702,18 +1702,18 @@ func (_TxToken *TxTokenFilterer) WatchInitialized(opts *bind.WatchOpts, sink cha
 // ParseInitialized is a log parse operation binding the contract event 0xc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d2.
 //
 // Solidity: event Initialized(uint64 version)
-func (_TxToken *TxTokenFilterer) ParseInitialized(log types.Log) (*TxTokenInitialized, error) {
-	event := new(TxTokenInitialized)
-	if err := _TxToken.contract.UnpackLog(event, "Initialized", log); err != nil {
+func (_TXToken *TXTokenFilterer) ParseInitialized(log types.Log) (*TXTokenInitialized, error) {
+	event := new(TXTokenInitialized)
+	if err := _TXToken.contract.UnpackLog(event, "Initialized", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// TxTokenPausedIterator is returned from FilterPaused and is used to iterate over the raw logs and unpacked data for Paused events raised by the TxToken contract.
-type TxTokenPausedIterator struct {
-	Event *TxTokenPaused // Event containing the contract specifics and raw log
+// TXTokenPausedIterator is returned from FilterPaused and is used to iterate over the raw logs and unpacked data for Paused events raised by the TXToken contract.
+type TXTokenPausedIterator struct {
+	Event *TXTokenPaused // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1727,7 +1727,7 @@ type TxTokenPausedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxTokenPausedIterator) Next() bool {
+func (it *TXTokenPausedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1736,7 +1736,7 @@ func (it *TxTokenPausedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxTokenPaused)
+			it.Event = new(TXTokenPaused)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1751,7 +1751,7 @@ func (it *TxTokenPausedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxTokenPaused)
+		it.Event = new(TXTokenPaused)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1767,19 +1767,19 @@ func (it *TxTokenPausedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxTokenPausedIterator) Error() error {
+func (it *TXTokenPausedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxTokenPausedIterator) Close() error {
+func (it *TXTokenPausedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxTokenPaused represents a Paused event raised by the TxToken contract.
-type TxTokenPaused struct {
+// TXTokenPaused represents a Paused event raised by the TXToken contract.
+type TXTokenPaused struct {
 	Account common.Address
 	Raw     types.Log // Blockchain specific contextual infos
 }
@@ -1787,21 +1787,21 @@ type TxTokenPaused struct {
 // FilterPaused is a free log retrieval operation binding the contract event 0x62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258.
 //
 // Solidity: event Paused(address account)
-func (_TxToken *TxTokenFilterer) FilterPaused(opts *bind.FilterOpts) (*TxTokenPausedIterator, error) {
+func (_TXToken *TXTokenFilterer) FilterPaused(opts *bind.FilterOpts) (*TXTokenPausedIterator, error) {
 
-	logs, sub, err := _TxToken.contract.FilterLogs(opts, "Paused")
+	logs, sub, err := _TXToken.contract.FilterLogs(opts, "Paused")
 	if err != nil {
 		return nil, err
 	}
-	return &TxTokenPausedIterator{contract: _TxToken.contract, event: "Paused", logs: logs, sub: sub}, nil
+	return &TXTokenPausedIterator{contract: _TXToken.contract, event: "Paused", logs: logs, sub: sub}, nil
 }
 
 // WatchPaused is a free log subscription operation binding the contract event 0x62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258.
 //
 // Solidity: event Paused(address account)
-func (_TxToken *TxTokenFilterer) WatchPaused(opts *bind.WatchOpts, sink chan<- *TxTokenPaused) (event.Subscription, error) {
+func (_TXToken *TXTokenFilterer) WatchPaused(opts *bind.WatchOpts, sink chan<- *TXTokenPaused) (event.Subscription, error) {
 
-	logs, sub, err := _TxToken.contract.WatchLogs(opts, "Paused")
+	logs, sub, err := _TXToken.contract.WatchLogs(opts, "Paused")
 	if err != nil {
 		return nil, err
 	}
@@ -1811,8 +1811,8 @@ func (_TxToken *TxTokenFilterer) WatchPaused(opts *bind.WatchOpts, sink chan<- *
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxTokenPaused)
-				if err := _TxToken.contract.UnpackLog(event, "Paused", log); err != nil {
+				event := new(TXTokenPaused)
+				if err := _TXToken.contract.UnpackLog(event, "Paused", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1836,18 +1836,18 @@ func (_TxToken *TxTokenFilterer) WatchPaused(opts *bind.WatchOpts, sink chan<- *
 // ParsePaused is a log parse operation binding the contract event 0x62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258.
 //
 // Solidity: event Paused(address account)
-func (_TxToken *TxTokenFilterer) ParsePaused(log types.Log) (*TxTokenPaused, error) {
-	event := new(TxTokenPaused)
-	if err := _TxToken.contract.UnpackLog(event, "Paused", log); err != nil {
+func (_TXToken *TXTokenFilterer) ParsePaused(log types.Log) (*TXTokenPaused, error) {
+	event := new(TXTokenPaused)
+	if err := _TXToken.contract.UnpackLog(event, "Paused", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// TxTokenRoleAdminChangedIterator is returned from FilterRoleAdminChanged and is used to iterate over the raw logs and unpacked data for RoleAdminChanged events raised by the TxToken contract.
-type TxTokenRoleAdminChangedIterator struct {
-	Event *TxTokenRoleAdminChanged // Event containing the contract specifics and raw log
+// TXTokenRoleAdminChangedIterator is returned from FilterRoleAdminChanged and is used to iterate over the raw logs and unpacked data for RoleAdminChanged events raised by the TXToken contract.
+type TXTokenRoleAdminChangedIterator struct {
+	Event *TXTokenRoleAdminChanged // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1861,7 +1861,7 @@ type TxTokenRoleAdminChangedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxTokenRoleAdminChangedIterator) Next() bool {
+func (it *TXTokenRoleAdminChangedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1870,7 +1870,7 @@ func (it *TxTokenRoleAdminChangedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxTokenRoleAdminChanged)
+			it.Event = new(TXTokenRoleAdminChanged)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1885,7 +1885,7 @@ func (it *TxTokenRoleAdminChangedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxTokenRoleAdminChanged)
+		it.Event = new(TXTokenRoleAdminChanged)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1901,19 +1901,19 @@ func (it *TxTokenRoleAdminChangedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxTokenRoleAdminChangedIterator) Error() error {
+func (it *TXTokenRoleAdminChangedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxTokenRoleAdminChangedIterator) Close() error {
+func (it *TXTokenRoleAdminChangedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxTokenRoleAdminChanged represents a RoleAdminChanged event raised by the TxToken contract.
-type TxTokenRoleAdminChanged struct {
+// TXTokenRoleAdminChanged represents a RoleAdminChanged event raised by the TXToken contract.
+type TXTokenRoleAdminChanged struct {
 	Role              [32]byte
 	PreviousAdminRole [32]byte
 	NewAdminRole      [32]byte
@@ -1923,7 +1923,7 @@ type TxTokenRoleAdminChanged struct {
 // FilterRoleAdminChanged is a free log retrieval operation binding the contract event 0xbd79b86ffe0ab8e8776151514217cd7cacd52c909f66475c3af44e129f0b00ff.
 //
 // Solidity: event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)
-func (_TxToken *TxTokenFilterer) FilterRoleAdminChanged(opts *bind.FilterOpts, role [][32]byte, previousAdminRole [][32]byte, newAdminRole [][32]byte) (*TxTokenRoleAdminChangedIterator, error) {
+func (_TXToken *TXTokenFilterer) FilterRoleAdminChanged(opts *bind.FilterOpts, role [][32]byte, previousAdminRole [][32]byte, newAdminRole [][32]byte) (*TXTokenRoleAdminChangedIterator, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -1938,17 +1938,17 @@ func (_TxToken *TxTokenFilterer) FilterRoleAdminChanged(opts *bind.FilterOpts, r
 		newAdminRoleRule = append(newAdminRoleRule, newAdminRoleItem)
 	}
 
-	logs, sub, err := _TxToken.contract.FilterLogs(opts, "RoleAdminChanged", roleRule, previousAdminRoleRule, newAdminRoleRule)
+	logs, sub, err := _TXToken.contract.FilterLogs(opts, "RoleAdminChanged", roleRule, previousAdminRoleRule, newAdminRoleRule)
 	if err != nil {
 		return nil, err
 	}
-	return &TxTokenRoleAdminChangedIterator{contract: _TxToken.contract, event: "RoleAdminChanged", logs: logs, sub: sub}, nil
+	return &TXTokenRoleAdminChangedIterator{contract: _TXToken.contract, event: "RoleAdminChanged", logs: logs, sub: sub}, nil
 }
 
 // WatchRoleAdminChanged is a free log subscription operation binding the contract event 0xbd79b86ffe0ab8e8776151514217cd7cacd52c909f66475c3af44e129f0b00ff.
 //
 // Solidity: event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)
-func (_TxToken *TxTokenFilterer) WatchRoleAdminChanged(opts *bind.WatchOpts, sink chan<- *TxTokenRoleAdminChanged, role [][32]byte, previousAdminRole [][32]byte, newAdminRole [][32]byte) (event.Subscription, error) {
+func (_TXToken *TXTokenFilterer) WatchRoleAdminChanged(opts *bind.WatchOpts, sink chan<- *TXTokenRoleAdminChanged, role [][32]byte, previousAdminRole [][32]byte, newAdminRole [][32]byte) (event.Subscription, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -1963,7 +1963,7 @@ func (_TxToken *TxTokenFilterer) WatchRoleAdminChanged(opts *bind.WatchOpts, sin
 		newAdminRoleRule = append(newAdminRoleRule, newAdminRoleItem)
 	}
 
-	logs, sub, err := _TxToken.contract.WatchLogs(opts, "RoleAdminChanged", roleRule, previousAdminRoleRule, newAdminRoleRule)
+	logs, sub, err := _TXToken.contract.WatchLogs(opts, "RoleAdminChanged", roleRule, previousAdminRoleRule, newAdminRoleRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1973,8 +1973,8 @@ func (_TxToken *TxTokenFilterer) WatchRoleAdminChanged(opts *bind.WatchOpts, sin
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxTokenRoleAdminChanged)
-				if err := _TxToken.contract.UnpackLog(event, "RoleAdminChanged", log); err != nil {
+				event := new(TXTokenRoleAdminChanged)
+				if err := _TXToken.contract.UnpackLog(event, "RoleAdminChanged", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1998,18 +1998,18 @@ func (_TxToken *TxTokenFilterer) WatchRoleAdminChanged(opts *bind.WatchOpts, sin
 // ParseRoleAdminChanged is a log parse operation binding the contract event 0xbd79b86ffe0ab8e8776151514217cd7cacd52c909f66475c3af44e129f0b00ff.
 //
 // Solidity: event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)
-func (_TxToken *TxTokenFilterer) ParseRoleAdminChanged(log types.Log) (*TxTokenRoleAdminChanged, error) {
-	event := new(TxTokenRoleAdminChanged)
-	if err := _TxToken.contract.UnpackLog(event, "RoleAdminChanged", log); err != nil {
+func (_TXToken *TXTokenFilterer) ParseRoleAdminChanged(log types.Log) (*TXTokenRoleAdminChanged, error) {
+	event := new(TXTokenRoleAdminChanged)
+	if err := _TXToken.contract.UnpackLog(event, "RoleAdminChanged", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// TxTokenRoleGrantedIterator is returned from FilterRoleGranted and is used to iterate over the raw logs and unpacked data for RoleGranted events raised by the TxToken contract.
-type TxTokenRoleGrantedIterator struct {
-	Event *TxTokenRoleGranted // Event containing the contract specifics and raw log
+// TXTokenRoleGrantedIterator is returned from FilterRoleGranted and is used to iterate over the raw logs and unpacked data for RoleGranted events raised by the TXToken contract.
+type TXTokenRoleGrantedIterator struct {
+	Event *TXTokenRoleGranted // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2023,7 +2023,7 @@ type TxTokenRoleGrantedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxTokenRoleGrantedIterator) Next() bool {
+func (it *TXTokenRoleGrantedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2032,7 +2032,7 @@ func (it *TxTokenRoleGrantedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxTokenRoleGranted)
+			it.Event = new(TXTokenRoleGranted)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2047,7 +2047,7 @@ func (it *TxTokenRoleGrantedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxTokenRoleGranted)
+		it.Event = new(TXTokenRoleGranted)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2063,19 +2063,19 @@ func (it *TxTokenRoleGrantedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxTokenRoleGrantedIterator) Error() error {
+func (it *TXTokenRoleGrantedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxTokenRoleGrantedIterator) Close() error {
+func (it *TXTokenRoleGrantedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxTokenRoleGranted represents a RoleGranted event raised by the TxToken contract.
-type TxTokenRoleGranted struct {
+// TXTokenRoleGranted represents a RoleGranted event raised by the TXToken contract.
+type TXTokenRoleGranted struct {
 	Role    [32]byte
 	Account common.Address
 	Sender  common.Address
@@ -2085,7 +2085,7 @@ type TxTokenRoleGranted struct {
 // FilterRoleGranted is a free log retrieval operation binding the contract event 0x2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d.
 //
 // Solidity: event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)
-func (_TxToken *TxTokenFilterer) FilterRoleGranted(opts *bind.FilterOpts, role [][32]byte, account []common.Address, sender []common.Address) (*TxTokenRoleGrantedIterator, error) {
+func (_TXToken *TXTokenFilterer) FilterRoleGranted(opts *bind.FilterOpts, role [][32]byte, account []common.Address, sender []common.Address) (*TXTokenRoleGrantedIterator, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -2100,17 +2100,17 @@ func (_TxToken *TxTokenFilterer) FilterRoleGranted(opts *bind.FilterOpts, role [
 		senderRule = append(senderRule, senderItem)
 	}
 
-	logs, sub, err := _TxToken.contract.FilterLogs(opts, "RoleGranted", roleRule, accountRule, senderRule)
+	logs, sub, err := _TXToken.contract.FilterLogs(opts, "RoleGranted", roleRule, accountRule, senderRule)
 	if err != nil {
 		return nil, err
 	}
-	return &TxTokenRoleGrantedIterator{contract: _TxToken.contract, event: "RoleGranted", logs: logs, sub: sub}, nil
+	return &TXTokenRoleGrantedIterator{contract: _TXToken.contract, event: "RoleGranted", logs: logs, sub: sub}, nil
 }
 
 // WatchRoleGranted is a free log subscription operation binding the contract event 0x2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d.
 //
 // Solidity: event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)
-func (_TxToken *TxTokenFilterer) WatchRoleGranted(opts *bind.WatchOpts, sink chan<- *TxTokenRoleGranted, role [][32]byte, account []common.Address, sender []common.Address) (event.Subscription, error) {
+func (_TXToken *TXTokenFilterer) WatchRoleGranted(opts *bind.WatchOpts, sink chan<- *TXTokenRoleGranted, role [][32]byte, account []common.Address, sender []common.Address) (event.Subscription, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -2125,7 +2125,7 @@ func (_TxToken *TxTokenFilterer) WatchRoleGranted(opts *bind.WatchOpts, sink cha
 		senderRule = append(senderRule, senderItem)
 	}
 
-	logs, sub, err := _TxToken.contract.WatchLogs(opts, "RoleGranted", roleRule, accountRule, senderRule)
+	logs, sub, err := _TXToken.contract.WatchLogs(opts, "RoleGranted", roleRule, accountRule, senderRule)
 	if err != nil {
 		return nil, err
 	}
@@ -2135,8 +2135,8 @@ func (_TxToken *TxTokenFilterer) WatchRoleGranted(opts *bind.WatchOpts, sink cha
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxTokenRoleGranted)
-				if err := _TxToken.contract.UnpackLog(event, "RoleGranted", log); err != nil {
+				event := new(TXTokenRoleGranted)
+				if err := _TXToken.contract.UnpackLog(event, "RoleGranted", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2160,18 +2160,18 @@ func (_TxToken *TxTokenFilterer) WatchRoleGranted(opts *bind.WatchOpts, sink cha
 // ParseRoleGranted is a log parse operation binding the contract event 0x2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d.
 //
 // Solidity: event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)
-func (_TxToken *TxTokenFilterer) ParseRoleGranted(log types.Log) (*TxTokenRoleGranted, error) {
-	event := new(TxTokenRoleGranted)
-	if err := _TxToken.contract.UnpackLog(event, "RoleGranted", log); err != nil {
+func (_TXToken *TXTokenFilterer) ParseRoleGranted(log types.Log) (*TXTokenRoleGranted, error) {
+	event := new(TXTokenRoleGranted)
+	if err := _TXToken.contract.UnpackLog(event, "RoleGranted", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// TxTokenRoleRevokedIterator is returned from FilterRoleRevoked and is used to iterate over the raw logs and unpacked data for RoleRevoked events raised by the TxToken contract.
-type TxTokenRoleRevokedIterator struct {
-	Event *TxTokenRoleRevoked // Event containing the contract specifics and raw log
+// TXTokenRoleRevokedIterator is returned from FilterRoleRevoked and is used to iterate over the raw logs and unpacked data for RoleRevoked events raised by the TXToken contract.
+type TXTokenRoleRevokedIterator struct {
+	Event *TXTokenRoleRevoked // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2185,7 +2185,7 @@ type TxTokenRoleRevokedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxTokenRoleRevokedIterator) Next() bool {
+func (it *TXTokenRoleRevokedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2194,7 +2194,7 @@ func (it *TxTokenRoleRevokedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxTokenRoleRevoked)
+			it.Event = new(TXTokenRoleRevoked)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2209,7 +2209,7 @@ func (it *TxTokenRoleRevokedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxTokenRoleRevoked)
+		it.Event = new(TXTokenRoleRevoked)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2225,19 +2225,19 @@ func (it *TxTokenRoleRevokedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxTokenRoleRevokedIterator) Error() error {
+func (it *TXTokenRoleRevokedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxTokenRoleRevokedIterator) Close() error {
+func (it *TXTokenRoleRevokedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxTokenRoleRevoked represents a RoleRevoked event raised by the TxToken contract.
-type TxTokenRoleRevoked struct {
+// TXTokenRoleRevoked represents a RoleRevoked event raised by the TXToken contract.
+type TXTokenRoleRevoked struct {
 	Role    [32]byte
 	Account common.Address
 	Sender  common.Address
@@ -2247,7 +2247,7 @@ type TxTokenRoleRevoked struct {
 // FilterRoleRevoked is a free log retrieval operation binding the contract event 0xf6391f5c32d9c69d2a47ea670b442974b53935d1edc7fd64eb21e047a839171b.
 //
 // Solidity: event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)
-func (_TxToken *TxTokenFilterer) FilterRoleRevoked(opts *bind.FilterOpts, role [][32]byte, account []common.Address, sender []common.Address) (*TxTokenRoleRevokedIterator, error) {
+func (_TXToken *TXTokenFilterer) FilterRoleRevoked(opts *bind.FilterOpts, role [][32]byte, account []common.Address, sender []common.Address) (*TXTokenRoleRevokedIterator, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -2262,17 +2262,17 @@ func (_TxToken *TxTokenFilterer) FilterRoleRevoked(opts *bind.FilterOpts, role [
 		senderRule = append(senderRule, senderItem)
 	}
 
-	logs, sub, err := _TxToken.contract.FilterLogs(opts, "RoleRevoked", roleRule, accountRule, senderRule)
+	logs, sub, err := _TXToken.contract.FilterLogs(opts, "RoleRevoked", roleRule, accountRule, senderRule)
 	if err != nil {
 		return nil, err
 	}
-	return &TxTokenRoleRevokedIterator{contract: _TxToken.contract, event: "RoleRevoked", logs: logs, sub: sub}, nil
+	return &TXTokenRoleRevokedIterator{contract: _TXToken.contract, event: "RoleRevoked", logs: logs, sub: sub}, nil
 }
 
 // WatchRoleRevoked is a free log subscription operation binding the contract event 0xf6391f5c32d9c69d2a47ea670b442974b53935d1edc7fd64eb21e047a839171b.
 //
 // Solidity: event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)
-func (_TxToken *TxTokenFilterer) WatchRoleRevoked(opts *bind.WatchOpts, sink chan<- *TxTokenRoleRevoked, role [][32]byte, account []common.Address, sender []common.Address) (event.Subscription, error) {
+func (_TXToken *TXTokenFilterer) WatchRoleRevoked(opts *bind.WatchOpts, sink chan<- *TXTokenRoleRevoked, role [][32]byte, account []common.Address, sender []common.Address) (event.Subscription, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -2287,7 +2287,7 @@ func (_TxToken *TxTokenFilterer) WatchRoleRevoked(opts *bind.WatchOpts, sink cha
 		senderRule = append(senderRule, senderItem)
 	}
 
-	logs, sub, err := _TxToken.contract.WatchLogs(opts, "RoleRevoked", roleRule, accountRule, senderRule)
+	logs, sub, err := _TXToken.contract.WatchLogs(opts, "RoleRevoked", roleRule, accountRule, senderRule)
 	if err != nil {
 		return nil, err
 	}
@@ -2297,8 +2297,8 @@ func (_TxToken *TxTokenFilterer) WatchRoleRevoked(opts *bind.WatchOpts, sink cha
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxTokenRoleRevoked)
-				if err := _TxToken.contract.UnpackLog(event, "RoleRevoked", log); err != nil {
+				event := new(TXTokenRoleRevoked)
+				if err := _TXToken.contract.UnpackLog(event, "RoleRevoked", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2322,18 +2322,18 @@ func (_TxToken *TxTokenFilterer) WatchRoleRevoked(opts *bind.WatchOpts, sink cha
 // ParseRoleRevoked is a log parse operation binding the contract event 0xf6391f5c32d9c69d2a47ea670b442974b53935d1edc7fd64eb21e047a839171b.
 //
 // Solidity: event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)
-func (_TxToken *TxTokenFilterer) ParseRoleRevoked(log types.Log) (*TxTokenRoleRevoked, error) {
-	event := new(TxTokenRoleRevoked)
-	if err := _TxToken.contract.UnpackLog(event, "RoleRevoked", log); err != nil {
+func (_TXToken *TXTokenFilterer) ParseRoleRevoked(log types.Log) (*TXTokenRoleRevoked, error) {
+	event := new(TXTokenRoleRevoked)
+	if err := _TXToken.contract.UnpackLog(event, "RoleRevoked", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// TxTokenTransferIterator is returned from FilterTransfer and is used to iterate over the raw logs and unpacked data for Transfer events raised by the TxToken contract.
-type TxTokenTransferIterator struct {
-	Event *TxTokenTransfer // Event containing the contract specifics and raw log
+// TXTokenTransferIterator is returned from FilterTransfer and is used to iterate over the raw logs and unpacked data for Transfer events raised by the TXToken contract.
+type TXTokenTransferIterator struct {
+	Event *TXTokenTransfer // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2347,7 +2347,7 @@ type TxTokenTransferIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxTokenTransferIterator) Next() bool {
+func (it *TXTokenTransferIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2356,7 +2356,7 @@ func (it *TxTokenTransferIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxTokenTransfer)
+			it.Event = new(TXTokenTransfer)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2371,7 +2371,7 @@ func (it *TxTokenTransferIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxTokenTransfer)
+		it.Event = new(TXTokenTransfer)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2387,19 +2387,19 @@ func (it *TxTokenTransferIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxTokenTransferIterator) Error() error {
+func (it *TXTokenTransferIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxTokenTransferIterator) Close() error {
+func (it *TXTokenTransferIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxTokenTransfer represents a Transfer event raised by the TxToken contract.
-type TxTokenTransfer struct {
+// TXTokenTransfer represents a Transfer event raised by the TXToken contract.
+type TXTokenTransfer struct {
 	From  common.Address
 	To    common.Address
 	Value *big.Int
@@ -2409,7 +2409,7 @@ type TxTokenTransfer struct {
 // FilterTransfer is a free log retrieval operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
 // Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
-func (_TxToken *TxTokenFilterer) FilterTransfer(opts *bind.FilterOpts, from []common.Address, to []common.Address) (*TxTokenTransferIterator, error) {
+func (_TXToken *TXTokenFilterer) FilterTransfer(opts *bind.FilterOpts, from []common.Address, to []common.Address) (*TXTokenTransferIterator, error) {
 
 	var fromRule []interface{}
 	for _, fromItem := range from {
@@ -2420,17 +2420,17 @@ func (_TxToken *TxTokenFilterer) FilterTransfer(opts *bind.FilterOpts, from []co
 		toRule = append(toRule, toItem)
 	}
 
-	logs, sub, err := _TxToken.contract.FilterLogs(opts, "Transfer", fromRule, toRule)
+	logs, sub, err := _TXToken.contract.FilterLogs(opts, "Transfer", fromRule, toRule)
 	if err != nil {
 		return nil, err
 	}
-	return &TxTokenTransferIterator{contract: _TxToken.contract, event: "Transfer", logs: logs, sub: sub}, nil
+	return &TXTokenTransferIterator{contract: _TXToken.contract, event: "Transfer", logs: logs, sub: sub}, nil
 }
 
 // WatchTransfer is a free log subscription operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
 // Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
-func (_TxToken *TxTokenFilterer) WatchTransfer(opts *bind.WatchOpts, sink chan<- *TxTokenTransfer, from []common.Address, to []common.Address) (event.Subscription, error) {
+func (_TXToken *TXTokenFilterer) WatchTransfer(opts *bind.WatchOpts, sink chan<- *TXTokenTransfer, from []common.Address, to []common.Address) (event.Subscription, error) {
 
 	var fromRule []interface{}
 	for _, fromItem := range from {
@@ -2441,7 +2441,7 @@ func (_TxToken *TxTokenFilterer) WatchTransfer(opts *bind.WatchOpts, sink chan<-
 		toRule = append(toRule, toItem)
 	}
 
-	logs, sub, err := _TxToken.contract.WatchLogs(opts, "Transfer", fromRule, toRule)
+	logs, sub, err := _TXToken.contract.WatchLogs(opts, "Transfer", fromRule, toRule)
 	if err != nil {
 		return nil, err
 	}
@@ -2451,8 +2451,8 @@ func (_TxToken *TxTokenFilterer) WatchTransfer(opts *bind.WatchOpts, sink chan<-
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxTokenTransfer)
-				if err := _TxToken.contract.UnpackLog(event, "Transfer", log); err != nil {
+				event := new(TXTokenTransfer)
+				if err := _TXToken.contract.UnpackLog(event, "Transfer", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2476,18 +2476,18 @@ func (_TxToken *TxTokenFilterer) WatchTransfer(opts *bind.WatchOpts, sink chan<-
 // ParseTransfer is a log parse operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
 // Solidity: event Transfer(address indexed from, address indexed to, uint256 value)
-func (_TxToken *TxTokenFilterer) ParseTransfer(log types.Log) (*TxTokenTransfer, error) {
-	event := new(TxTokenTransfer)
-	if err := _TxToken.contract.UnpackLog(event, "Transfer", log); err != nil {
+func (_TXToken *TXTokenFilterer) ParseTransfer(log types.Log) (*TXTokenTransfer, error) {
+	event := new(TXTokenTransfer)
+	if err := _TXToken.contract.UnpackLog(event, "Transfer", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// TxTokenUnpausedIterator is returned from FilterUnpaused and is used to iterate over the raw logs and unpacked data for Unpaused events raised by the TxToken contract.
-type TxTokenUnpausedIterator struct {
-	Event *TxTokenUnpaused // Event containing the contract specifics and raw log
+// TXTokenUnpausedIterator is returned from FilterUnpaused and is used to iterate over the raw logs and unpacked data for Unpaused events raised by the TXToken contract.
+type TXTokenUnpausedIterator struct {
+	Event *TXTokenUnpaused // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2501,7 +2501,7 @@ type TxTokenUnpausedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *TxTokenUnpausedIterator) Next() bool {
+func (it *TXTokenUnpausedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2510,7 +2510,7 @@ func (it *TxTokenUnpausedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(TxTokenUnpaused)
+			it.Event = new(TXTokenUnpaused)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2525,7 +2525,7 @@ func (it *TxTokenUnpausedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(TxTokenUnpaused)
+		it.Event = new(TXTokenUnpaused)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2541,19 +2541,19 @@ func (it *TxTokenUnpausedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *TxTokenUnpausedIterator) Error() error {
+func (it *TXTokenUnpausedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *TxTokenUnpausedIterator) Close() error {
+func (it *TXTokenUnpausedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// TxTokenUnpaused represents a Unpaused event raised by the TxToken contract.
-type TxTokenUnpaused struct {
+// TXTokenUnpaused represents a Unpaused event raised by the TXToken contract.
+type TXTokenUnpaused struct {
 	Account common.Address
 	Raw     types.Log // Blockchain specific contextual infos
 }
@@ -2561,21 +2561,21 @@ type TxTokenUnpaused struct {
 // FilterUnpaused is a free log retrieval operation binding the contract event 0x5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa.
 //
 // Solidity: event Unpaused(address account)
-func (_TxToken *TxTokenFilterer) FilterUnpaused(opts *bind.FilterOpts) (*TxTokenUnpausedIterator, error) {
+func (_TXToken *TXTokenFilterer) FilterUnpaused(opts *bind.FilterOpts) (*TXTokenUnpausedIterator, error) {
 
-	logs, sub, err := _TxToken.contract.FilterLogs(opts, "Unpaused")
+	logs, sub, err := _TXToken.contract.FilterLogs(opts, "Unpaused")
 	if err != nil {
 		return nil, err
 	}
-	return &TxTokenUnpausedIterator{contract: _TxToken.contract, event: "Unpaused", logs: logs, sub: sub}, nil
+	return &TXTokenUnpausedIterator{contract: _TXToken.contract, event: "Unpaused", logs: logs, sub: sub}, nil
 }
 
 // WatchUnpaused is a free log subscription operation binding the contract event 0x5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa.
 //
 // Solidity: event Unpaused(address account)
-func (_TxToken *TxTokenFilterer) WatchUnpaused(opts *bind.WatchOpts, sink chan<- *TxTokenUnpaused) (event.Subscription, error) {
+func (_TXToken *TXTokenFilterer) WatchUnpaused(opts *bind.WatchOpts, sink chan<- *TXTokenUnpaused) (event.Subscription, error) {
 
-	logs, sub, err := _TxToken.contract.WatchLogs(opts, "Unpaused")
+	logs, sub, err := _TXToken.contract.WatchLogs(opts, "Unpaused")
 	if err != nil {
 		return nil, err
 	}
@@ -2585,8 +2585,8 @@ func (_TxToken *TxTokenFilterer) WatchUnpaused(opts *bind.WatchOpts, sink chan<-
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(TxTokenUnpaused)
-				if err := _TxToken.contract.UnpackLog(event, "Unpaused", log); err != nil {
+				event := new(TXTokenUnpaused)
+				if err := _TXToken.contract.UnpackLog(event, "Unpaused", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2610,9 +2610,9 @@ func (_TxToken *TxTokenFilterer) WatchUnpaused(opts *bind.WatchOpts, sink chan<-
 // ParseUnpaused is a log parse operation binding the contract event 0x5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa.
 //
 // Solidity: event Unpaused(address account)
-func (_TxToken *TxTokenFilterer) ParseUnpaused(log types.Log) (*TxTokenUnpaused, error) {
-	event := new(TxTokenUnpaused)
-	if err := _TxToken.contract.UnpackLog(event, "Unpaused", log); err != nil {
+func (_TXToken *TXTokenFilterer) ParseUnpaused(log types.Log) (*TXTokenUnpaused, error) {
+	event := new(TXTokenUnpaused)
+	if err := _TXToken.contract.UnpackLog(event, "Unpaused", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
