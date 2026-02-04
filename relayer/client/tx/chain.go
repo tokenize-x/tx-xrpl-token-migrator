@@ -160,7 +160,7 @@ func (c *ChainClient) queryTxsByEvents(
 				mu.Unlock()
 				return
 			}
-			txn.Timestamp = block.Block.Header.Time.String()
+			txn.Timestamp = block.Block.Time.String()
 		})
 	}
 	wg.Wait()

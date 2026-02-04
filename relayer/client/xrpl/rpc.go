@@ -574,13 +574,14 @@ func (c *RPCClient) callRPC(ctx context.Context, req rpcReq, res any) error {
 }
 
 func (c *RPCClient) calculateFee(txSignatureCount, baseFee uint32) (*rippledata.Value, error) {
-	if txSignatureCount == 0 {
+	switch txSignatureCount {
+	case 0:
 		return nil, errors.New("tx signature count must be greater than 0")
-	} else if txSignatureCount == 1 {
+	case 1:
 		// Single sig: base_fee
 		return rippledata.NewNativeValue(int64(baseFee))
+	default:
+		// Multisig: base_fee × (1 + Number of Signatures Provided)
+		return rippledata.NewNativeValue(int64(baseFee * (1 + txSignatureCount)))
 	}
-
-	// Multisig: base_fee × (1 + Number of Signatures Provided)
-	return rippledata.NewNativeValue(int64(baseFee * (1 + txSignatureCount)))
 }
