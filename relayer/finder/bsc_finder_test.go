@@ -10,10 +10,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
+
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc/abi"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/metric"
-	"go.uber.org/zap/zaptest"
 )
 
 func TestBSCFinderBuildPendingTransaction(t *testing.T) {

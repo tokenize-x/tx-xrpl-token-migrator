@@ -9,6 +9,9 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/CoreumFoundation/coreum-tools/pkg/http"
+	txconfig "github.com/CoreumFoundation/coreum/v5/pkg/config"
+	txkeyring "github.com/CoreumFoundation/coreum/v5/pkg/keyring"
 	"github.com/CosmWasm/wasmd/x/wasm"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -17,12 +20,9 @@ import (
 	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
+
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/xrpl"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
-
-	"github.com/CoreumFoundation/coreum-tools/pkg/http"
-	txconfig "github.com/CoreumFoundation/coreum/v5/pkg/config"
-	txkeyring "github.com/CoreumFoundation/coreum/v5/pkg/keyring"
 )
 
 const (
@@ -36,12 +36,16 @@ const (
 // ********** XRPLChain **********
 
 // XRPLChainConfig is a config required for the XRPL chain to be created.
+//
+//nolint:revive // existing naming convention
 type XRPLChainConfig struct {
 	RPCAddress  string
 	FundingSeed string
 }
 
 // XRPLChain is XRPL chain for the testing.
+//
+//nolint:revive // existing naming convention
 type XRPLChain struct {
 	cfg       XRPLChainConfig
 	signer    *xrpl.KeyringTxSigner

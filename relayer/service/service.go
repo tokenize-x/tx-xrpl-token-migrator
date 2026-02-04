@@ -7,6 +7,11 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/CoreumFoundation/coreum-tools/pkg/http"
+	"github.com/CoreumFoundation/coreum-tools/pkg/parallel"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config/constant"
 	"github.com/CosmWasm/wasmd/x/wasm"
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -17,6 +22,11 @@ import (
 	"github.com/pkg/errors"
 	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/samber/lo"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
+
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/audit"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
@@ -26,16 +36,6 @@ import (
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/metric"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/watcher"
-	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
-
-	"github.com/CoreumFoundation/coreum-tools/pkg/http"
-	"github.com/CoreumFoundation/coreum-tools/pkg/parallel"
-	"github.com/CoreumFoundation/coreum/v5/pkg/client"
-	"github.com/CoreumFoundation/coreum/v5/pkg/config"
-	"github.com/CoreumFoundation/coreum/v5/pkg/config/constant"
 )
 
 // XRPLTokenConfig is XRPL token config.

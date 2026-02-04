@@ -1,14 +1,19 @@
 //go:build integrationtests
 
+// Package xrpl provides XRPL integration tests.
 package xrpl
 
 import (
 	"context"
 	"fmt"
 	"math"
+	"slices"
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/testutil/event"
+	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdkclient "github.com/cosmos/cosmos-sdk/client"
 	sdkmultisig "github.com/cosmos/cosmos-sdk/crypto/keys/multisig"
@@ -19,11 +24,6 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
-
-	"github.com/CoreumFoundation/coreum/v5/pkg/client"
-	"github.com/CoreumFoundation/coreum/v5/testutil/event"
-	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 )
@@ -672,7 +672,7 @@ func TestWASMUpdateTrustedAddresses(t *testing.T) {
 
 	cfg, err := contractClient.GetContractConfig(ctx)
 	requireT.NoError(err)
-	requireT.ElementsMatch(lo.Map(newTrustedAddresses, func(item sdk.AccAddress, index int) string {
+	requireT.ElementsMatch(lo.Map(newTrustedAddresses, func(item sdk.AccAddress, _ int) string {
 		return item.String()
 	}), cfg.TrustedAddresses)
 }
@@ -714,7 +714,7 @@ func TestWASMAddXRPLTokens(t *testing.T) {
 	// Verify initial tokens are present
 	cfg, err := contractClient.GetContractConfig(ctx)
 	requireT.NoError(err)
-	requireT.Equal(len(TestXRPLTokens), len(cfg.XRPLTokens))
+	requireT.Len(cfg.XRPLTokens, len(TestXRPLTokens))
 
 	t.Logf("Trying to add XRPL tokens from non-owner.")
 	newXRPLTokens := []tx.XRPLToken{

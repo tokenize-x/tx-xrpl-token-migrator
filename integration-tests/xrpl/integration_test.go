@@ -4,12 +4,16 @@ package xrpl
 
 import (
 	"context"
+	"slices"
 	"sort"
 	"sync"
 	"testing"
 	"time"
 
 	sdkmath "cosmossdk.io/math"
+	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -19,11 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
-	"golang.org/x/exp/slices"
-
-	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
-	"github.com/CoreumFoundation/coreum/v5/pkg/client"
-	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/service"
@@ -487,7 +486,7 @@ func buildAndStartDevEnv(
 	instances := lo.Map(
 		[]sdk.AccAddress{trustedAddress1, trustedAddress2, trustedAddress3},
 		//nolint:contextcheck // buildTestingServices intentionally uses context.Background()
-		func(trustedAddress sdk.AccAddress, index int) *service.Services {
+		func(trustedAddress sdk.AccAddress, _ int) *service.Services {
 			return buildTestingServices(
 				t,
 				zaptest.NewLogger(t),
@@ -560,7 +559,7 @@ func buildTestingServices(
 	txRPCURL, txGRPCURL, xrplRPCAddress string,
 	senderAddress, contractAddress sdk.AccAddress,
 ) *service.Services {
-	services, err := service.NewServices(context.Background(), service.Config{
+	services, err := service.NewServices(t.Context(), service.Config{
 		XRPLRPCURL:                    xrplRPCAddress,
 		XRPLHistoryScanStartLedger:    0,
 		XRPLRecentScanIndexesBack:     30_000,

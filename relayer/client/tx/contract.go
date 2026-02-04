@@ -6,6 +6,9 @@ import (
 	"strings"
 
 	sdkmath "cosmossdk.io/math"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/testutil/event"
+	feemodeltypes "github.com/CoreumFoundation/coreum/v5/x/feemodel/types"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -17,11 +20,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
-	contractembed "github.com/tokenize-x/tx-xrpl-token-migrator/contract"
 
-	"github.com/CoreumFoundation/coreum/v5/pkg/client"
-	"github.com/CoreumFoundation/coreum/v5/testutil/event"
-	feemodeltypes "github.com/CoreumFoundation/coreum/v5/x/feemodel/types"
+	contractembed "github.com/tokenize-x/tx-xrpl-token-migrator/contract"
 )
 
 // ExecMethod is contract exec method.
@@ -542,83 +542,6 @@ func (c *ContractClient) EstimateExecuteMessages(
 	return sdk.NewCoin(c.cfg.TXDenom, amount), gas, nil
 }
 
-// calculateGas calculates gas using legacy amino codec to cover both multisig and basic accounts.
-func (c *ContractClient) calculateGas(
-	ctx context.Context,
-	sender sdk.AccAddress,
-	txf client.Factory,
-	msgs ...sdk.Msg,
-) (uint64, error) {
-	modeInfo, signature := authtx.SignatureDataToModeInfoAndSig(&signing.MultiSignatureData{
-		Signatures: []signing.SignatureData{
-			&signing.SingleSignatureData{
-				SignMode: signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON,
-			},
-		},
-	})
-
-	pubKeyAny, err := codectypes.NewAnyWithValue(&secp256k1.PubKey{})
-	if err != nil {
-		return 0, errors.WithStack(err)
-	}
-
-	acc, err := client.GetAccountInfo(ctx, c.clientCtx, sender)
-	if err != nil {
-		return 0, errors.WithStack(err)
-	}
-
-	simAuthInfoBytes, err := proto.Marshal(&sdktx.AuthInfo{
-		SignerInfos: []*sdktx.SignerInfo{
-			{
-				PublicKey: pubKeyAny,
-				ModeInfo:  modeInfo,
-				Sequence:  acc.GetSequence(),
-			},
-		},
-		Fee: &sdktx.Fee{},
-	})
-	if err != nil {
-		return 0, errors.WithStack(err)
-	}
-
-	anyMessages := make([]*codectypes.Any, 0, len(msgs))
-	for _, msg := range msgs {
-		anyMsg, err := codectypes.NewAnyWithValue(msg)
-		if err != nil {
-			return 0, errors.WithStack(err)
-		}
-		anyMessages = append(anyMessages, anyMsg)
-	}
-
-	bodyBytes, err := proto.Marshal(&sdktx.TxBody{
-		Messages: anyMessages,
-	})
-	if err != nil {
-		return 0, errors.WithStack(err)
-	}
-
-	txBytes, err := proto.Marshal(&sdktx.TxRaw{
-		BodyBytes:     bodyBytes,
-		AuthInfoBytes: simAuthInfoBytes,
-		Signatures: [][]byte{
-			signature,
-		},
-	})
-	if err != nil {
-		return 0, errors.WithStack(err)
-	}
-
-	txSvcClient := sdktx.NewServiceClient(c.clientCtx)
-	simRes, err := txSvcClient.Simulate(ctx, &sdktx.SimulateRequest{
-		TxBytes: txBytes,
-	})
-	if err != nil {
-		return 0, errors.Wrap(err, "transaction estimation failed")
-	}
-
-	return uint64(txf.GasAdjustment() * float64(simRes.GasInfo.GasUsed)), nil
-}
-
 // GetContractConfig returns contract config.
 func (c *ContractClient) GetContractConfig(ctx context.Context) (Config, error) {
 	var config Config
@@ -735,6 +658,83 @@ func (c *ContractClient) GetAllPendingTransactions(ctx context.Context) (
 	}
 
 	return unapprovedTransactions, approvedTransactions, nil
+}
+
+// calculateGas calculates gas using legacy amino codec to cover both multisig and basic accounts.
+func (c *ContractClient) calculateGas(
+	ctx context.Context,
+	sender sdk.AccAddress,
+	txf client.Factory,
+	msgs ...sdk.Msg,
+) (uint64, error) {
+	modeInfo, signature := authtx.SignatureDataToModeInfoAndSig(&signing.MultiSignatureData{
+		Signatures: []signing.SignatureData{
+			&signing.SingleSignatureData{
+				SignMode: signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON,
+			},
+		},
+	})
+
+	pubKeyAny, err := codectypes.NewAnyWithValue(&secp256k1.PubKey{})
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	acc, err := client.GetAccountInfo(ctx, c.clientCtx, sender)
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	simAuthInfoBytes, err := proto.Marshal(&sdktx.AuthInfo{
+		SignerInfos: []*sdktx.SignerInfo{
+			{
+				PublicKey: pubKeyAny,
+				ModeInfo:  modeInfo,
+				Sequence:  acc.GetSequence(),
+			},
+		},
+		Fee: &sdktx.Fee{},
+	})
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	anyMessages := make([]*codectypes.Any, 0, len(msgs))
+	for _, msg := range msgs {
+		anyMsg, err := codectypes.NewAnyWithValue(msg)
+		if err != nil {
+			return 0, errors.WithStack(err)
+		}
+		anyMessages = append(anyMessages, anyMsg)
+	}
+
+	bodyBytes, err := proto.Marshal(&sdktx.TxBody{
+		Messages: anyMessages,
+	})
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	txBytes, err := proto.Marshal(&sdktx.TxRaw{
+		BodyBytes:     bodyBytes,
+		AuthInfoBytes: simAuthInfoBytes,
+		Signatures: [][]byte{
+			signature,
+		},
+	})
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	txSvcClient := sdktx.NewServiceClient(c.clientCtx)
+	simRes, err := txSvcClient.Simulate(ctx, &sdktx.SimulateRequest{
+		TxBytes: txBytes,
+	})
+	if err != nil {
+		return 0, errors.Wrap(err, "transaction estimation failed")
+	}
+
+	return uint64(txf.GasAdjustment() * float64(simRes.GasInfo.GasUsed)), nil
 }
 
 // IsUnauthorizedError returns true if error is Unauthorized error.

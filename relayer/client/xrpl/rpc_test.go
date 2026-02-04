@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/CoreumFoundation/coreum-tools/pkg/http"
 	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/stretchr/testify/require"
-	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
-	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/metric"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/http"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/metric"
 )
 
 const (
@@ -24,7 +24,7 @@ const (
 func TestRPCClient_SubscribeAccountTransactions(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
 	t.Cleanup(cancel)
 
 	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
@@ -83,7 +83,7 @@ func TestRPCClient_SubscribeAccountTransactions(t *testing.T) {
 func TestRPCClient_GetAccountTransactions(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
 	t.Cleanup(cancel)
 
 	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
@@ -180,7 +180,7 @@ func TestRPCClient_GetAccountTransactions(t *testing.T) {
 func TestRPCClient_RPCErrorHandling(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
 	t.Cleanup(cancel)
 
 	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
@@ -227,7 +227,7 @@ func TestRPCClient_RPCErrorHandling(t *testing.T) {
 func TestRPCClient_GetCurrentLedger(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
 	t.Cleanup(cancel)
 
 	httpClient := http.NewRetryableClient(http.DefaultClientConfig())
