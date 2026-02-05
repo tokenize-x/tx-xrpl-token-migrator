@@ -59,7 +59,9 @@ func TestBSCLiveScanner(t *testing.T) {
 
 	// Deploy contracts
 	t.Log("Deploying TXToken and TXBridge contracts...")
-	contracts, err := evm.SetupBridgeEnvironment(ctx, rpcClient, chains.BSC.ChainID(), chains.BSC.KeyStore(), deployer, bridgeCfg)
+	contracts, err := evm.SetupBridgeEnvironment(
+		ctx, rpcClient, chains.BSC.ChainID(), chains.BSC.KeyStore(), deployer, bridgeCfg,
+	)
 	requireT.NoError(err)
 	t.Logf("Token deployed at: %s", contracts.TokenAddress.Hex())
 	t.Logf("Bridge deployed at: %s", contracts.BridgeAddress.Hex())
@@ -70,7 +72,16 @@ func TestBSCLiveScanner(t *testing.T) {
 	// Mint tokens to user
 	mintAmount := tokensToAmount(100) // 100 tokens (6 decimals)
 	t.Logf("Minting %s tokens to user %s", mintAmount.String(), user.Address.Hex())
-	err = evm.MintTokens(ctx, rpcClient, chains.BSC.ChainID(), chains.BSC.KeyStore(), deployer, contracts.Token, user.Address, mintAmount)
+	err = evm.MintTokens(
+		ctx,
+		rpcClient,
+		chains.BSC.ChainID(),
+		chains.BSC.KeyStore(),
+		deployer,
+		contracts.Token,
+		user.Address,
+		mintAmount,
+	)
 	requireT.NoError(err)
 
 	// Verify user balance
@@ -152,7 +163,9 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 
 	// Deploy EVM contracts
 	t.Log("Deploying EVM contracts...")
-	contracts, err := evm.SetupBridgeEnvironment(ctx, rpcClient, chains.BSC.ChainID(), chains.BSC.KeyStore(), deployer, bridgeCfg)
+	contracts, err := evm.SetupBridgeEnvironment(
+		ctx, rpcClient, chains.BSC.ChainID(), chains.BSC.KeyStore(), deployer, bridgeCfg,
+	)
 	requireT.NoError(err)
 
 	// Setup TX chain side
@@ -199,9 +212,27 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 
 	// Mint tokens to users
 	mintAmount := tokensToAmount(100) // 100 tokens each
-	err = evm.MintTokens(ctx, rpcClient, chains.BSC.ChainID(), chains.BSC.KeyStore(), deployer, contracts.Token, user1.Address, mintAmount)
+	err = evm.MintTokens(
+		ctx,
+		rpcClient,
+		chains.BSC.ChainID(),
+		chains.BSC.KeyStore(),
+		deployer,
+		contracts.Token,
+		user1.Address,
+		mintAmount,
+	)
 	requireT.NoError(err)
-	err = evm.MintTokens(ctx, rpcClient, chains.BSC.ChainID(), chains.BSC.KeyStore(), deployer, contracts.Token, user2.Address, mintAmount)
+	err = evm.MintTokens(
+		ctx,
+		rpcClient,
+		chains.BSC.ChainID(),
+		chains.BSC.KeyStore(),
+		deployer,
+		contracts.Token,
+		user2.Address,
+		mintAmount,
+	)
 	requireT.NoError(err)
 
 	// Create scanner and start executors
