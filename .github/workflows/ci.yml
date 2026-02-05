@@ -64,12 +64,12 @@ jobs:
           path: ${{ matrix.ci_step }}/xrpl-bridge
           fetch-depth: 0
           submodules: recursive
-      - name: Checkout coreum
+      - name: Checkout tx-chain
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-          repository: CoreumFoundation/coreum
-          path: ${{ matrix.ci_step }}/coreum
+          repository: tokenize-x/tx-chain
+          path: ${{ matrix.ci_step }}/tx-chain
           ref: v5.0.1
           submodules: recursive
           fetch-depth: 0
