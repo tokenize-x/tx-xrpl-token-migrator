@@ -20,13 +20,14 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+
 	"github.com/tokenize-x/tx-xrpl-token-migrator/integration-tests/bsc/evm"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 )
 
 const (
 	// BSCCurrencyCode is BSC toke currency code on BSC chain.
-	//BSCCurrencyCode = "BSC"
+	// BSCCurrencyCode = "BSC"
 
 	veryLightScryptN = 2
 	veryLightScryptP = 1
@@ -113,7 +114,9 @@ func (c BinanceSmartChain) GenAccount(t *testing.T) accounts.Account {
 }
 
 // FundAccount funds the provided account with the provided amount.
-func (c BinanceSmartChain) FundAccount(ctx context.Context, t *testing.T, client *ethclient.Client, acc common.Address, amount *big.Int) {
+func (c BinanceSmartChain) FundAccount(
+	ctx context.Context, t *testing.T, client *ethclient.Client, acc common.Address, amount *big.Int,
+) {
 	t.Helper()
 
 	c.fundMu.Lock()
