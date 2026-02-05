@@ -7,17 +7,13 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/http"
-	"github.com/CoreumFoundation/coreum-tools/pkg/parallel"
-	"github.com/CoreumFoundation/coreum/v5/pkg/client"
-	"github.com/CoreumFoundation/coreum/v5/pkg/config"
-	"github.com/CoreumFoundation/coreum/v5/pkg/config/constant"
 	"github.com/CosmWasm/wasmd/x/wasm"
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	rippledata "github.com/rubblelabs/ripple/data"
@@ -26,6 +22,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/CoreumFoundation/coreum-tools/pkg/http"
+	"github.com/CoreumFoundation/coreum-tools/pkg/parallel"
+	"github.com/CoreumFoundation/coreum/v5/pkg/client"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config/constant"
 
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/audit"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc"
@@ -323,7 +325,11 @@ func NewServices(
 		if cfg.BSCScanner.RPCURL == "" {
 			return nil, errors.New("bsc-rpc-url is required when BSC scanner is enabled")
 		}
-		bscScanner, err = bsc.NewScanner(cfg.BSCScanner, log)
+		ethClient, err := ethclient.Dial(cfg.BSCScanner.RPCURL)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to connect to BSC RPC")
+		}
+		bscScanner, err = bsc.NewScanner(cfg.BSCScanner, log, ethClient)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create BSC scanner")
 		}
