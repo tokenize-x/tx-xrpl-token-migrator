@@ -152,6 +152,7 @@ func (r *Recorder) SetXRPLLatestAccountLedgerIndex(v int64) {
 	r.xrplLatestLedgerIndexGauge.Set(float64(v))
 }
 
+// SetBSCLatestProcessedBlock sets the latest processed BSC block number.
 func (r *Recorder) SetBSCLatestProcessedBlock(v uint64) {
 	r.bscLatestProcessedBlockMu.Lock()
 	defer r.bscLatestProcessedBlockMu.Unlock()
@@ -162,6 +163,7 @@ func (r *Recorder) SetBSCLatestProcessedBlock(v uint64) {
 	r.bscLatestProcessedBlockGauge.Set(float64(v))
 }
 
+// SetBSCChainHeadBlock sets the current BSC chain head block number.
 func (r *Recorder) SetBSCChainHeadBlock(v uint64) {
 	r.bscChainHeadBlockGauge.Set(float64(v))
 }
