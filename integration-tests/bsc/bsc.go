@@ -26,9 +26,6 @@ import (
 )
 
 const (
-	// BSCCurrencyCode is BSC toke currency code on BSC chain.
-	// BSCCurrencyCode = "BSC"
-
 	veryLightScryptN = 2
 	veryLightScryptP = 1
 )
