@@ -11,13 +11,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
 	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
 	rippledata "github.com/rubblelabs/ripple/data"
-	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 	"go.uber.org/zap"
 
-	"github.com/CoreumFoundation/coreum-tools/pkg/retry"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 )
 
 // ******************** RPC transport objects ********************
@@ -574,13 +574,14 @@ func (c *RPCClient) callRPC(ctx context.Context, req rpcReq, res any) error {
 }
 
 func (c *RPCClient) calculateFee(txSignatureCount, baseFee uint32) (*rippledata.Value, error) {
-	if txSignatureCount == 0 {
+	switch txSignatureCount {
+	case 0:
 		return nil, errors.New("tx signature count must be greater than 0")
-	} else if txSignatureCount == 1 {
+	case 1:
 		// Single sig: base_fee
 		return rippledata.NewNativeValue(int64(baseFee))
+	default:
+		// Multisig: base_fee × (1 + Number of Signatures Provided)
+		return rippledata.NewNativeValue(int64(baseFee * (1 + txSignatureCount)))
 	}
-
-	// Multisig: base_fee × (1 + Number of Signatures Provided)
-	return rippledata.NewNativeValue(int64(baseFee * (1 + txSignatureCount)))
 }

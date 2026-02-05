@@ -1,15 +1,11 @@
 //go:build integrationtests
 
+// Package integrationtests provides common utilities for integration tests.
 package integrationtests
 
 import (
 	"context"
 	"time"
-
-	"github.com/CosmWasm/wasmd/x/wasm"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth"
-	"github.com/pkg/errors"
 
 	txapp "github.com/CoreumFoundation/coreum/v5/app"
 	"github.com/CoreumFoundation/coreum/v5/pkg/client"
@@ -17,6 +13,10 @@ import (
 	"github.com/CoreumFoundation/coreum/v5/pkg/config/constant"
 	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 	feemodeltypes "github.com/CoreumFoundation/coreum/v5/x/feemodel/types"
+	"github.com/CosmWasm/wasmd/x/wasm"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/auth"
+	"github.com/pkg/errors"
 )
 
 // TXChainConfig represents TX chain config.

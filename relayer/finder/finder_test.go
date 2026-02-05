@@ -8,18 +8,18 @@ import (
 	"time"
 
 	sdkmath "cosmossdk.io/math"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config"
+	"github.com/CoreumFoundation/coreum/v5/pkg/config/constant"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/golang/mock/gomock"
 	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
+
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/xrpl"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/metric"
-	"go.uber.org/zap/zaptest"
-
-	"github.com/CoreumFoundation/coreum/v5/pkg/config"
-	"github.com/CoreumFoundation/coreum/v5/pkg/config/constant"
 )
 
 var (
@@ -172,7 +172,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 		},
 		{
 			name: "negative_empty",
-			xrplTxFunc: func(tx xrpl.Transaction) xrpl.Transaction {
+			xrplTxFunc: func(_ xrpl.Transaction) xrpl.Transaction {
 				return xrpl.Transaction{}
 			},
 			wantMatches: false,

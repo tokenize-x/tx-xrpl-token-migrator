@@ -1,3 +1,4 @@
+// Package bsc provides BSC blockchain client and event scanning functionality.
 package bsc
 
 import (
@@ -8,17 +9,19 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc/abi"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
-	"go.uber.org/zap"
 )
 
+// MetricRecorder is the interface for recording BSC metrics.
 type MetricRecorder interface {
 	SetBSCLatestProcessedBlock(v uint64)
 	SetBSCChainHeadBlock(v uint64)
 }
 
-// configuration for the BSC event scanner.
+// ScannerConfig is configuration for the BSC event scanner.
 type ScannerConfig struct {
 	RPCURL        string
 	BridgeAddress common.Address
@@ -36,6 +39,7 @@ type Scanner struct {
 	metricRecorder MetricRecorder
 }
 
+// NewScanner creates a new BSC event scanner.
 func NewScanner(cfg ScannerConfig, log logger.Logger, metricRecorder MetricRecorder) (*Scanner, error) {
 	client, err := ethclient.Dial(cfg.RPCURL)
 	if err != nil {
@@ -57,7 +61,7 @@ func NewScanner(cfg ScannerConfig, log logger.Logger, metricRecorder MetricRecor
 	}, nil
 }
 
-// starts scanning for SentToTXChain events and sends them to the channel.
+// Subscribe starts scanning for SentToTXChain events and sends them to the channel.
 func (s *Scanner) Subscribe(ctx context.Context, ch chan<- *abi.TXBridgeSentToTXChain) error {
 	currentBlock, err := s.client.BlockNumber(ctx)
 	if err != nil {
@@ -72,12 +76,23 @@ func (s *Scanner) Subscribe(ctx context.Context, ch chan<- *abi.TXBridgeSentToTX
 	return nil
 }
 
+// GetCurrentBlock returns the current block number from BSC.
+func (s *Scanner) GetCurrentBlock(ctx context.Context) (uint64, error) {
+	return s.client.BlockNumber(ctx)
+}
+
+// Close closes the BSC client connection.
+func (s *Scanner) Close() {
+	s.client.Close()
+}
+
 func (s *Scanner) scanHistorical(ctx context.Context, from, to uint64, ch chan<- *abi.TXBridgeSentToTXChain) {
 	if from >= to {
 		return
 	}
 
-	s.log.Info("starting BSC historical scan", zap.Uint64("from", from), zap.Uint64("to", to))
+	s.log.Info("starting BSC historical scan",
+		zap.Uint64("from", from), zap.Uint64("to", to))
 
 	batchSize := uint64(10000)
 	for start := from; start < to; start += batchSize {
@@ -139,7 +154,8 @@ func (s *Scanner) scanRecent(ctx context.Context, from uint64, ch chan<- *abi.TX
 			continue
 		}
 
-		s.log.Info("polled BSC blocks", zap.Uint64("from", lastBlock+1), zap.Uint64("to", safeBlock), zap.Int("events", count))
+		s.log.Info("polled BSC blocks",
+			zap.Uint64("from", lastBlock+1), zap.Uint64("to", safeBlock), zap.Int("events", count))
 		lastBlock = safeBlock
 		if s.metricRecorder != nil {
 			s.metricRecorder.SetBSCLatestProcessedBlock(lastBlock)
@@ -152,7 +168,9 @@ func (s *Scanner) scanRange(ctx context.Context, from, to uint64, ch chan<- *abi
 	return err
 }
 
-func (s *Scanner) scanRangeWithCount(ctx context.Context, from, to uint64, ch chan<- *abi.TXBridgeSentToTXChain) (int, error) {
+func (s *Scanner) scanRangeWithCount(
+	ctx context.Context, from, to uint64, ch chan<- *abi.TXBridgeSentToTXChain,
+) (int, error) {
 	iter, err := s.filterer.FilterSentToTXChain(&bind.FilterOpts{
 		Start:   from,
 		End:     &to,
@@ -174,12 +192,4 @@ func (s *Scanner) scanRangeWithCount(ctx context.Context, from, to uint64, ch ch
 	}
 
 	return count, iter.Error()
-}
-
-func (s *Scanner) GetCurrentBlock(ctx context.Context) (uint64, error) {
-	return s.client.BlockNumber(ctx)
-}
-
-func (s *Scanner) Close() {
-	s.client.Close()
 }

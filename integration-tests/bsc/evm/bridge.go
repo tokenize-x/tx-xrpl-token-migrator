@@ -16,7 +16,7 @@ import (
 	bscabi "github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc/abi"
 )
 
-// represents a completed bridge transaction.
+// BridgeTransaction represents a completed bridge transaction.
 type BridgeTransaction struct {
 	TxHash    common.Hash
 	Amount    *big.Int
@@ -24,7 +24,7 @@ type BridgeTransaction struct {
 	From      common.Address
 }
 
-// initiates a bridge transaction.
+// SendToTxChain initiates a bridge transaction.
 func SendToTxChain(
 	ctx context.Context,
 	client *ethclient.Client,
@@ -60,7 +60,7 @@ func SendToTxChain(
 	}, nil
 }
 
-// mints tokens to user and bridges them in sequence. full flow for testing.
+// MintAndSendToTxChain mints tokens to user and bridges them in sequence.
 func MintAndSendToTxChain(
 	ctx context.Context,
 	client *ethclient.Client,
@@ -84,7 +84,7 @@ func MintAndSendToTxChain(
 	return SendToTxChain(ctx, client, userPrivateKey, chainID, contracts.Bridge, amount, txAddress)
 }
 
-// retrieves SentToTXChain events from the bridge contract.
+// GetBridgeEvents retrieves SentToTXChain events from the bridge contract.
 func GetBridgeEvents(
 	ctx context.Context,
 	bridge *bscabi.TXBridge,

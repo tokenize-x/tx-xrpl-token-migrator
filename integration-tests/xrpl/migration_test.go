@@ -6,10 +6,9 @@ import (
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
+	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/stretchr/testify/require"
-
-	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 )
@@ -71,6 +70,6 @@ func TestContractMigration(t *testing.T) {
 		Address: contractAddr.String(),
 	})
 	requireT.NoError(err)
-	requireT.Equal(newCodeID, newContractInfo.ContractInfo.CodeID)
-	requireT.NotEqual(contractInfoRes.ContractInfo.CodeID, newContractInfo.ContractInfo.CodeID)
+	requireT.Equal(newCodeID, newContractInfo.CodeID)
+	requireT.NotEqual(contractInfoRes.CodeID, newContractInfo.CodeID)
 }

@@ -55,6 +55,7 @@ func init() {
 
 // NewTestingContext returns the configured TX chain and new context for the BSC integration tests.
 func NewTestingContext(t *testing.T) (context.Context, Chains) {
+	//nolint:usetesting // t.Context() cancelled before cleanup runs
 	testCtx, testCtxCancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	t.Cleanup(func() {
 		require.NoError(t, testCtx.Err())
