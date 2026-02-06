@@ -84,8 +84,6 @@ test-contract:
 
 .PHONY: restart-dev-env
 restart-dev-env:
-	ls -la ${TX_BUILDER}
-	chmod +x ${TX_BUILDER}
 	${TX_BUILDER} znet remove && ${TX_BUILDER} znet start --profiles=1txd,xrpl,bsc
 
 stop-dev-env:
@@ -93,4 +91,6 @@ stop-dev-env:
 	
 .PHONY: rebuild-dev-env
 rebuild-dev-env:
+	ls -la ${TX_BUILDER}
+	chmod +x ${TX_BUILDER}
 	${TX_BUILDER} build images
