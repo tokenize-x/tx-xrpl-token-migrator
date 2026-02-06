@@ -47,16 +47,6 @@ all: fmt lint test build-contract test-integration
 test:
 	@go test -v -mod=readonly -parallel=4 ./...
 
-.PHONY: install-foundry
-install-foundry:
-	@if ! command -v anvil &> /dev/null && [ ! -f "$$HOME/.foundry/bin/anvil" ]; then \
-		echo "Installing Foundry..."; \
-		curl -L https://foundry.paradigm.xyz | bash; \
-		$$HOME/.foundry/bin/foundryup; \
-	else \
-		echo "Foundry already installed"; \
-	fi
-
 .PHONY: test-integration
 test-integration: test-integration-xrpl test-integration-bsc
 
@@ -66,7 +56,7 @@ test-integration-xrpl:
 
 .PHONY: test-integration-bsc
 test-integration-bsc:
-	@PATH="$$HOME/.foundry/bin:$$PATH" go test -v --tags=integrationtests -mod=readonly ./integration-tests/bsc
+	go test -v --tags=integrationtests -mod=readonly ./integration-tests/bsc
 
 .PHONY: lint
 lint:
@@ -94,6 +84,8 @@ test-contract:
 
 .PHONY: restart-dev-env
 restart-dev-env:
+	ls -la ${TX_BUILDER}
+	chmod +x ${TX_BUILDER}
 	${TX_BUILDER} znet remove && ${TX_BUILDER} znet start --profiles=1txd,xrpl,bsc
 
 stop-dev-env:
