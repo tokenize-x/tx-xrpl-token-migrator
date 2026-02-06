@@ -2,7 +2,7 @@ IMPORT_PREFIX=github.com/CoreumFoundation
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 CONTRACT_DIR:=$(ROOT_DIR)/contract
 SCAN_FILES := $(shell find . -type f -name '*.go' -not -name '*mock.go' -not -name '*_gen.go' -not -path "*/vendor/*")
-TX_BUILDER:=$(ROOT_DIR)/../../tx-chain/bin/tx-chain-builder
+TX_BUILDER:=$(ROOT_DIR)/../tx-chain/bin/tx-chain-builder
 BUILDER = ./bin/tx-xrpl-token-migrator-builder
 
 ###############################################################################
@@ -91,7 +91,8 @@ stop-dev-env:
 	
 .PHONY: rebuild-dev-env
 rebuild-dev-env:
-	ls -la /home/ubuntu/runner/_work/tx-xrpl-token-migrator/tx-xrpl-token-migrator/integration-tests
+	ls -la /home/ubuntu/runner/_work/tx-xrpl-token-migrator/tx-xrpl-token-migrator/integration-tests/tx-chain/bin
 	ls -la ${TX_BUILDER}
+	ls -la /home/ubuntu/runner/_work/tx-xrpl-token-migrator/tx-xrpl-token-migrator/integration-tests/tx-chain
 	chmod +x ${TX_BUILDER}
 	${TX_BUILDER} build images
