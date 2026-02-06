@@ -84,7 +84,7 @@ test-contract:
 
 .PHONY: restart-dev-env
 restart-dev-env:
-	${TX_BUILDER} znet remove && ${TX_BUILDER} znet start --profiles=1txd,xrpl,bsc
+	${TX_BUILDER} znet remove && ${TX_BUILDER} znet start --profiles=1cored,xrpl,bsc
 
 stop-dev-env:
 	${TX_BUILDER} znet remove 
