@@ -40,7 +40,9 @@ type Scanner struct {
 }
 
 // NewScanner creates a new BSC event scanner.
-func NewScanner(cfg ScannerConfig, log logger.Logger, client *ethclient.Client, metricRecorder MetricRecorder) (*Scanner, error) {
+func NewScanner(
+	cfg ScannerConfig, log logger.Logger, client *ethclient.Client, metricRecorder MetricRecorder,
+) (*Scanner, error) {
 	filterer, err := abi.NewTXBridgeFilterer(cfg.BridgeAddress, client)
 	if err != nil {
 		client.Close()
