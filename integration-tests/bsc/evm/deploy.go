@@ -102,7 +102,6 @@ func getTransactOpts(ctx context.Context, client *ethclient.Client, chainID *big
 	)
 
 	auth.Nonce = big.NewInt(int64(nonce))
-	auth.GasPrice = gasPrice
 	auth.GasTipCap = tip
 	auth.GasLimit = 5000000
 	auth.GasFeeCap = maxFee

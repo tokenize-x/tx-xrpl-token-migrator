@@ -42,6 +42,12 @@ func tokensToAmount(tokens int64) *big.Int {
 	return amount.Mul(amount, multiplier)
 }
 
+func ethToWei(eth int64) *big.Int {
+	amount := big.NewInt(eth)
+	multiplier := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
+	return amount.Mul(amount, multiplier)
+}
+
 // TestBSCLiveScanner tests the real BSC scanner against a local BSC node.
 func TestBSCLiveScanner(t *testing.T) {
 	requireT := require.New(t)
@@ -52,7 +58,7 @@ func TestBSCLiveScanner(t *testing.T) {
 
 	// Get deployer private key
 	deployer := chains.BSC.GenAccount(t)
-	chains.BSC.FundAccount(ctx, t, rpcClient, deployer.Address, tokensToAmount(100))
+	chains.BSC.FundAccount(ctx, t, rpcClient, deployer.Address, ethToWei(10))
 
 	// Configure bridge for testing
 	bridgeCfg := evm.DefaultBridgeConfig()
@@ -66,8 +72,9 @@ func TestBSCLiveScanner(t *testing.T) {
 	t.Logf("Token deployed at: %s", contracts.TokenAddress.Hex())
 	t.Logf("Bridge deployed at: %s", contracts.BridgeAddress.Hex())
 
-	// Get user key
+	// Get user key and fund with ETH for gas
 	user := chains.BSC.GenAccount(t)
+	chains.BSC.FundAccount(ctx, t, rpcClient, user.Address, ethToWei(1))
 
 	// Mint tokens to user
 	mintAmount := tokensToAmount(100) // 100 tokens (6 decimals)
@@ -156,7 +163,7 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 
 	// Get deployer key
 	deployer := chains.BSC.GenAccount(t)
-	chains.BSC.FundAccount(ctx, t, rpcClient, deployer.Address, tokensToAmount(1000000))
+	chains.BSC.FundAccount(ctx, t, rpcClient, deployer.Address, ethToWei(10))
 
 	// Configure bridge
 	bridgeCfg := evm.DefaultBridgeConfig()
@@ -206,9 +213,11 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 	recipient1 := txChain.TXChain.GenAccount()
 	recipient2 := txChain.TXChain.GenAccount()
 
-	// Get multiple EVM user keys
+	// Get multiple EVM user keys and fund with ETH for gas
 	user1 := chains.BSC.GenAccount(t)
 	user2 := chains.BSC.GenAccount(t)
+	chains.BSC.FundAccount(ctx, t, rpcClient, user1.Address, ethToWei(1))
+	chains.BSC.FundAccount(ctx, t, rpcClient, user2.Address, ethToWei(1))
 
 	// Mint tokens to users
 	mintAmount := tokensToAmount(100) // 100 tokens each
