@@ -2,7 +2,7 @@ IMPORT_PREFIX=github.com/CoreumFoundation
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 CONTRACT_DIR:=$(ROOT_DIR)/contract
 SCAN_FILES := $(shell find . -type f -name '*.go' -not -name '*mock.go' -not -name '*_gen.go' -not -path "*/vendor/*")
-TX_BUILDER:=$(ROOT_DIR)/../coreum/bin/coreum-builder
+TX_BUILDER:=$(ROOT_DIR)/../tx-chain/bin/tx-chain-builder
 BUILDER = ./bin/tx-xrpl-token-migrator-builder
 
 ###############################################################################
@@ -47,16 +47,6 @@ all: fmt lint test build-contract test-integration
 test:
 	@go test -v -mod=readonly -parallel=4 ./...
 
-.PHONY: install-foundry
-install-foundry:
-	@if ! command -v anvil &> /dev/null && [ ! -f "$$HOME/.foundry/bin/anvil" ]; then \
-		echo "Installing Foundry..."; \
-		curl -L https://foundry.paradigm.xyz | bash; \
-		$$HOME/.foundry/bin/foundryup; \
-	else \
-		echo "Foundry already installed"; \
-	fi
-
 .PHONY: test-integration
 test-integration: test-integration-xrpl test-integration-bsc
 
@@ -66,7 +56,7 @@ test-integration-xrpl:
 
 .PHONY: test-integration-bsc
 test-integration-bsc:
-	@PATH="$$HOME/.foundry/bin:$$PATH" go test -v --tags=integrationtests -mod=readonly ./integration-tests/bsc
+	go test -v --tags=integrationtests -mod=readonly ./integration-tests/bsc
 
 .PHONY: lint
 lint:
@@ -94,7 +84,7 @@ test-contract:
 
 .PHONY: restart-dev-env
 restart-dev-env:
-	${TX_BUILDER} znet remove && ${TX_BUILDER} znet start --profiles=1cored,xrpl
+	${TX_BUILDER} znet remove && ${TX_BUILDER} znet start --profiles=1txd,xrpl,bsc
 
 stop-dev-env:
 	${TX_BUILDER} znet remove 

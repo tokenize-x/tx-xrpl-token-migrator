@@ -25,38 +25,12 @@ jobs:
           - ci_step: "test"
             command: "make build-contract && make test"
           - ci_step: "integration-tests"
-            command: "make install-foundry && make build-contract && make rebuild-dev-env && make restart-dev-env && make test-integration"
+            command: "make build-contract && make rebuild-dev-env && make restart-dev-env && make test-integration"
           - ci_step: "contract-lint-and-test"
             command: "make test-contract"
 
     runs-on: self-hosted
     steps:
-      - uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: |
-            ${{ secrets.TX_CHAIN_PRIVATE_KEY }}
-            ${{ secrets.TX_TOOLS_PRIVATE_KEY }}
-            ${{ secrets.TX_CRUST_PRIVATE_KEY }}
-      - name: Setup tx-chain access
-        run: |
-          export GOPRIVATE=github.com/tokenize-x GONOSUMDB=github.com:tokenize-x
-          echo -e "${{ secrets.TX_CHAIN_PRIVATE_KEY }}" > ~/.ssh/tx-chain-deploy-key
-          echo -e "${{ secrets.TX_TOOLS_PRIVATE_KEY }}" > ~/.ssh/tx-tools-deploy-key
-          echo -e "${{ secrets.TX_CRUST_PRIVATE_KEY }}" > ~/.ssh/tx-crust-deploy-key
-          chmod 600 ~/.ssh/tx-chain-deploy-key ~/.ssh/tx-tools-deploy-key ~/.ssh/tx-crust-deploy-key
-          {
-            echo -e "Host tx-chain-private\n    HostName github.com\n    User git\n    IdentityFile ~/.ssh/tx-chain-deploy-key\n    IdentitiesOnly yes"
-            echo -e "Host tx-tools-private\n    HostName github.com\n    User git\n    IdentityFile ~/.ssh/tx-tools-deploy-key\n    IdentitiesOnly yes"
-            echo -e "Host tx-crust-private\n    HostName github.com\n    User git\n    IdentityFile ~/.ssh/tx-crust-deploy-key\n    IdentitiesOnly yes"
-          } >> ~/.ssh/config
-          {
-            echo -e "[url \"git@tx-chain-private:tokenize-x/tx-chain\"]\n        insteadOf = \"git@github.com:tokenize-x/tx-chain\""
-            echo -e "[url \"git@tx-chain-private:tokenize-x/tx-chain\"]\n        insteadOf = \"https://github.com/tokenize-x/tx-chain\""
-            echo -e "[url \"git@tx-tools-private:tokenize-x/tx-tools\"]\n        insteadOf = \"git@github.com:tokenize-x/tx-tools\""
-            echo -e "[url \"git@tx-tools-private:tokenize-x/tx-tools\"]\n        insteadOf = \"https://github.com/tokenize-x/tx-tools\""
-            echo -e "[url \"git@tx-crust-private:tokenize-x/tx-crust\"]\n        insteadOf = \"git@github.com:tokenize-x/tx-crust\""
-            echo -e "[url \"git@tx-crust-private:tokenize-x/tx-crust\"]\n        insteadOf = \"https://github.com/tokenize-x/tx-crust\""
-          } > ~/.gitconfig
       - name: Checkout xrpl bridge
         uses: actions/checkout@v4
         with:
@@ -64,13 +38,13 @@ jobs:
           path: ${{ matrix.ci_step }}/xrpl-bridge
           fetch-depth: 0
           submodules: recursive
-      - name: Checkout coreum
+      - name: Checkout tx-chain
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-          repository: CoreumFoundation/coreum
-          path: ${{ matrix.ci_step }}/coreum
-          ref: v5.0.1
+          repository: tokenize-x/tx-chain
+          path: ${{ matrix.ci_step }}/tx-chain
+          ref: 3f0746c11f7cbfdd82135f063fe80587e495df7d
           submodules: recursive
           fetch-depth: 0
       - name: Install go
