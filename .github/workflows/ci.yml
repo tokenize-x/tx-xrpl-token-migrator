@@ -44,7 +44,7 @@ jobs:
           persist-credentials: false
           repository: tokenize-x/tx-chain
           path: ${{ matrix.ci_step }}/tx-chain
-          ref: v5.0.1
+          ref: 3f0746c11f7cbfdd82135f063fe80587e495df7d
           submodules: recursive
           fetch-depth: 0
       - name: Install go
