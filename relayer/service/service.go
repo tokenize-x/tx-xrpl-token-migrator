@@ -318,23 +318,6 @@ func NewServices(
 		log.Info("XRPL scanner disabled via flag")
 	}
 
-	var bscScanner *bsc.Scanner
-	if !cfg.BSCScannerDisabled {
-		if cfg.BSCScanner.RPCURL == "" {
-			return nil, errors.New("bsc-rpc-url is required when BSC scanner is enabled")
-		}
-		bscScanner, err = bsc.NewScanner(cfg.BSCScanner, log, metricRecorder)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create BSC scanner")
-		}
-		log.Info("BSC scanner enabled",
-			zap.String("rpcURL", cfg.BSCScanner.RPCURL),
-			zap.String("bridgeAddress", cfg.BSCScanner.BridgeAddress.Hex()),
-		)
-	} else {
-		log.Info("BSC scanner disabled via flag")
-	}
-
 	network, err := config.NetworkConfigByChainID(constant.ChainID(cfg.TXChainID))
 	if err != nil {
 		return nil, err
@@ -417,16 +400,31 @@ func NewServices(
 	}
 
 	// BSC finder
-	if bscScanner != nil {
-		bscFinder := finder.NewBSCFinder(
-			finder.BSCFinderConfig{
-				TXDenom:    network.Denom(),
-				TXDecimals: 6,
-			},
-			log,
-			bscScanner,
-		)
-		allFinders = append(allFinders, bscFinder)
+	if !cfg.BSCScannerDisabled {
+		if cfg.BSCScanner.RPCURL == "" {
+			return nil, errors.New("bsc-rpc-url is required when BSC scanner is enabled")
+		}
+		for _, bscToken := range contractCfg.BSCTokens {
+			bscScanner, err := bsc.NewScanner(cfg.BSCScanner, bscToken, log, metricRecorder)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to create BSC scanner")
+			}
+			log.Info("BSC scanner enabled",
+				zap.String("rpcURL", cfg.BSCScanner.RPCURL),
+				zap.String("bridgeAddress", bscToken.BridgeAddress),
+			)
+			bscFinder := finder.NewBSCFinder(
+				finder.BSCFinderConfig{
+					TXDenom:    network.Denom(),
+					TXDecimals: int(bscToken.Decimals),
+				},
+				log,
+				bscScanner,
+			)
+			allFinders = append(allFinders, bscFinder)
+		}
+	} else {
+		log.Info("BSC scanner disabled via flag")
 	}
 
 	// Create executor with all finders

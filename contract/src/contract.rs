@@ -665,6 +665,7 @@ mod tests {
     const TEST_XRPL_SOLO_CURRENCY: &str = "534F4C4F00000000000000000000000000000000";
     const TEST_XRPL_SOLO_ISSUER: &str = "rHZwvHEs56GCmHupwjA4RY7oPA3EoAJWuN";
     const TEST_ACTIVATION_DATE: u64 = 946684800; // time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
+    const TEST_START_BLOCK: u64 = 1000000;
     const TEST_MULTIPLIER_1_0: &str = "1.0";
     const TEST_MULTIPLIER_1_25: &str = "1.25";
 
@@ -1623,7 +1624,7 @@ mod tests {
 
         let first_bsc_tokens = vec![crate::msg::BSCToken {
             bridge_address: TEST_BSC_BRIDGE_ADDRESS.to_string(),
-            activation_date: TEST_ACTIVATION_DATE,
+            start_block: TEST_START_BLOCK,
             decimals: 18,
         }];
 
@@ -1644,7 +1645,7 @@ mod tests {
         // Add more tokens - should append, not replace
         let second_bsc_tokens = vec![crate::msg::BSCToken {
             bridge_address: "0x2170ed0880ac9a755fd29b2688956bd959f933f8".to_string(),
-            activation_date: TEST_ACTIVATION_DATE,
+            start_block: TEST_START_BLOCK,
             decimals: 18,
         }];
 
@@ -1661,7 +1662,7 @@ mod tests {
         // Try to add duplicate token - should fail
         let duplicate_token = vec![crate::msg::BSCToken {
             bridge_address: TEST_BSC_BRIDGE_ADDRESS.to_string(),
-            activation_date: TEST_ACTIVATION_DATE,
+            start_block: TEST_START_BLOCK,
             decimals: 18,
         }];
 
@@ -1686,7 +1687,7 @@ mod tests {
 
         let bsc_tokens = vec![crate::msg::BSCToken {
             bridge_address: TEST_BSC_BRIDGE_ADDRESS.to_string(),
-            activation_date: TEST_ACTIVATION_DATE,
+            start_block: TEST_START_BLOCK,
             decimals: 6,
         }];
 
@@ -1709,7 +1710,7 @@ mod tests {
 
         let bsc_tokens = vec![crate::msg::BSCToken {
             bridge_address: TEST_BSC_BRIDGE_ADDRESS.to_string(),
-            activation_date: TEST_ACTIVATION_DATE,
+            start_block: TEST_START_BLOCK,
             decimals: 6,
         }];
 

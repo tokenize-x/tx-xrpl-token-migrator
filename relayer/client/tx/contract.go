@@ -35,6 +35,7 @@ const (
 	ExecMethodUpdateMaxAmount        ExecMethod = "update_max_amount"
 	ExecMethodUpdateTrustedAddresses ExecMethod = "update_trusted_addresses"
 	ExecMethodAddXRPLTokens          ExecMethod = "add_xrpl_tokens"
+	ExecMethodAddBscTokens           ExecMethod = "add_bsc_tokens"
 )
 
 // QueryMethod is contract query method.
@@ -68,6 +69,7 @@ type DeployAndInstantiateConfig struct {
 	MinAmount        sdkmath.Int
 	MaxAmount        sdkmath.Int
 	XRPLTokens       []XRPLToken
+	BSCTokens        []BSCToken
 	Label            string
 }
 
@@ -85,9 +87,9 @@ type XRPLToken struct {
 //
 //nolint:tagliatelle //contract spec
 type BSCToken struct {
-	BridgeAddress  string `json:"bridge_address"`
-	ActivationDate uint64 `json:"activation_date"`
-	Decimals       uint32 `json:"decimals"`
+	BridgeAddress string `json:"bridge_address"`
+	StartBlock    uint64 `json:"start_block"`
+	Decimals      uint32 `json:"decimals"`
 }
 
 // Config represents contract config.
@@ -136,6 +138,11 @@ type AddXRPLTokensRequest struct {
 	XRPLTokens []XRPLToken `json:"xrpl_tokens"` //nolint:tagliatelle //contract spec
 }
 
+// AddBSCTokensRequest is the `add_bsc_tokens` request payload.
+type AddBSCTokensRequest struct {
+	BSCTokens []BSCToken `json:"bsc_tokens"` //nolint:tagliatelle //contract spec
+}
+
 // Transaction represents the transaction model.
 type Transaction struct {
 	Amount            sdk.Coin `json:"amount"`
@@ -163,6 +170,7 @@ type instantiateRequest struct {
 	MinAmount        sdkmath.Int `json:"min_amount"`
 	MaxAmount        sdkmath.Int `json:"max_amount"`
 	XRPLTokens       []XRPLToken `json:"xrpl_tokens"`
+	BSCTokens        []BSCToken  `json:"bsc_tokens"`
 }
 
 type queryTxsResponse[T any] struct {
@@ -243,6 +251,7 @@ func (c *ContractClient) DeployAndInstantiate(
 		MinAmount:        config.MinAmount,
 		MaxAmount:        config.MaxAmount,
 		XRPLTokens:       config.XRPLTokens,
+		BSCTokens:        config.BSCTokens,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "can't marshal instantiate payload")
@@ -383,6 +392,25 @@ func (c *ContractClient) AddXRPLTokens(
 	return txRes, nil
 }
 
+// AddBSCTokens executes add_bsc_tokens Method of the contract.
+func (c *ContractClient) AddBSCTokens(
+	ctx context.Context,
+	sender sdk.AccAddress,
+	bscTokens []BSCToken,
+) (*sdk.TxResponse, error) {
+	msg, err := c.BuildAddBSCTokensTransaction(sender, bscTokens)
+	if err != nil {
+		return nil, err
+	}
+
+	txRes, err := client.BroadcastTx(ctx, c.clientCtx.WithFromAddress(sender), c.txFactory(), msg)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to add BSC tokens")
+	}
+
+	return txRes, nil
+}
+
 // BuildAddXRPLTokensTransaction build add_xrpl_tokens Method transaction.
 func (c *ContractClient) BuildAddXRPLTokensTransaction(
 	sender sdk.AccAddress,
@@ -395,6 +423,23 @@ func (c *ContractClient) BuildAddXRPLTokensTransaction(
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build tx for %s Method", ExecMethodAddXRPLTokens)
+	}
+
+	return msg, nil
+}
+
+// BuildAddBSCTokensTransaction build add_bsc_tokens Method transaction.
+func (c *ContractClient) BuildAddBSCTokensTransaction(
+	sender sdk.AccAddress,
+	bscTokens []BSCToken,
+) (sdk.Msg, error) {
+	msg, err := c.buildExecuteWithFunds(sender, sdk.NewCoins(), map[ExecMethod]AddBSCTokensRequest{
+		ExecMethodAddBscTokens: {
+			BSCTokens: bscTokens,
+		},
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build tx for %s Method", ExecMethodAddBscTokens)
 	}
 
 	return msg, nil

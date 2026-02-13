@@ -12,7 +12,7 @@ pub struct XRPLToken {
 #[cw_serde]
 pub struct BSCToken {
     pub bridge_address: String,
-    pub activation_date: u64,
+    pub start_block: u64,
     pub decimals: u8,
 }
 

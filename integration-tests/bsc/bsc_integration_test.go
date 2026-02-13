@@ -112,13 +112,16 @@ func TestBSCLiveScanner(t *testing.T) {
 	// Create scanner
 	scannerCfg := bsc.ScannerConfig{
 		RPCURL:        anvil.RPCURL(),
-		BridgeAddress: contracts.BridgeAddress,
-		StartBlock:    0,
 		PollInterval:  500 * time.Millisecond,
 		Confirmations: 0,
 	}
+	bsctoken := tx.BSCToken{
+		BridgeAddress: contracts.BridgeAddress.Hex(),
+		StartBlock:    0,
+		Decimals:      6,
+	}
 
-	scanner, err := bsc.NewScanner(scannerCfg, logger, nil)
+	scanner, err := bsc.NewScanner(scannerCfg, bsctoken, logger, nil)
 	requireT.NoError(err)
 
 	// Subscribe to events
@@ -150,7 +153,6 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 	ctx, chains := NewTestingContext(t)
 	requireT := require.New(t)
 	txChain := chains.TX
-	logger := zaptest.NewLogger(t)
 
 	// Start Anvil
 	t.Log("Starting Anvil...")
@@ -201,8 +203,10 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 		MinAmount:        sdkmath.NewIntFromUint64(100),
 		MaxAmount:        sdkmath.NewIntFromUint64(500_000_000),
 		XRPLTokens:       []tx.XRPLToken{},
+		BSCTokens:        []tx.BSCToken{},
 		Label:            "bsc_live_multi_test",
 	})
+
 	requireT.NoError(err)
 
 	coinToFundContract := txChain.TXChain.NewCoin(sdkmath.NewInt(50_000_000_000))
@@ -230,13 +234,17 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 	requireT.NoError(err)
 
 	// Create scanner and start executors
+	bsctoken := tx.BSCToken{
+		BridgeAddress: contracts.BridgeAddress.Hex(),
+		StartBlock:    0,
+		Decimals:      6,
+	}
+
 	scanner, err := bsc.NewScanner(bsc.ScannerConfig{
 		RPCURL:        anvil.RPCURL(),
-		BridgeAddress: contracts.BridgeAddress,
-		StartBlock:    0,
 		PollInterval:  500 * time.Millisecond,
 		Confirmations: 0,
-	}, logger, nil)
+	}, bsctoken, zaptest.NewLogger(t), nil)
 	requireT.NoError(err)
 
 	instances := buildAndStartBSCLiveExecutors(
@@ -292,6 +300,74 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 			instance.cancel()
 		}
 	})
+}
+
+func TestWASMAddBSCTokens(t *testing.T) {
+	t.Parallel()
+
+	ctx, chain := NewTestingContext(t)
+	txChain := chain.TX.TXChain
+
+	owner := txChain.GenAccount()
+	anyAddress := txChain.GenAccount()
+
+	requireT := require.New(t)
+	txChain.Faucet.FundAccounts(ctx, t,
+		integration.NewFundedAccount(owner, txChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integration.NewFundedAccount(anyAddress, txChain.NewCoin(sdkmath.NewInt(5000000000))),
+	)
+
+	contractClient := tx.NewContractClient(tx.DefaultContractClientConfig(nil, ""), txChain.ClientContext)
+
+	t.Log("Deploying and instantiating the smart contract.")
+	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, tx.DeployAndInstantiateConfig{
+		Owner: owner.String(),
+		Admin: owner.String(),
+		TrustedAddresses: []string{
+			anyAddress.String(),
+		},
+		Threshold:  1,
+		MinAmount:  sdkmath.NewInt(1),
+		MaxAmount:  sdkmath.NewIntFromUint64(10_000),
+		BSCTokens:  []tx.BSCToken{},
+		XRPLTokens: []tx.XRPLToken{},
+		Label:      "bank_threshold_send",
+	})
+	requireT.NoError(err)
+
+	requireT.NoError(contractClient.SetContractAddress(contractAddr))
+	t.Logf("Contract deployed and instantiated, address:%s.", contractAddr)
+
+	// Verify initial tokens are present
+	cfg, err := contractClient.GetContractConfig(ctx)
+	requireT.NoError(err)
+	requireT.Empty(cfg.XRPLTokens)
+
+	t.Logf("Trying to add BSC tokens from non-owner.")
+	newBSCTokens := []tx.BSCToken{
+		{
+			BridgeAddress: "0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+			StartBlock:    1000,
+			Decimals:      6,
+		},
+	}
+
+	_, err = contractClient.AddBSCTokens(
+		ctx, anyAddress, newBSCTokens,
+	)
+	requireT.True(tx.IsUnauthorizedError(err), "expected unauthorized error, got: %v", err)
+
+	t.Logf("Adding XRPL tokens from the owner.")
+	_, err = contractClient.AddBSCTokens(
+		ctx, owner, newBSCTokens,
+	)
+	requireT.NoError(err)
+
+	// Verify tokens were added
+	cfg, err = contractClient.GetContractConfig(ctx)
+	requireT.NoError(err)
+	requireT.Len(cfg.BSCTokens, len(newBSCTokens))
+	requireT.Equal(newBSCTokens, cfg.BSCTokens)
 }
 
 // helper that creates and starts executors with a real scanner.
