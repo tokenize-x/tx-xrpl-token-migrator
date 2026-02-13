@@ -1608,7 +1608,7 @@ mod tests {
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
         assert!(res.is_ok());
 
-        // check that config includes xrpl_tokens
+        // check that config includes bsc_tokens
         let config = get_config(deps.as_ref()).unwrap();
         assert_eq!(vec![] as Vec<crate::msg::BSCToken>, config.bsc_tokens);
     }
