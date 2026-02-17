@@ -4,10 +4,7 @@ version = "0.2.0"
 authors = ["Tokenize-X"]
 edition = "2021"
 
-exclude = [
-    "threshold_bank_send.wasm",
-    "checksums.txt",
-]
+exclude = ["threshold_bank_send.wasm", "checksums.txt"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -38,6 +35,7 @@ cosmwasm-schema = "1.2.6"
 serde = { version = "1.0.137", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.40" }
 bs58 = { version = "0.5", features = ["check"] }
+hex = "0.4.3"
 
 [dev-dependencies]
 cosmwasm-schema = "1.0.0"

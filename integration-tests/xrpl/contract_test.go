@@ -87,6 +87,7 @@ func TestWASMContractThresholdBankSend(t *testing.T) {
 		MinAmount:        minAmount,
 		MaxAmount:        maxAmount,
 		XRPLTokens:       TestXRPLTokens,
+		BSCTokens:        []tx.BSCToken{},
 		Label:            "bank_threshold_send",
 	})
 	requireT.NoError(err)
@@ -269,6 +270,7 @@ func TestWASMContractExecutePending(t *testing.T) {
 		MinAmount:        minAmount,
 		MaxAmount:        maxAmount,
 		XRPLTokens:       TestXRPLTokens,
+		BSCTokens:        []tx.BSCToken{},
 		Label:            "bank_threshold_send",
 	})
 	requireT.NoError(err)
@@ -446,6 +448,7 @@ func TestWASMContractExecutePendingWithMultisig(t *testing.T) {
 		MinAmount:        minAmount,
 		MaxAmount:        maxAmount,
 		XRPLTokens:       TestXRPLTokens,
+		BSCTokens:        []tx.BSCToken{},
 		Label:            "bank_threshold_send",
 	})
 	requireT.NoError(err)
@@ -578,6 +581,7 @@ func TestWASMUpdateMinMaxAmounts(t *testing.T) {
 		MaxAmount:  maxAmount,
 		Label:      "bank_threshold_send",
 		XRPLTokens: TestXRPLTokens,
+		BSCTokens:  []tx.BSCToken{},
 	})
 	requireT.NoError(err)
 
@@ -647,6 +651,7 @@ func TestWASMUpdateTrustedAddresses(t *testing.T) {
 		MaxAmount:  sdkmath.NewIntFromUint64(10_000),
 		Label:      "bank_threshold_send",
 		XRPLTokens: TestXRPLTokens,
+		BSCTokens:  []tx.BSCToken{},
 	})
 	requireT.NoError(err)
 
@@ -705,6 +710,7 @@ func TestWASMAddXRPLTokens(t *testing.T) {
 		MaxAmount:  sdkmath.NewIntFromUint64(10_000),
 		Label:      "bank_threshold_send",
 		XRPLTokens: TestXRPLTokens,
+		BSCTokens:  []tx.BSCToken{},
 	})
 	requireT.NoError(err)
 
@@ -823,6 +829,7 @@ func TestWASMContractQueryPagination(t *testing.T) {
 		MaxAmount:  maxAmount,
 		Label:      "bank_threshold_send",
 		XRPLTokens: TestXRPLTokens,
+		BSCTokens:  []tx.BSCToken{},
 	})
 	requireT.NoError(err)
 

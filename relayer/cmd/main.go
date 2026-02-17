@@ -19,7 +19,6 @@ import (
 	txclient "github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
@@ -43,12 +42,11 @@ const (
 	flagXRPLRecentScanIndexesBack     = "xrpl-recent-scan-indexes-back"
 	flagXRPLRecentScanSkipLastIndexes = "xrpl-recent-scan-skip-last-indexes"
 	flagXRPLToken                     = "xrpl-token"
+	flagBSCToken                      = "bsc-token"
 	flagXRPLMemoSuffix                = "xrpl-memo-suffix"
 
 	flagBSCScannerDisabled = "bsc-scanner-disabled"
 	flagBSCRPCURL          = "bsc-rpc-url"
-	flagBSCBridgeAddress   = "bsc-bridge-address"
-	flagBSCStartBlock      = "bsc-start-block"
 	flagBSCPollInterval    = "bsc-poll-interval"
 	flagBSCConfirmations   = "bsc-confirmations"
 
@@ -152,6 +150,7 @@ func RootCmd(ctx context.Context) (*cobra.Command, error) {
 	cmd.AddCommand(BuildMigrateContractTransactionCmd(ctx))
 	cmd.AddCommand(BuildUpdateTrustedAddressesTransactionCmd(ctx))
 	cmd.AddCommand(BuildAddXRPLTokensTransactionCmd(ctx))
+	cmd.AddCommand(BuildAddBSCTokensTransactionCmd(ctx))
 	cmd.AddCommand(AuditCmd(ctx))
 
 	cmd.AddCommand(keys.Commands())
@@ -807,6 +806,95 @@ func BuildAddXRPLTokensTransactionCmd(ctx context.Context) *cobra.Command {
 	return cmd
 }
 
+// BuildAddBSCTokensTransactionCmd builds transaction for the add_bsc_tokens contract method.
+func BuildAddBSCTokensTransactionCmd(ctx context.Context) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "build-add-bsc-tokens",
+		Short: "Builds transaction for the add_bsc_tokens method",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := readServicesConfig(cmd)
+			if err != nil {
+				return err
+			}
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			contractClient, _, err := service.NewContractClient(ctx, cfg, clientCtx.Keyring, logger.Get(ctx))
+			if err != nil {
+				return err
+			}
+			senderAddress, err := sdk.AccAddressFromBech32(cfg.TXSenderAddress)
+			if err != nil {
+				return errors.Wrapf(err, "invalid signer address")
+			}
+
+			bscTokensStr, err := cmd.Flags().GetStringSlice(flagBSCToken)
+			if err != nil {
+				return err
+			}
+
+			bscTokens := make([]tx.BSCToken, 0, len(bscTokensStr))
+			for _, tokenStr := range bscTokensStr {
+				parts := strings.Split(tokenStr, "/")
+				if len(parts) != 3 {
+					return errors.Errorf(
+						"invalid %s value: %s, expected format: bridge_address/start_block/decimals",
+						flagBSCToken,
+						tokenStr,
+					)
+				}
+				startBlock, err := strconv.ParseUint(parts[1], 10, 64)
+				if err != nil {
+					return errors.Wrapf(err, "failed to parse start_block: %s", parts[1])
+				}
+				decimals, err := strconv.ParseUint(parts[2], 10, 32)
+				if err != nil {
+					return errors.Wrapf(err, "failed to parse decimals: %s", parts[2])
+				}
+				bscTokens = append(bscTokens, tx.BSCToken{
+					BridgeAddress: parts[0],
+					StartBlock:    startBlock,
+					Decimals:      uint32(decimals),
+				})
+			}
+
+			msg, err := contractClient.BuildAddBSCTokensTransaction(senderAddress, bscTokens)
+			if err != nil {
+				return err
+			}
+
+			fees, gas, err := contractClient.EstimateExecuteMessages(ctx, senderAddress, msg)
+			if err != nil {
+				return err
+			}
+
+			clientCtx = clientCtx.
+				WithChainID(cfg.TXChainID).
+				WithGenerateOnly(true)
+
+			txf, err := txclient.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return errors.Wrapf(err, "failed to create tx factory")
+			}
+
+			txf = txf.WithFees(fees.String()).
+				WithGas(gas)
+
+			return txclient.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
+		},
+	}
+
+	cmd.PersistentFlags().StringSlice(
+		flagBSCToken,
+		nil,
+		"BSC tokens in format: bridge_address/start_block/decimals",
+	)
+	addTXFlags(cmd)
+
+	return cmd
+}
+
 func preProcessFlags() error {
 	flagSet := pflag.NewFlagSet("pre-process", pflag.ExitOnError)
 	flagSet.ParseErrorsWhitelist.UnknownFlags = true
@@ -862,8 +950,6 @@ func addXRPLFlags(cmd *cobra.Command) {
 func addBSCFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().Bool(flagBSCScannerDisabled, false, "Disable BSC scanner")
 	cmd.PersistentFlags().String(flagBSCRPCURL, "", "BSC/EVM RPC URL for bridge event scanning")
-	cmd.PersistentFlags().String(flagBSCBridgeAddress, "", "BSC bridge contract address")
-	cmd.PersistentFlags().Uint64(flagBSCStartBlock, 0, "BSC block number to start scanning from")
 	cmd.PersistentFlags().Duration(flagBSCPollInterval, 3*time.Second, "BSC block polling interval (e.g., 3s, 5s)")
 	cmd.PersistentFlags().Uint64(flagBSCConfirmations, 15, "BSC block confirmations before processing (reorg protection)")
 }
@@ -1045,21 +1131,6 @@ func setDuration(cmd *cobra.Command, flagName string, v *time.Duration) error {
 	return nil
 }
 
-func setHexAddressIfNotEmpty(cmd *cobra.Command, flagName string, v *common.Address) error {
-	val, err := cmd.Flags().GetString(flagName)
-	if err != nil {
-		return err
-	}
-	if val == "" {
-		return nil
-	}
-	if !common.IsHexAddress(val) {
-		return errors.Errorf("invalid hex address for %s: %s", flagName, val)
-	}
-	*v = common.HexToAddress(val)
-	return nil
-}
-
 func readBSCConfig(cmd *cobra.Command, cfg *bsc.ScannerConfig) error {
 	if cmd.Flags().Lookup(flagBSCRPCURL) == nil {
 		return nil
@@ -1068,12 +1139,6 @@ func readBSCConfig(cmd *cobra.Command, cfg *bsc.ScannerConfig) error {
 	setters := map[string]func(string) error{
 		flagBSCRPCURL: func(flag string) error {
 			return setStringIfNotEmpty(cmd, flag, &cfg.RPCURL)
-		},
-		flagBSCBridgeAddress: func(flag string) error {
-			return setHexAddressIfNotEmpty(cmd, flag, &cfg.BridgeAddress)
-		},
-		flagBSCStartBlock: func(flag string) error {
-			return setUint64(cmd, flag, &cfg.StartBlock)
 		},
 		flagBSCPollInterval: func(flag string) error {
 			return setDuration(cmd, flag, &cfg.PollInterval)
@@ -1086,13 +1151,6 @@ func readBSCConfig(cmd *cobra.Command, cfg *bsc.ScannerConfig) error {
 	for flagName, setter := range setters {
 		if err := setter(flagName); err != nil {
 			return err
-		}
-	}
-
-	// if BSC is enabled, required fields must be set
-	if cfg.RPCURL != "" {
-		if cfg.BridgeAddress == (common.Address{}) {
-			return errors.Errorf("flag %s is required when %s is set", flagBSCBridgeAddress, flagBSCRPCURL)
 		}
 	}
 

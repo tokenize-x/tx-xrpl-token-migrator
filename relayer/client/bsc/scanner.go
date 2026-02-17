@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/bsc/abi"
+	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/tx"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
 )
 
@@ -24,8 +25,6 @@ type MetricRecorder interface {
 // ScannerConfig is configuration for the BSC event scanner.
 type ScannerConfig struct {
 	RPCURL        string
-	BridgeAddress common.Address
-	StartBlock    uint64
 	PollInterval  time.Duration
 	Confirmations uint64
 }
@@ -33,6 +32,7 @@ type ScannerConfig struct {
 // Scanner is the BSC bridge event scanner.
 type Scanner struct {
 	cfg            ScannerConfig
+	token          tx.BSCToken
 	log            logger.Logger
 	client         *ethclient.Client
 	filterer       *abi.TXBridgeFilterer
@@ -41,9 +41,13 @@ type Scanner struct {
 
 // NewScanner creates a new BSC event scanner.
 func NewScanner(
-	cfg ScannerConfig, log logger.Logger, client *ethclient.Client, metricRecorder MetricRecorder,
+	cfg ScannerConfig,
+	token tx.BSCToken,
+	log logger.Logger,
+	client *ethclient.Client,
+	metricRecorder MetricRecorder,
 ) (*Scanner, error) {
-	filterer, err := abi.NewTXBridgeFilterer(cfg.BridgeAddress, client)
+	filterer, err := abi.NewTXBridgeFilterer(common.HexToAddress(token.BridgeAddress), client)
 	if err != nil {
 		client.Close()
 		return nil, errors.Wrap(err, "failed to create TXBridge filterer")
@@ -67,7 +71,7 @@ func (s *Scanner) Subscribe(ctx context.Context, ch chan<- *abi.TXBridgeSentToTX
 
 	safeBlock := currentBlock - s.cfg.Confirmations
 
-	go s.scanHistorical(ctx, s.cfg.StartBlock, safeBlock, ch)
+	go s.scanHistorical(ctx, s.token.StartBlock, safeBlock, ch)
 	go s.scanRecent(ctx, safeBlock, ch)
 
 	return nil
