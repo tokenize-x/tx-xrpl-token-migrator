@@ -472,6 +472,7 @@ func buildAndStartDevEnv(
 		MinAmount:        sdkmath.NewIntFromUint64(100),
 		MaxAmount:        sdkmath.NewIntFromUint64(200_000_000),
 		XRPLTokens:       convertServiceTokensToContractTokens(tokens),
+		BSCTokens:        []tx.BSCToken{},
 		Label:            "bank_threshold_send",
 	})
 	requireT.NoError(err)
@@ -883,6 +884,7 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 		MinAmount:  sdkmath.NewIntFromUint64(100),
 		MaxAmount:  sdkmath.NewIntFromUint64(200_000_000),
 		XRPLTokens: convertServiceTokensToContractTokens(initialTokens),
+		BSCTokens:  []tx.BSCToken{},
 		Label:      "bank_threshold_send",
 	})
 	requireT.NoError(err)

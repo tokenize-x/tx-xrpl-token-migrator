@@ -17,7 +17,6 @@ import (
 	"github.com/CoreumFoundation/coreum/v5/testutil/integration"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -43,50 +42,57 @@ func tokensToAmount(tokens int64) *big.Int {
 	return amount.Mul(amount, multiplier)
 }
 
-// TestBSCLiveScanner tests the real BSC scanner against a local Anvil node.
+func ethToWei(eth int64) *big.Int {
+	amount := big.NewInt(eth)
+	multiplier := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
+	return amount.Mul(amount, multiplier)
+}
+
+// TestBSCLiveScanner tests the real BSC scanner against a local BSC node.
 func TestBSCLiveScanner(t *testing.T) {
 	requireT := require.New(t)
-	ctx, _ := NewTestingContext(t)
+	ctx, chains := NewTestingContext(t)
 	logger := zaptest.NewLogger(t)
 
-	// Start Anvil
-	t.Log("Starting Anvil...")
-	anvil, err := evm.StartAnvil(evm.DefaultAnvilConfig())
-	requireT.NoError(err)
-	t.Cleanup(func() {
-		_ = anvil.Stop()
-	})
+	rpcClient := chains.BSC.RPCClient()
 
-	client, err := anvil.Client()
-	requireT.NoError(err)
-
-	// Get deployer private key (first Anvil account)
-	deployerKey, err := evm.GetPrivateKey(0)
-	requireT.NoError(err)
+	// Get deployer private key
+	deployer := chains.BSC.GenAccount(t)
+	chains.BSC.FundAccount(ctx, t, rpcClient, deployer.Address, ethToWei(10))
 
 	// Configure bridge for testing
 	bridgeCfg := evm.DefaultBridgeConfig()
 
 	// Deploy contracts
 	t.Log("Deploying TXToken and TXBridge contracts...")
-	contracts, err := evm.SetupBridgeEnvironment(ctx, client, deployerKey, anvil.ChainID(), bridgeCfg)
+	contracts, err := evm.SetupBridgeEnvironment(
+		ctx, rpcClient, chains.BSC.ChainID(), chains.BSC.KeyStore(), deployer, bridgeCfg,
+	)
 	requireT.NoError(err)
 	t.Logf("Token deployed at: %s", contracts.TokenAddress.Hex())
 	t.Logf("Bridge deployed at: %s", contracts.BridgeAddress.Hex())
 
-	// Get user key (second Anvil account)
-	userKey, err := evm.GetPrivateKey(1)
-	requireT.NoError(err)
-	userAddr := crypto.PubkeyToAddress(userKey.PublicKey)
+	// Get user key and fund with ETH for gas
+	user := chains.BSC.GenAccount(t)
+	chains.BSC.FundAccount(ctx, t, rpcClient, user.Address, ethToWei(1))
 
 	// Mint tokens to user
 	mintAmount := tokensToAmount(100) // 100 tokens (6 decimals)
-	t.Logf("Minting %s tokens to user %s", mintAmount.String(), userAddr.Hex())
-	err = evm.MintTokens(ctx, client, deployerKey, anvil.ChainID(), contracts.Token, userAddr, mintAmount)
+	t.Logf("Minting %s tokens to user %s", mintAmount.String(), user.Address.Hex())
+	err = evm.MintTokens(
+		ctx,
+		rpcClient,
+		chains.BSC.ChainID(),
+		chains.BSC.KeyStore(),
+		deployer,
+		contracts.Token,
+		user.Address,
+		mintAmount,
+	)
 	requireT.NoError(err)
 
 	// Verify user balance
-	balance, err := contracts.Token.BalanceOf(nil, userAddr)
+	balance, err := contracts.Token.BalanceOf(nil, user.Address)
 	requireT.NoError(err)
 	requireT.Equal(mintAmount.String(), balance.String(), "user should have minted tokens")
 
@@ -99,9 +105,10 @@ func TestBSCLiveScanner(t *testing.T) {
 
 	bridgeTx, err := evm.SendToTxChain(
 		ctx,
-		client,
-		userKey,
-		anvil.ChainID(),
+		rpcClient,
+		chains.BSC.ChainID(),
+		chains.BSC.KeyStore(),
+		user,
 		contracts.Bridge,
 		bridgeAmount,
 		txAddress,
@@ -111,7 +118,7 @@ func TestBSCLiveScanner(t *testing.T) {
 
 	// Create scanner
 	scannerCfg := bsc.ScannerConfig{
-		RPCURL:        anvil.RPCURL(),
+		RPCURL:        chains.BSC.cfg.RPCAddress,
 		PollInterval:  500 * time.Millisecond,
 		Confirmations: 0,
 	}
@@ -121,7 +128,7 @@ func TestBSCLiveScanner(t *testing.T) {
 		Decimals:      6,
 	}
 
-	scanner, err := bsc.NewScanner(scannerCfg, bsctoken, logger, nil)
+	scanner, err := bsc.NewScanner(scannerCfg, bsctoken, logger, rpcClient, nil)
 	requireT.NoError(err)
 
 	// Subscribe to events
@@ -136,9 +143,9 @@ func TestBSCLiveScanner(t *testing.T) {
 	t.Log("Waiting for SentToTXChain event...")
 	select {
 	case event := <-eventCh:
-		t.Logf("Received event: from=%s, amount=%s, txAddress=%s",
+		t.Logf("Received event: from=%s, amount=%s, payload=%s",
 			event.From.Hex(), event.Amount.String(), event.TxAddress)
-		requireT.Equal(userAddr, event.From, "event should be from user")
+		requireT.Equal(user.Address, event.From, "event should be from user")
 		requireT.Equal(bridgeAmount.String(), event.Amount.String(), "amount should match")
 		requireT.Equal(txAddress, event.TxAddress, "txAddress should match")
 	case <-scanCtx.Done():
@@ -154,27 +161,20 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 	requireT := require.New(t)
 	txChain := chains.TX
 
-	// Start Anvil
-	t.Log("Starting Anvil...")
-	anvil, err := evm.StartAnvil(evm.DefaultAnvilConfig())
-	requireT.NoError(err)
-	t.Cleanup(func() {
-		_ = anvil.Stop()
-	})
-
-	client, err := anvil.Client()
-	requireT.NoError(err)
+	rpcClient := chains.BSC.RPCClient()
 
 	// Get deployer key
-	deployerKey, err := evm.GetPrivateKey(0)
-	requireT.NoError(err)
+	deployer := chains.BSC.GenAccount(t)
+	chains.BSC.FundAccount(ctx, t, rpcClient, deployer.Address, ethToWei(10))
 
 	// Configure bridge
 	bridgeCfg := evm.DefaultBridgeConfig()
 
 	// Deploy EVM contracts
 	t.Log("Deploying EVM contracts...")
-	contracts, err := evm.SetupBridgeEnvironment(ctx, client, deployerKey, anvil.ChainID(), bridgeCfg)
+	contracts, err := evm.SetupBridgeEnvironment(
+		ctx, rpcClient, chains.BSC.ChainID(), chains.BSC.KeyStore(), deployer, bridgeCfg,
+	)
 	requireT.NoError(err)
 
 	// Setup TX chain side
@@ -217,20 +217,35 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 	recipient1 := txChain.TXChain.GenAccount()
 	recipient2 := txChain.TXChain.GenAccount()
 
-	// Get multiple EVM user keys
-	user1Key, err := evm.GetPrivateKey(1)
-	requireT.NoError(err)
-	user1Addr := crypto.PubkeyToAddress(user1Key.PublicKey)
-
-	user2Key, err := evm.GetPrivateKey(2)
-	requireT.NoError(err)
-	user2Addr := crypto.PubkeyToAddress(user2Key.PublicKey)
+	// Get multiple EVM user keys and fund with ETH for gas
+	user1 := chains.BSC.GenAccount(t)
+	user2 := chains.BSC.GenAccount(t)
+	chains.BSC.FundAccount(ctx, t, rpcClient, user1.Address, ethToWei(1))
+	chains.BSC.FundAccount(ctx, t, rpcClient, user2.Address, ethToWei(1))
 
 	// Mint tokens to users
 	mintAmount := tokensToAmount(100) // 100 tokens each
-	err = evm.MintTokens(ctx, client, deployerKey, anvil.ChainID(), contracts.Token, user1Addr, mintAmount)
+	err = evm.MintTokens(
+		ctx,
+		rpcClient,
+		chains.BSC.ChainID(),
+		chains.BSC.KeyStore(),
+		deployer,
+		contracts.Token,
+		user1.Address,
+		mintAmount,
+	)
 	requireT.NoError(err)
-	err = evm.MintTokens(ctx, client, deployerKey, anvil.ChainID(), contracts.Token, user2Addr, mintAmount)
+	err = evm.MintTokens(
+		ctx,
+		rpcClient,
+		chains.BSC.ChainID(),
+		chains.BSC.KeyStore(),
+		deployer,
+		contracts.Token,
+		user2.Address,
+		mintAmount,
+	)
 	requireT.NoError(err)
 
 	// Create scanner and start executors
@@ -241,10 +256,10 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 	}
 
 	scanner, err := bsc.NewScanner(bsc.ScannerConfig{
-		RPCURL:        anvil.RPCURL(),
+		RPCURL:        chains.BSC.cfg.RPCAddress,
 		PollInterval:  500 * time.Millisecond,
 		Confirmations: 0,
-	}, bsctoken, zaptest.NewLogger(t), nil)
+	}, bsctoken, zaptest.NewLogger(t), rpcClient, nil)
 	requireT.NoError(err)
 
 	instances := buildAndStartBSCLiveExecutors(
@@ -255,7 +270,10 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 
 	// Bridge transaction 1: 30 tokens from user1 to recipient1
 	_, err = evm.SendToTxChain(
-		ctx, client, user1Key, anvil.ChainID(),
+		ctx, rpcClient,
+		chains.BSC.ChainID(),
+		chains.BSC.KeyStore(),
+		user1,
 		contracts.Bridge,
 		tokensToAmount(30),
 		recipient1.String(),
@@ -265,7 +283,10 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 
 	// Bridge transaction 2: 45 tokens from user2 to recipient2
 	_, err = evm.SendToTxChain(
-		ctx, client, user2Key, anvil.ChainID(),
+		ctx, rpcClient,
+		chains.BSC.ChainID(),
+		chains.BSC.KeyStore(),
+		user2,
 		contracts.Bridge,
 		tokensToAmount(45),
 		recipient2.String(),
@@ -275,7 +296,10 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 
 	// Bridge transaction 3: 20 tokens from user1 to recipient1
 	_, err = evm.SendToTxChain(
-		ctx, client, user1Key, anvil.ChainID(),
+		ctx, rpcClient,
+		chains.BSC.ChainID(),
+		chains.BSC.KeyStore(),
+		user1,
 		contracts.Bridge,
 		tokensToAmount(20),
 		recipient1.String(),

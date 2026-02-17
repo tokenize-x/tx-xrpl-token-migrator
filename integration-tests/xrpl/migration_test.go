@@ -47,6 +47,7 @@ func TestContractMigration(t *testing.T) {
 		MinAmount:  sdkmath.NewIntFromUint64(100),
 		MaxAmount:  sdkmath.NewIntFromUint64(200_000_000),
 		XRPLTokens: TestXRPLTokens,
+		BSCTokens:  []tx.BSCToken{},
 		Label:      "bank_threshold_send",
 	})
 	requireT.NoError(err)

@@ -44,6 +44,7 @@ func NewScanner(
 	cfg ScannerConfig,
 	token tx.BSCToken,
 	log logger.Logger,
+	client *ethclient.Client,
 	metricRecorder MetricRecorder,
 ) (*Scanner, error) {
 	client, err := ethclient.Dial(cfg.RPCURL)

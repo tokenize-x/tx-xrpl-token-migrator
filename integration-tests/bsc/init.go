@@ -19,11 +19,15 @@ import (
 var chains Chains
 
 // flag variables.
-var txCfg integrationtests.TXChainConfig
+var (
+	txCfg  integrationtests.TXChainConfig
+	bscCfg BinanceSmartChainConfig
+)
 
 // Chains struct holds chains required for the BSC testing.
 type Chains struct {
 	TX  integrationtests.TXChain
+	BSC BinanceSmartChain
 	Log logger.Logger
 }
 
@@ -34,6 +38,9 @@ func init() {
 	flag.StringVar(&txCfg.FundingMnemonic, "tx-funding-mnemonic", "sad hobby filter tray ordinary gap half web cat hard call mystery describe member round trend friend beyond such clap frozen segment fan mistake", "Funding TX account mnemonic required by tests")
 	flag.StringVar(&txCfg.ContractPath, "tx-contract-path", "../../contract/artifacts/coreumbridge_xrpl.wasm", "Path to smart contract bytecode")
 	flag.StringVar(&txCfg.PreviousContractPath, "tx-previous-contract-path", "../../bin/coreumbridge-xrpl-v1.1.0.wasm", "Path to previous smart contract bytecode")
+	flag.StringVar(&bscCfg.RPCAddress, "bsc-rpc-address", "http://localhost:8545", "RPC address of bsc node")
+	flag.StringVar(&bscCfg.FundingSeed, "bsc-funding-seed", "sad hobby filter tray ordinary gap half web cat hard call mystery describe member round trend friend beyond such clap frozen segment fan mistake", "Funding BSC account seed required by tests")
+	flag.Int64Var(&bscCfg.ChainID, "bsc-chain-id", 1337, "BSC chain ID")
 
 	// accept testing flags
 	testing.Init()
@@ -51,6 +58,12 @@ func init() {
 		panic(errors.Wrapf(err, "failed to init TX chain"))
 	}
 	chains.TX = txChain
+
+	binanceSmartChain, err := NewBinanceSmartChain(bscCfg, log)
+	if err != nil {
+		panic(errors.Wrapf(err, "failed to init Binance smart chain"))
+	}
+	chains.BSC = binanceSmartChain
 }
 
 // NewTestingContext returns the configured TX chain and new context for the BSC integration tests.

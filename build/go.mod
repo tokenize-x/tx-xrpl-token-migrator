@@ -4,7 +4,7 @@ go 1.24
 
 replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 
-require github.com/tokenize-x/tx-crust v0.0.0-20260129072642-443b98cfb118
+require github.com/tokenize-x/tx-crust v0.0.0-20260130142023-cb8a3c382755
 
 require (
 	github.com/pkg/errors v0.9.1 // indirect

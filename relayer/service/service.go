@@ -18,6 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	rippledata "github.com/rubblelabs/ripple/data"
@@ -405,7 +406,11 @@ func NewServices(
 			return nil, errors.New("bsc-rpc-url is required when BSC scanner is enabled")
 		}
 		for _, bscToken := range contractCfg.BSCTokens {
-			bscScanner, err := bsc.NewScanner(cfg.BSCScanner, bscToken, log, metricRecorder)
+			ethClient, err := ethclient.Dial(cfg.BSCScanner.RPCURL)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to connect to BSC RPC")
+			}
+			bscScanner, err := bsc.NewScanner(cfg.BSCScanner, bscToken, log, ethClient, metricRecorder)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to create BSC scanner")
 			}
