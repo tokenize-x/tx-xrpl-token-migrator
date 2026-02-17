@@ -28,6 +28,9 @@ pub enum ContractError {
     #[error("Invalid XRPL currency format: {reason}")]
     InvalidXRPLCurrency { reason: String },
 
+    #[error("Invalid BSC bridge address format: {reason}")]
+    InvalidBscToken { reason: String },
+
     #[error("Invalid XRPL issuer format: {reason}")]
     InvalidXRPLIssuer { reason: String },
 

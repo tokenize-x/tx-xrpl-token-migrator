@@ -24,6 +24,8 @@ use crate::state::{
     TRUSTED_ADDRESSES,
 };
 
+use hex;
+
 const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -44,6 +46,9 @@ const XRPL_BASE58_ALPHABET: &[u8; 58] =
 // Currency codes are 40-character hexadecimal strings (160 bits)
 // Reference: ripple/data/currency.go
 const XRPL_CURRENCY_HEX_LENGTH: usize = 40;
+
+// BSC validation constants
+const BSC_BRIDGE_ADDRESS_LENGTH: usize = 42;
 
 // XRPL address validation constants
 // Reference: ripple/crypto/const.go
@@ -408,6 +413,8 @@ pub fn add_bsc_tokens(
     }
 
     for token in new_tokens.iter() {
+        validate_bsc_token(token)?;
+
         if config
             .bsc_tokens
             .iter()
@@ -426,6 +433,32 @@ pub fn add_bsc_tokens(
     Ok(Response::new()
         .add_attribute("action", "add_bsc_tokens")
         .add_attribute("version", config.version.to_string()))
+}
+
+pub fn validate_bsc_token(token: &crate::msg::BSCToken) -> Result<(), ContractError> {
+    if token.bridge_address.len() != BSC_BRIDGE_ADDRESS_LENGTH {
+        return Err(ContractError::InvalidBscToken {
+            reason: format!(
+                "Bridge address must be a {}-character hexadecimal string",
+                BSC_BRIDGE_ADDRESS_LENGTH
+            ),
+        });
+    }
+
+    let stripped_address =
+        token
+            .bridge_address
+            .strip_prefix("0x")
+            .ok_or_else(|| ContractError::InvalidBscToken {
+                reason: "BSC bridge address format must be 0x followed by 40 characters".into(),
+            })?;
+
+    // ensure the address strings are valid hex.
+    hex::decode(stripped_address).map_err(|_| ContractError::InvalidBscToken {
+        reason: "Invalid BSC bridge address format".into(),
+    })?;
+
+    Ok(())
 }
 
 pub fn add_xrpl_tokens(
@@ -1724,5 +1757,42 @@ mod tests {
         // verify config has correct values
         let config = get_config(deps.as_ref()).unwrap();
         assert_eq!(bsc_tokens, config.bsc_tokens);
+    }
+
+    #[test]
+    fn test_validate_bsc_token_invalid_bridge_address() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(TEST_OWNER, &[]);
+
+        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
+        assert!(res.is_ok());
+
+        // Test valid bridge addresses
+        let valid_tokens = vec![crate::msg::BSCToken {
+            bridge_address: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F".to_string(),
+            start_block: TEST_START_BLOCK,
+            decimals: 18,
+        }];
+
+        for token in valid_tokens.iter() {
+            let res = validate_bsc_token(token);
+            assert!(res.is_ok());
+        }
+
+        // Test invalid currency length
+        let invalid_tokens = vec![crate::msg::BSCToken {
+            bridge_address: "0x71C7656EC7ab88b098defB751B7401B5f6d8976G".to_string(), // Invalid hex
+            start_block: TEST_START_BLOCK,
+            decimals: 18,
+        }];
+
+        for token in invalid_tokens.iter() {
+            let res = validate_bsc_token(token);
+            assert!(matches!(
+                res.unwrap_err(),
+                ContractError::InvalidBscToken { .. }
+            ));
+        }
     }
 }

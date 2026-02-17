@@ -47,11 +47,6 @@ func NewScanner(
 	client *ethclient.Client,
 	metricRecorder MetricRecorder,
 ) (*Scanner, error) {
-	client, err := ethclient.Dial(cfg.RPCURL)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect to BSC RPC")
-	}
-
 	filterer, err := abi.NewTXBridgeFilterer(common.HexToAddress(token.BridgeAddress), client)
 	if err != nil {
 		client.Close()
