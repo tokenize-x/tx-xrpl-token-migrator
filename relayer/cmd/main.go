@@ -846,7 +846,7 @@ func BuildAddBSCTokensTransactionCmd(ctx context.Context) *cobra.Command {
 				}
 				startBlock, err := strconv.ParseUint(parts[1], 10, 64)
 				if err != nil {
-					return errors.Wrapf(err, "failed to parse start_block: %s", parts[2])
+					return errors.Wrapf(err, "failed to parse start_block: %s", parts[1])
 				}
 				decimals, err := strconv.ParseUint(parts[2], 10, 32)
 				if err != nil {
