@@ -67,6 +67,7 @@ const MAX_MULTIPLIER_DENOMINATOR: u128 = 1; // 10.0 = 10/1
 
 // Token limit constant
 const MAX_XRPL_TOKENS: usize = 200;
+const MAX_BSC_TOKENS: usize = 200;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -427,6 +428,9 @@ pub fn add_bsc_tokens(
     }
 
     config.bsc_tokens.extend(new_tokens);
+    if config.bsc_tokens.len() > MAX_BSC_TOKENS {
+        return Err(StdError::generic_err("Maximum token limit reached").into());
+    }
     config.version += 1;
     CONFIG.save(deps.storage, &config)?;
 
