@@ -249,7 +249,7 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 	requireT.NoError(err)
 
 	// Create scanner and start executors
-	bsctoken := tx.BSCToken{
+	bscToken := tx.BSCToken{
 		BridgeAddress: contracts.BridgeAddress.Hex(),
 		StartBlock:    0,
 		Decimals:      6,
@@ -259,7 +259,7 @@ func TestBSCLiveMultipleTransactions(t *testing.T) {
 		RPCURL:        chains.BSC.cfg.RPCAddress,
 		PollInterval:  500 * time.Millisecond,
 		Confirmations: 0,
-	}, bsctoken, zaptest.NewLogger(t), rpcClient, nil)
+	}, bscToken, zaptest.NewLogger(t), rpcClient, nil)
 	requireT.NoError(err)
 
 	instances := buildAndStartBSCLiveExecutors(
