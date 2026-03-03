@@ -702,7 +702,7 @@ systemctl stop xrpl-bridge-relayer
 
 ```bash
 # Replace VERSION with the actual version number (e.g., v2.3.0)
-wget https://github.com/tokenize-x/tx-xrpl-token-migrator/releases/download/VERSION/relayer
+wget https://github.com/tokenize-x/tx-xrpl-token-migrator/releases/download/v2.3.0/relayer-linux-amd64
 chmod +x relayer
 ```
 
@@ -733,6 +733,10 @@ journalctl -u xrpl-bridge-relayer -f
 ```
 
 Look for successful connection, contract config loaded, and XRPL tokens loaded from contract.
+Logline similar to this should be present
+```
+coreum-bridge-relayer sh[3497048]: 2026-03-03T11:17:42.680028521Z        info        relayer        watcher/config.go:51        Initialized config watcher        {"version": 2}
+```
 
 * Verify relayer is functioning correctly
 
@@ -742,6 +746,16 @@ Look for successful connection, contract config loaded, and XRPL tokens loaded f
     --tx-contract-address $TX_CONTRACT_ADDRESS \
     --tx-grpc-url $TX_GRPC_URL \
     --tx-chain-id $TX_CHAIN_ID
+```
+
+The audit should complete without discrepancies.
+
+### Step 9: Post-Migration Tasks
+
+* Monitor the relayer for at least 24 hours to ensure stable operation
+
+```bash
+journalctl -u xrpl-bridge-relayer -f
 ```
 
 * Run audit to verify data integrity
@@ -757,20 +771,10 @@ export TX_RPC_URL="{RPC URL of TX node}"
     --xrpl-rpc-url $XRPL_RPC_URL
 ```
 
-The audit should complete without discrepancies.
-
-### Step 9: Post-Migration Tasks
-
-* Monitor the relayer for at least 24 hours to ensure stable operation
-
-```bash
-journalctl -u xrpl-bridge-relayer -f
-```
-
 * Verify that new transactions are being processed correctly
 
 
-* Clean up temporary files
+* Clean up temporary files (if applicable)
 
 ```bash
 rm -f unsigned-migrate.json signed-migrate.json unsigned-add-tokens.json signed-add-tokens.json
