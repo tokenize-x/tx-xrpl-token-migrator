@@ -635,9 +635,9 @@ cored tx broadcast signed-migrate.json \
 ```
 
 **For Mainnet:**
-- **CORE**: Currency `434F524500000000000000000000000000000000`, Issuer `rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D`, Activation `2000-01-01 00:00:00 UTC` (946684800), Multiplier `1.0`
+- **CORE**: Currency `434F524500000000000000000000000000000000`, Issuer `rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D`, Activation `2023-01-01 00:00:00 UTC` (1672527600), Multiplier `1.0`
 - **XCORE**: Currency `58434F5245000000000000000000000000000000`, Issuer `r3dVizzUAS3U29WKaaSALqkieytA2LCoRe`, Activation `2025-03-24 04:00:00 UTC` (1742788800), Multiplier `1.0`
-- **SOLO**: Currency `534F4C4F00000000000000000000000000000000`, Issuer `rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz`, Activation `2100-01-01 12:00:00 UTC` (4102488000), Multiplier `1.25`
+- **SOLO**: Currency `534F4C4F00000000000000000000000000000000`, Issuer `rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz`, Activation `2026-03-02 00:00:00 GMT+0000` (1772409600), Multiplier `2.345422`
 
 ```bash
 ./relayer build-add-xrpl-tokens \
@@ -645,9 +645,9 @@ cored tx broadcast signed-migrate.json \
     --tx-grpc-url $TX_GRPC_URL \
     --tx-sender-address $TX_CONTRACT_OWNER \
     --tx-contract-address $TX_CONTRACT_ADDRESS \
-    --xrpl-token "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D/434F524500000000000000000000000000000000/946684800/1.0" \
+    --xrpl-token "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D/434F524500000000000000000000000000000000/1672527600/1.0" \
     --xrpl-token "r3dVizzUAS3U29WKaaSALqkieytA2LCoRe/58434F5245000000000000000000000000000000/1742788800/1.0" \
-    --xrpl-token "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz/534F4C4F00000000000000000000000000000000/4102488000/1.25" > unsigned-add-tokens.json
+    --xrpl-token "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz/534F4C4F00000000000000000000000000000000/1772406000/2.345422" > unsigned-add-tokens.json
 ```
 
 * Sign and broadcast (see [Sign and broadcast with cored](#Sign-and-broadcast-with-cored))
