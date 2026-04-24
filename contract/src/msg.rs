@@ -41,10 +41,15 @@ pub enum ExecuteMsg {
     AddXrplTokens {
         xrpl_tokens: Vec<XRPLToken>,
     },
+    UpdateOwner {
+        new_owner: String,
+    },
 }
 
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub new_owner: Option<String>,
+}
 
 #[cw_serde]
 #[derive(QueryResponses)]

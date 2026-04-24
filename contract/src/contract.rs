@@ -136,11 +136,12 @@ pub fn execute(
             update_trusted_addresses(deps, info, trusted_addresses)
         }
         ExecuteMsg::AddXrplTokens { xrpl_tokens } => add_xrpl_tokens(deps, info, xrpl_tokens),
+        ExecuteMsg::UpdateOwner { new_owner } => update_owner(deps, info, new_owner),
     }
 }
 
 #[entry_point]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
     let storage_version = cw2::get_contract_version(deps.storage)?;
     if storage_version.contract != CONTRACT_NAME {
         return Err(StdError::generic_err("Can only upgrade from same contract name").into());
@@ -201,10 +202,41 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
         // They will be removed in a future contract version after migration is verified
     }
 
+    // Overwrite config.owner atomically as part of this migration.
+    if let Some(new_owner) = msg.new_owner {
+        let addr = deps.api.addr_validate(&new_owner)?;
+        let mut config = CONFIG.load(deps.storage)?;
+        config.owner = addr;
+        config.version += 1;
+        CONFIG.save(deps.storage, &config)?;
+    }
+
     // Upgrade contract version
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     Ok(Response::default())
+}
+
+pub fn update_owner(
+    deps: DepsMut,
+    info: MessageInfo,
+    new_owner: String,
+) -> Result<Response, ContractError> {
+    let mut config = CONFIG.load(deps.storage)?;
+
+    if info.sender != config.owner {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    let validated = deps.api.addr_validate(&new_owner)?;
+    config.owner = validated;
+    config.version += 1;
+    CONFIG.save(deps.storage, &config)?;
+
+    Ok(Response::new()
+        .add_attribute("action", "update_owner")
+        .add_attribute("new_owner", new_owner)
+        .add_attribute("version", config.version.to_string()))
 }
 
 pub fn threshold_bank_send(
@@ -1556,5 +1588,134 @@ mod tests {
             res.unwrap_err(),
             ContractError::InvalidMultiplier { .. }
         ));
+    }
+
+    #[test]
+    fn test_update_owner() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
+        assert!(res.is_ok());
+
+        let new_owner = "devcore1wvkmnjken95y3aesnmre052u0f0azdl8y499th";
+
+        // Non-owner cannot rotate.
+        let info = mock_info(TEST_ANY_ADDRESS, &[]);
+        let res = update_owner(deps.as_mut(), info, new_owner.to_string());
+        assert_eq!(ContractError::Unauthorized {}, res.unwrap_err());
+
+        // Invalid address is rejected.
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = update_owner(deps.as_mut(), info, "INVALID".to_string());
+        assert_eq!(
+            StdError::generic_err("Invalid input: address not normalized").to_string(),
+            res.unwrap_err().to_string()
+        );
+
+        // Confirm owner is still the original owner after failed attempts.
+        let config = get_config(deps.as_ref()).unwrap();
+        assert_eq!(Addr::unchecked(TEST_OWNER), config.owner);
+        let version_before = config.version;
+
+        // Current owner rotates ownership.
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = update_owner(deps.as_mut(), info, new_owner.to_string());
+        assert!(res.is_ok());
+        let config = get_config(deps.as_ref()).unwrap();
+        assert_eq!(Addr::unchecked(new_owner), config.owner);
+        assert_eq!(version_before + 1, config.version);
+
+        // Old owner can no longer rotate.
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = update_owner(deps.as_mut(), info, TEST_OWNER.to_string());
+        assert_eq!(ContractError::Unauthorized {}, res.unwrap_err());
+
+        // New owner can rotate back.
+        let info = mock_info(new_owner, &[]);
+        let res = update_owner(deps.as_mut(), info, TEST_OWNER.to_string());
+        assert!(res.is_ok());
+        let config = get_config(deps.as_ref()).unwrap();
+        assert_eq!(Addr::unchecked(TEST_OWNER), config.owner);
+    }
+
+    #[test]
+    fn test_migrate_with_new_owner() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        // Instantiate sets contract_version and initial CONFIG.
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
+        assert!(res.is_ok());
+
+        let config_before = get_config(deps.as_ref()).unwrap();
+        assert_eq!(Addr::unchecked(TEST_OWNER), config_before.owner);
+
+        let new_owner = "devcore1wvkmnjken95y3aesnmre052u0f0azdl8y499th";
+
+        // Migration with Some(new_owner) rotates ownership atomically.
+        let res = migrate(
+            deps.as_mut(),
+            env.clone(),
+            MigrateMsg {
+                new_owner: Some(new_owner.to_string()),
+            },
+        );
+        assert!(res.is_ok());
+
+        let config_after = get_config(deps.as_ref()).unwrap();
+        assert_eq!(Addr::unchecked(new_owner), config_after.owner);
+        assert_eq!(config_before.version + 1, config_after.version);
+        // All other fields untouched.
+        assert_eq!(config_before.threshold, config_after.threshold);
+        assert_eq!(config_before.trusted_addresses, config_after.trusted_addresses);
+        assert_eq!(config_before.min_amount, config_after.min_amount);
+        assert_eq!(config_before.max_amount, config_after.max_amount);
+        assert_eq!(config_before.xrpl_tokens, config_after.xrpl_tokens);
+    }
+
+    #[test]
+    fn test_migrate_without_new_owner_is_noop_on_owner() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
+        assert!(res.is_ok());
+
+        let config_before = get_config(deps.as_ref()).unwrap();
+
+        // MigrateMsg { new_owner: None } must not touch ownership.
+        let res = migrate(
+            deps.as_mut(),
+            env.clone(),
+            MigrateMsg { new_owner: None },
+        );
+        assert!(res.is_ok());
+
+        let config_after = get_config(deps.as_ref()).unwrap();
+        assert_eq!(config_before.owner, config_after.owner);
+        assert_eq!(config_before.version, config_after.version);
+    }
+
+    #[test]
+    fn test_migrate_rejects_invalid_new_owner() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let info = mock_info(TEST_OWNER, &[]);
+        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), init_msg());
+        assert!(res.is_ok());
+
+        let res = migrate(
+            deps.as_mut(),
+            env.clone(),
+            MigrateMsg {
+                new_owner: Some("INVALID".to_string()),
+            },
+        );
+        assert!(res.is_err());
     }
 }
