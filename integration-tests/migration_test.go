@@ -63,7 +63,7 @@ func TestContractMigration(t *testing.T) {
 	requireT.NoError(err)
 
 	t.Log("Migrating the contract.")
-	_, err = contractClient.MigrateContract(ctx, owner, newCodeID)
+	_, err = contractClient.MigrateContract(ctx, owner, newCodeID, nil)
 	requireT.NoError(err)
 
 	newContractInfo, err := wasmClient.ContractInfo(ctx, &wasmtypes.QueryContractInfoRequest{

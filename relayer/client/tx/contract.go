@@ -35,6 +35,7 @@ const (
 	ExecMethodUpdateMaxAmount        ExecMethod = "update_max_amount"
 	ExecMethodUpdateTrustedAddresses ExecMethod = "update_trusted_addresses"
 	ExecMethodAddXRPLTokens          ExecMethod = "add_xrpl_tokens"
+	ExecMethodUpdateOwner            ExecMethod = "update_owner"
 )
 
 // QueryMethod is contract query method.
@@ -124,6 +125,17 @@ type UpdateUpdateTrustedAddressesRequest struct {
 // AddXRPLTokensRequest is the `add_xrpl_tokens` request payload.
 type AddXRPLTokensRequest struct {
 	XRPLTokens []XRPLToken `json:"xrpl_tokens"` //nolint:tagliatelle //contract spec
+}
+
+// UpdateOwnerRequest is the `update_owner` execute payload.
+type UpdateOwnerRequest struct {
+	NewOwner string `json:"new_owner"` //nolint:tagliatelle //contract spec
+}
+
+// MigrateRequest is the migrate entry-point payload.
+// NewOwner is optional: when set, migrate atomically rotates config.owner.
+type MigrateRequest struct {
+	NewOwner *string `json:"new_owner,omitempty"` //nolint:tagliatelle //contract spec
 }
 
 // Transaction represents the transaction model.
@@ -290,13 +302,15 @@ func (c *ContractClient) Deploy(
 	return codeID, nil
 }
 
-// MigrateContract calls the executes the contract migration.
+// MigrateContract executes the contract migration. If msgPayload is nil, an empty
+// `{}` payload is sent (no migrate-time state change beyond the version bump).
 func (c *ContractClient) MigrateContract(
 	ctx context.Context,
 	sender sdk.AccAddress,
 	codeID uint64,
+	msgPayload []byte,
 ) (*sdk.TxResponse, error) {
-	msg := c.BuildMigrateContractMessage(sender, codeID)
+	msg := c.BuildMigrateContractMessage(sender, codeID, msgPayload)
 	txRes, err := client.BroadcastTx(ctx, c.clientCtx.WithFromAddress(sender), c.txFactory(), msg)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to migrate contract, codeID:%d", codeID)
@@ -305,16 +319,36 @@ func (c *ContractClient) MigrateContract(
 	return txRes, nil
 }
 
-// BuildMigrateContractMessage builds migrate contract message.
+// MigrateContractWithNewOwner migrates the contract to the new code ID and atomically
+// rotates config.owner to newOwner via the migrate payload.
+func (c *ContractClient) MigrateContractWithNewOwner(
+	ctx context.Context,
+	sender sdk.AccAddress,
+	codeID uint64,
+	newOwner string,
+) (*sdk.TxResponse, error) {
+	payload, err := json.Marshal(MigrateRequest{NewOwner: &newOwner})
+	if err != nil {
+		return nil, errors.Wrap(err, "can't marshal migrate payload")
+	}
+	return c.MigrateContract(ctx, sender, codeID, payload)
+}
+
+// BuildMigrateContractMessage builds migrate contract message. A nil msgPayload
+// is replaced with the empty object `{}`.
 func (c *ContractClient) BuildMigrateContractMessage(
 	sender sdk.AccAddress,
 	codeID uint64,
+	msgPayload []byte,
 ) sdk.Msg {
+	if msgPayload == nil {
+		msgPayload = []byte("{}")
+	}
 	return &wasmtypes.MsgMigrateContract{
 		Sender:   sender.String(),
 		Contract: c.cfg.ContractAddress.String(),
 		CodeID:   codeID,
-		Msg:      []byte("{}"),
+		Msg:      msgPayload,
 	}
 }
 
@@ -438,6 +472,24 @@ func (c *ContractClient) UpdateMinAmount(
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to execute %s Method", ExecMethodUpdateMinAmount)
+	}
+
+	return txRes, nil
+}
+
+// UpdateOwner executes update_owner Method of the contract.
+func (c *ContractClient) UpdateOwner(
+	ctx context.Context,
+	sender sdk.AccAddress,
+	newOwner string,
+) (*sdk.TxResponse, error) {
+	txRes, err := c.execute(ctx, sender, map[ExecMethod]UpdateOwnerRequest{
+		ExecMethodUpdateOwner: {
+			NewOwner: newOwner,
+		},
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to execute %s Method", ExecMethodUpdateOwner)
 	}
 
 	return txRes, nil

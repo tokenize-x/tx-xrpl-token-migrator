@@ -883,6 +883,136 @@ func TestWASMContractQueryPagination(t *testing.T) {
 	}
 }
 
+func TestWASMUpdateOwner(t *testing.T) {
+	t.Parallel()
+
+	ctx, chain := NewTXTestingContext(t)
+
+	owner := chain.TXChain.GenAccount()
+	newOwner := chain.TXChain.GenAccount()
+	anyAddress := chain.TXChain.GenAccount()
+
+	requireT := require.New(t)
+	chain.TXChain.Faucet.FundAccounts(ctx, t,
+		integrationtests.NewFundedAccount(owner, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integrationtests.NewFundedAccount(newOwner, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+		integrationtests.NewFundedAccount(anyAddress, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+	)
+
+	contractClient := tx.NewContractClient(tx.DefaultContractClientConfig(nil, ""), chain.TXChain.ClientContext)
+
+	t.Log("Deploying and instantiating the smart contract.")
+	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, tx.DeployAndInstantiateConfig{
+		Owner: owner.String(),
+		Admin: owner.String(),
+		TrustedAddresses: []string{
+			anyAddress.String(),
+		},
+		Threshold:  1,
+		MinAmount:  sdkmath.NewInt(1),
+		MaxAmount:  sdkmath.NewIntFromUint64(10_000),
+		Label:      "bank_threshold_send",
+		XRPLTokens: testXRPLTokens,
+	})
+	requireT.NoError(err)
+	requireT.NoError(contractClient.SetContractAddress(contractAddr))
+
+	cfg, err := contractClient.GetContractConfig(ctx)
+	requireT.NoError(err)
+	requireT.Equal(owner.String(), cfg.Owner)
+	initialVersion := cfg.Version
+
+	t.Logf("Trying to rotate owner from non-owner address.")
+	_, err = contractClient.UpdateOwner(ctx, anyAddress, newOwner.String())
+	requireT.True(tx.IsUnauthorizedError(err))
+
+	t.Logf("Trying to rotate owner with invalid address.")
+	_, err = contractClient.UpdateOwner(ctx, owner, "INVALID")
+	requireT.Error(err)
+
+	cfg, err = contractClient.GetContractConfig(ctx)
+	requireT.NoError(err)
+	requireT.Equal(owner.String(), cfg.Owner)
+	requireT.Equal(initialVersion, cfg.Version)
+
+	t.Logf("Rotating owner from current owner.")
+	_, err = contractClient.UpdateOwner(ctx, owner, newOwner.String())
+	requireT.NoError(err)
+
+	cfg, err = contractClient.GetContractConfig(ctx)
+	requireT.NoError(err)
+	requireT.Equal(newOwner.String(), cfg.Owner)
+	requireT.Equal(initialVersion+1, cfg.Version)
+
+	t.Logf("Old owner can no longer rotate.")
+	_, err = contractClient.UpdateOwner(ctx, owner, owner.String())
+	requireT.True(tx.IsUnauthorizedError(err))
+
+	t.Logf("New owner can rotate back to original.")
+	_, err = contractClient.UpdateOwner(ctx, newOwner, owner.String())
+	requireT.NoError(err)
+
+	cfg, err = contractClient.GetContractConfig(ctx)
+	requireT.NoError(err)
+	requireT.Equal(owner.String(), cfg.Owner)
+}
+
+func TestWASMMigrateOwnerRotation(t *testing.T) {
+	t.Parallel()
+
+	ctx, chain := NewTXTestingContext(t)
+	requireT := require.New(t)
+
+	owner := chain.TXChain.GenAccount()
+	newOwner := chain.TXChain.GenAccount()
+	trustedAddress := chain.TXChain.GenAccount()
+
+	chain.TXChain.Faucet.FundAccounts(ctx, t,
+		integrationtests.NewFundedAccount(owner, chain.TXChain.NewCoin(sdkmath.NewInt(5000000000))),
+	)
+
+	contractClient := tx.NewContractClient(tx.DefaultContractClientConfig(nil, ""), chain.TXChain.ClientContext)
+
+	t.Log("Deploying and instantiating the smart contract.")
+	contractAddr, err := contractClient.DeployAndInstantiate(ctx, owner, tx.DeployAndInstantiateConfig{
+		Owner:            owner.String(),
+		Admin:            owner.String(),
+		TrustedAddresses: []string{trustedAddress.String()},
+		Threshold:        1,
+		MinAmount:        sdkmath.NewInt(1),
+		MaxAmount:        sdkmath.NewIntFromUint64(10_000),
+		XRPLTokens:       testXRPLTokens,
+		Label:            "bank_threshold_send",
+	})
+	requireT.NoError(err)
+	requireT.NoError(contractClient.SetContractAddress(contractAddr))
+
+	cfg, err := contractClient.GetContractConfig(ctx)
+	requireT.NoError(err)
+	requireT.Equal(owner.String(), cfg.Owner)
+	initialVersion := cfg.Version
+
+	t.Log("Deploying the new contract code.")
+	newCodeID, err := contractClient.Deploy(ctx, owner)
+	requireT.NoError(err)
+
+	t.Log("Migrating with empty payload — owner must remain unchanged.")
+	_, err = contractClient.MigrateContract(ctx, owner, newCodeID, nil)
+	requireT.NoError(err)
+	cfg, err = contractClient.GetContractConfig(ctx)
+	requireT.NoError(err)
+	requireT.Equal(owner.String(), cfg.Owner, "owner must not change for nil migrate payload")
+
+	t.Log("Migrating with new_owner — owner must rotate atomically.")
+	_, err = contractClient.MigrateContractWithNewOwner(ctx, owner, newCodeID, newOwner.String())
+	requireT.NoError(err)
+
+	cfg, err = contractClient.GetContractConfig(ctx)
+	requireT.NoError(err)
+	requireT.Equal(newOwner.String(), cfg.Owner, "owner must rotate to new_owner")
+	requireT.Greater(cfg.Version, initialVersion, "version must increase")
+}
+
 func assertBankBalance(
 	ctx context.Context,
 	t *testing.T,
