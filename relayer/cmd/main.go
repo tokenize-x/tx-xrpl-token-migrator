@@ -609,7 +609,7 @@ func BuildMigrateContractTransactionCmd(ctx context.Context) *cobra.Command {
 				return errors.Wrapf(err, "failed to parse codeID")
 			}
 
-			msg := contractClient.BuildMigrateContractMessage(senderAddress, codeID)
+			msg := contractClient.BuildMigrateContractMessage(senderAddress, codeID, nil)
 
 			fees, gas, err := contractClient.EstimateExecuteMessages(ctx, senderAddress, msg)
 			if err != nil {
