@@ -132,12 +132,6 @@ type UpdateOwnerRequest struct {
 	NewOwner string `json:"new_owner"` //nolint:tagliatelle //contract spec
 }
 
-// MigrateRequest is the migrate entry-point payload.
-// NewOwner is optional: when set, migrate atomically rotates config.owner.
-type MigrateRequest struct {
-	NewOwner *string `json:"new_owner,omitempty"` //nolint:tagliatelle //contract spec
-}
-
 // Transaction represents the transaction model.
 type Transaction struct {
 	Amount            sdk.Coin `json:"amount"`
@@ -302,8 +296,7 @@ func (c *ContractClient) Deploy(
 	return codeID, nil
 }
 
-// MigrateContract executes the contract migration. If msgPayload is nil, an empty
-// `{}` payload is sent (no migrate-time state change beyond the version bump).
+// MigrateContract calls the executes the contract migration.
 func (c *ContractClient) MigrateContract(
 	ctx context.Context,
 	sender sdk.AccAddress,
@@ -319,23 +312,7 @@ func (c *ContractClient) MigrateContract(
 	return txRes, nil
 }
 
-// MigrateContractWithNewOwner migrates the contract to the new code ID and atomically
-// rotates config.owner to newOwner via the migrate payload.
-func (c *ContractClient) MigrateContractWithNewOwner(
-	ctx context.Context,
-	sender sdk.AccAddress,
-	codeID uint64,
-	newOwner string,
-) (*sdk.TxResponse, error) {
-	payload, err := json.Marshal(MigrateRequest{NewOwner: &newOwner})
-	if err != nil {
-		return nil, errors.Wrap(err, "can't marshal migrate payload")
-	}
-	return c.MigrateContract(ctx, sender, codeID, payload)
-}
-
-// BuildMigrateContractMessage builds migrate contract message. A nil msgPayload
-// is replaced with the empty object `{}`.
+// BuildMigrateContractMessage builds migrate contract message.
 func (c *ContractClient) BuildMigrateContractMessage(
 	sender sdk.AccAddress,
 	codeID uint64,

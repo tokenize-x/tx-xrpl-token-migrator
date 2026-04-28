@@ -1004,7 +1004,8 @@ func TestWASMMigrateOwnerRotation(t *testing.T) {
 	requireT.Equal(owner.String(), cfg.Owner, "owner must not change for nil migrate payload")
 
 	t.Log("Migrating with new_owner — owner must rotate atomically.")
-	_, err = contractClient.MigrateContractWithNewOwner(ctx, owner, newCodeID, newOwner.String())
+	migratePayload := []byte(fmt.Sprintf(`{"new_owner":%q}`, newOwner.String()))
+	_, err = contractClient.MigrateContract(ctx, owner, newCodeID, migratePayload)
 	requireT.NoError(err)
 
 	cfg, err = contractClient.GetContractConfig(ctx)
