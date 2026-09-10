@@ -1018,3 +1018,51 @@ func TestConfigChangeDetectionAndRestart(t *testing.T) {
 
 	t.Log("Config change detection and restart verified successfully")
 }
+
+// TestXRPLToTXBurnReconciliation checks a real burn end-to-end: the token is returned to its issuer and
+// paid out on TX. If the burn check or the AffectedNodes parsing were wrong, no payout would arrive.
+func TestXRPLToTXBurnReconciliation(t *testing.T) {
+	t.Parallel()
+
+	ctx, chains := NewTestingContext(t)
+	requireT := require.New(t)
+
+	xrplChain := chains.XRPL
+	txChain := chains.TX
+
+	coreIssuer := xrplChain.GenAccount(ctx, t, 10)
+	coreCurrency, err := rippledata.NewCurrency(xrplCORECurrency)
+	requireT.NoError(err)
+
+	enableDefaultRippling(ctx, t, chains, coreIssuer)
+
+	tokens := []service.XRPLTokenConfig{
+		{
+			XRPLIssuer:     coreIssuer.String(),
+			XRPLCurrency:   xrplCORECurrency,
+			ActivationDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+			Multiplier:     "1.0",
+		},
+	}
+
+	xrplSender := prepareXRPLSender(ctx, t, xrplChain, tokens)
+	recipient := txChain.TXChain.GenAccount()
+
+	buildAndStartDevEnv(ctx, t, chains, tokens)
+
+	// Return 42.345 of the token to its issuer (a burn); the memo names the TX recipient.
+	sendPayments(ctx, t, xrplChain, xrplSender, []payment{
+		{
+			address:  recipient.String(),
+			amounts:  []string{"42.345"},
+			issuer:   coreIssuer,
+			currency: coreCurrency,
+		},
+	})
+
+	// Paid out 1:1 (multiplier 1.0): 42.345 -> 42345000.
+	awaitForBalance(
+		ctx, t, txChain.TXChain.ClientContext, recipient.String(),
+		txChain.TXChain.NewCoin(sdkmath.NewInt(42345000)),
+	)
+}

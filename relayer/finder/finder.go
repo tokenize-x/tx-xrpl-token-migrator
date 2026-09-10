@@ -8,6 +8,7 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/pkg/errors"
 	rippledata "github.com/rubblelabs/ripple/data"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/client/xrpl"
 	"github.com/tokenize-x/tx-xrpl-token-migrator/relayer/logger"
@@ -127,6 +128,32 @@ func (f *Finder) buildPendingTransaction(txn xrpl.Transaction) (PendingTXSendTra
 		return PendingTXSendTransaction{}, false
 	}
 
+	// Confirm the delivered amount was really burned by checking the tx's ledger changes,
+	// not just the reported delivered amount.
+	txWithMeta := rippledata.TransactionWithMetaData{
+		Transaction: &rippledata.Payment{TxBase: rippledata.TxBase{TransactionType: rippledata.PAYMENT}},
+		MetaData:    rippledata.MetaData{AffectedNodes: txn.AffectedNodes},
+	}
+	burned, err := receivedAtLeastDeliveredAmount(txWithMeta, f.cfg.XRPLIssuer, txn.DeliveryAmount)
+	if err != nil {
+		// We could not verify the burn from the ledger; the tokens may already be burned.
+		// It must be checked by operator.
+		f.log.Error(
+			"Skipping tx: could not verify the burn against the ledger metadata",
+			zap.String("xrplTxHash", txn.Hash),
+			zap.Error(err),
+		)
+		return PendingTXSendTransaction{}, false
+	}
+	if !burned {
+		f.log.Error(
+			"Skipping tx: delivered amount is not backed by an on-ledger burn",
+			zap.String("xrplTxHash", txn.Hash),
+			zap.String("deliveredAmount", txn.DeliveryAmount.String()),
+		)
+		return PendingTXSendTransaction{}, false
+	}
+
 	txCoin := f.convertXRPLAmountToTXCoin(txn.DeliveryAmount.Value)
 	if txCoin.IsZero() {
 		f.log.Info("Zero amount to send", zap.String("xrplTxHash", txn.Hash))
@@ -195,4 +222,81 @@ func ConvertXRPLAmountToTXAmount(xrplAmount *rippledata.Value, decimals int, mul
 		xrplRatAmountDenominator)
 
 	return sdkmath.NewIntFromBigInt(txAmount)
+}
+
+// balanceReconciliationEpsilon is the rounding tolerance for issued tokens, as a fraction of the balance.
+// XRPL keeps ~15-16 significant digits, so 1e-14 is above that yet below any real amount.
+var balanceReconciliationEpsilon = big.NewRat(1, 100_000_000_000_000)
+
+// receivedAtLeastDeliveredAmount reports whether account's balance change in the delivered currency
+// (from the tx's AffectedNodes) is at least the delivered amount.
+// For a burn, account is the issuer: the token is returned to it, so its balance must rise by the
+// delivered amount. Receiving more is fine.
+func receivedAtLeastDeliveredAmount(
+	txn rippledata.TransactionWithMetaData,
+	account rippledata.Account,
+	deliveredAmount rippledata.Amount,
+) (bool, error) {
+	balances, err := txn.Balances()
+	if err != nil {
+		return false, errors.Wrap(err, "failed to compute balance changes from the XRPL tx metadata")
+	}
+
+	accountBalances, ok := balances[account]
+	if !ok || accountBalances == nil {
+		return false, nil
+	}
+
+	var total rippledata.Value
+	found := false
+	maxBalanceMag := new(big.Rat)
+	for _, balance := range *accountBalances {
+		if !balance.Currency.Equals(deliveredAmount.Currency) {
+			continue
+		}
+		// For a token the account does not issue, it holds it via a trust line, so the counterparty must
+		// be the issuer. The account's own issued token has no such constraint.
+		if !deliveredAmount.IsNative() &&
+			!deliveredAmount.Issuer.Equals(account) &&
+			!balance.CounterParty.Equals(deliveredAmount.Issuer) {
+			continue
+		}
+
+		if mag := new(big.Rat).Abs(balance.Balance.Rat()); mag.Cmp(maxBalanceMag) > 0 {
+			maxBalanceMag = mag
+		}
+		if !found {
+			total = balance.Change
+			found = true
+			continue
+		}
+		sum, err := total.Add(balance.Change)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to sum the balance changes")
+		}
+		total = *sum
+	}
+
+	if !found {
+		return false, nil
+	}
+
+	if total.Compare(*deliveredAmount.Value) >= 0 {
+		return true, nil
+	}
+
+	// XRP is exact, so any shortfall is real.
+	if deliveredAmount.IsNative() {
+		return false, nil
+	}
+
+	// Allow a shortfall only up to the rounding tolerance.
+	// Scale it to the larger of the balance and the delivered amount, since a full burn ends at 0.
+	scale := maxBalanceMag
+	if d := new(big.Rat).Abs(deliveredAmount.Rat()); d.Cmp(scale) > 0 {
+		scale = d
+	}
+	shortfall := new(big.Rat).Sub(deliveredAmount.Rat(), total.Rat())
+	tolerance := new(big.Rat).Mul(scale, balanceReconciliationEpsilon)
+	return shortfall.Cmp(tolerance) <= 0, nil
 }

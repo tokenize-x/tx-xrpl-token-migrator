@@ -26,4 +26,5 @@ type Transaction struct { //nolint:musttag //json used in the tests only
 	Sequence          int64
 	Date              time.Time
 	Validated         bool
+	AffectedNodes     rippledata.NodeEffects `json:"-"`
 }

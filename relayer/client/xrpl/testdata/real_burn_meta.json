@@ -1,0 +1,65 @@
+{
+  "AffectedNodes": [
+    {
+      "ModifiedNode": {
+        "FinalFields": {
+          "Balance": {
+            "currency": "434F524500000000000000000000000000000000",
+            "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+            "value": "-294.4013478023953"
+          },
+          "Flags": 2228224,
+          "HighLimit": {
+            "currency": "434F524500000000000000000000000000000000",
+            "issuer": "rw7ffWZC1EGmhudxNSyrtBvayi2dHMPaFV",
+            "value": "500000000"
+          },
+          "HighNode": "2",
+          "LowLimit": {
+            "currency": "434F524500000000000000000000000000000000",
+            "issuer": "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
+            "value": "0"
+          },
+          "LowNode": "76c"
+        },
+        "LedgerEntryType": "RippleState",
+        "LedgerIndex": "7C3F99750BCE2ECD6BB123EDCE3707261BE0B0430B77CA928CD7501F04510ED1",
+        "PreviousFields": {
+          "Balance": {
+            "currency": "434F524500000000000000000000000000000000",
+            "issuer": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+            "value": "-299.4013478023953"
+          }
+        },
+        "PreviousTxnID": "223BC9E10CAF494286037DEC30FF6AC38A7406ECE9D0261D4D7BBAB1D8632058",
+        "PreviousTxnLgrSeq": 84943246
+      }
+    },
+    {
+      "ModifiedNode": {
+        "FinalFields": {
+          "Account": "rw7ffWZC1EGmhudxNSyrtBvayi2dHMPaFV",
+          "Balance": "6956819141",
+          "Flags": 0,
+          "OwnerCount": 45,
+          "Sequence": 66201873
+        },
+        "LedgerEntryType": "AccountRoot",
+        "LedgerIndex": "86C703424C66CFAF43CE787724852B51E94E4327D14E62C1255539A8B3470A2B",
+        "PreviousFields": {
+          "Balance": "6956819153",
+          "Sequence": 66201872
+        },
+        "PreviousTxnID": "F97B275C34EE59A85B29D28ABDA16C80B7178747264D699F165E186DE649211D",
+        "PreviousTxnLgrSeq": 84939966
+      }
+    }
+  ],
+  "TransactionIndex": 335,
+  "TransactionResult": "tesSUCCESS",
+  "delivered_amount": {
+    "currency": "434F524500000000000000000000000000000000",
+    "issuer": "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D",
+    "value": "5"
+  }
+}
