@@ -68,7 +68,10 @@ func TestBuildPendingTransaction(t *testing.T) {
 				ModifiedNode: &rippledata.AffectedNode{
 					LedgerEntryType: rippledata.RIPPLE_STATE,
 					PreviousFields: &rippledata.RippleState{
-						Balance: &rippledata.Amount{Value: convertStringToRippleValue(t, "1.23456789", false), Currency: cfg.XRPLCurrency},
+						Balance: &rippledata.Amount{
+							Value:    convertStringToRippleValue(t, "1.23456789", false),
+							Currency: cfg.XRPLCurrency,
+						},
 					},
 					FinalFields: &rippledata.RippleState{
 						LowLimit:  &rippledata.Amount{Issuer: burnHolder, Currency: cfg.XRPLCurrency},
