@@ -123,6 +123,10 @@ func (f *Finder) buildPendingTransaction(txn xrpl.Transaction) (PendingTXSendTra
 		return PendingTXSendTransaction{}, false
 	}
 
+	if txn.Destination != f.cfg.XRPLIssuer.String() {
+		return PendingTXSendTransaction{}, false
+	}
+
 	txCoin := f.convertXRPLAmountToTXCoin(txn.DeliveryAmount.Value)
 	if txCoin.IsZero() {
 		f.log.Info("Zero amount to send", zap.String("xrplTxHash", txn.Hash))

@@ -54,6 +54,7 @@ func TestBuildPendingTransaction(t *testing.T) {
 	txAddress := sdk.AccAddress(ed25519.GenPrivKey().PubKey().Address())
 
 	validXRPLTransaction := xrpl.Transaction{
+		Destination: cfg.XRPLIssuer.String(),
 		DeliveryAmount: rippledata.Amount{
 			Currency: cfg.XRPLCurrency,
 			Issuer:   cfg.XRPLIssuer,
@@ -129,6 +130,16 @@ func TestBuildPendingTransaction(t *testing.T) {
 			name: "invalid_memo",
 			xrplTxFunc: func(tx xrpl.Transaction) xrpl.Transaction {
 				tx.Memos = []string{"invalid-memo"}
+				return tx
+			},
+			wantMatches: false,
+			want:        PendingTXSendTransaction{},
+		},
+		{
+			name: "negative_destination_not_issuer",
+			xrplTxFunc: func(tx xrpl.Transaction) xrpl.Transaction {
+				// delivered to another account, not the issuer: not a burn, so not eligible
+				tx.Destination = "rBc4jsqDka1DATHHQj3CpkLQTY5ZPTDe4X"
 				return tx
 			},
 			wantMatches: false,
