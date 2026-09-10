@@ -3,6 +3,7 @@ package xrpl
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"testing"
 	"time"
 
@@ -262,4 +263,75 @@ func convertStringToRippleValue(t *testing.T, s string, native bool) *rippledata
 	require.NoError(t, err)
 
 	return v
+}
+
+// AffectedNodes must be parsed from the meta and carried onto the model, or the burn check has no
+// ledger data and rejects every burn.
+func TestConvertTxInfoToTransaction_CarriesAffectedNodes(t *testing.T) {
+	t.Parallel()
+
+	const metaJSON = `{
+		"TransactionResult": "tesSUCCESS",
+		"delivered_amount": {"currency":"USD","issuer":"rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D","value":"999"},
+		"AffectedNodes": [
+			{"ModifiedNode": {
+				"LedgerEntryType": "RippleState",
+				"FinalFields": {
+					"Balance": {"currency":"USD","issuer":"rrrrrrrrrrrrrrrrrrrrBZbvji","value":"0"},
+					"LowLimit": {"currency":"USD","issuer":"rBc4jsqDka1DATHHQj3CpkLQTY5ZPTDe4X","value":"0"},
+					"HighLimit": {"currency":"USD","issuer":"rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D","value":"0"}
+				},
+				"PreviousFields": {
+					"Balance": {"currency":"USD","issuer":"rrrrrrrrrrrrrrrrrrrrBZbvji","value":"999"}
+				}
+			}}
+		]
+	}`
+
+	var meta metaRes
+	require.NoError(t, json.Unmarshal([]byte(metaJSON), &meta))
+	require.Len(t, meta.AffectedNodes, 1)
+
+	got, ok, err := convertTxInfoToTransaction(
+		baseTx{Account: "rBc4jsqDka1DATHHQj3CpkLQTY5ZPTDe4X"}, meta, 100, true,
+	)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Len(t, got.AffectedNodes, 1)
+}
+
+// Runs a real mainnet burn's metadata (testdata/real_burn_meta.json) through the parser and confirms the
+// issuer's balance change matches the delivered amount, so we know we parse real rippled output correctly.
+func TestMetaRes_ParsesRealBurn(t *testing.T) {
+	t.Parallel()
+
+	raw, err := os.ReadFile("testdata/real_burn_meta.json")
+	require.NoError(t, err)
+
+	var meta metaRes
+	require.NoError(t, json.Unmarshal(raw, &meta))
+	require.NotEmpty(t, meta.AffectedNodes)
+
+	issuer := convertStringToRippleAccount(t, mainnetCoreAccount)
+	currency := convertStringToRippleCurrency(t, "434F524500000000000000000000000000000000")
+	delivered := convertStringToRippleValue(t, "5", false)
+
+	txm := rippledata.TransactionWithMetaData{
+		Transaction: &rippledata.Payment{TxBase: rippledata.TxBase{TransactionType: rippledata.PAYMENT}},
+		MetaData:    rippledata.MetaData{AffectedNodes: meta.AffectedNodes},
+	}
+	balances, err := txm.Balances()
+	require.NoError(t, err)
+
+	issuerBalances, ok := balances[issuer]
+	require.True(t, ok)
+
+	found := false
+	for _, b := range *issuerBalances {
+		if b.Currency.Equals(currency) {
+			require.GreaterOrEqual(t, b.Change.Compare(*delivered), 0)
+			found = true
+		}
+	}
+	require.True(t, found)
 }

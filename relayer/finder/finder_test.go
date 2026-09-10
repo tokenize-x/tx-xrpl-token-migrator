@@ -52,12 +52,34 @@ func TestBuildPendingTransaction(t *testing.T) {
 	}
 
 	txAddress := sdk.AccAddress(ed25519.GenPrivKey().PubKey().Address())
+	burnHolder := convertStringToRippleAccount(t, "rBc4jsqDka1DATHHQj3CpkLQTY5ZPTDe4X")
 
 	validXRPLTransaction := xrpl.Transaction{
+		Account:     burnHolder.String(),
+		Destination: cfg.XRPLIssuer.String(),
 		DeliveryAmount: rippledata.Amount{
 			Currency: cfg.XRPLCurrency,
 			Issuer:   cfg.XRPLIssuer,
 			Value:    convertStringToRippleValue(t, "1.23456789", false),
+		},
+		// A real burn of the delivered amount: the holder returns it to the issuer.
+		AffectedNodes: rippledata.NodeEffects{
+			{
+				ModifiedNode: &rippledata.AffectedNode{
+					LedgerEntryType: rippledata.RIPPLE_STATE,
+					PreviousFields: &rippledata.RippleState{
+						Balance: &rippledata.Amount{
+							Value:    convertStringToRippleValue(t, "1.23456789", false),
+							Currency: cfg.XRPLCurrency,
+						},
+					},
+					FinalFields: &rippledata.RippleState{
+						LowLimit:  &rippledata.Amount{Issuer: burnHolder, Currency: cfg.XRPLCurrency},
+						HighLimit: &rippledata.Amount{Issuer: cfg.XRPLIssuer, Currency: cfg.XRPLCurrency},
+						Balance:   &rippledata.Amount{Value: convertStringToRippleValue(t, "0", false), Currency: cfg.XRPLCurrency},
+					},
+				},
+			},
 		},
 		Memos: []string{
 			"none-address" + cfg.XRPLMemoSuffix,
@@ -129,6 +151,26 @@ func TestBuildPendingTransaction(t *testing.T) {
 			name: "invalid_memo",
 			xrplTxFunc: func(tx xrpl.Transaction) xrpl.Transaction {
 				tx.Memos = []string{"invalid-memo"}
+				return tx
+			},
+			wantMatches: false,
+			want:        PendingTXSendTransaction{},
+		},
+		{
+			name: "negative_destination_not_issuer",
+			xrplTxFunc: func(tx xrpl.Transaction) xrpl.Transaction {
+				// delivered to another account, not the issuer: not a burn, so not eligible
+				tx.Destination = "rBc4jsqDka1DATHHQj3CpkLQTY5ZPTDe4X"
+				return tx
+			},
+			wantMatches: false,
+			want:        PendingTXSendTransaction{},
+		},
+		{
+			name: "negative_no_real_burn",
+			xrplTxFunc: func(tx xrpl.Transaction) xrpl.Transaction {
+				// no matching burn in the ledger changes
+				tx.AffectedNodes = nil
 				return tx
 			},
 			wantMatches: false,
@@ -337,4 +379,81 @@ func convertStringToRippleValue(t *testing.T, s string, native bool) *rippledata
 	require.NoError(t, err)
 
 	return v
+}
+
+// A burn returns the token to its issuer, so the issuer's balance must rise by at least the delivered
+// amount. This checks receivedAtLeastDeliveredAmount against the tx's ledger changes.
+func TestReceivedAtLeastDeliveredAmount(t *testing.T) {
+	t.Parallel()
+
+	issuer := convertStringToRippleAccount(t, "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D")
+	holder := convertStringToRippleAccount(t, "rBc4jsqDka1DATHHQj3CpkLQTY5ZPTDe4X")
+	currency := convertStringToRippleCurrency(t, "USD")
+
+	issuedAmount := func(value string) rippledata.Amount {
+		return rippledata.Amount{
+			Value:    convertStringToRippleValue(t, value, false),
+			Currency: currency,
+			Issuer:   issuer,
+		}
+	}
+
+	// burnTx: the holder returns the token to its issuer, so the trust-line balance moves prev -> final.
+	burnTx := func(prev, final string) rippledata.TransactionWithMetaData {
+		return rippledata.TransactionWithMetaData{
+			Transaction: &rippledata.Payment{
+				TxBase: rippledata.TxBase{TransactionType: rippledata.PAYMENT, Account: holder},
+			},
+			MetaData: rippledata.MetaData{
+				AffectedNodes: rippledata.NodeEffects{
+					{
+						ModifiedNode: &rippledata.AffectedNode{
+							LedgerEntryType: rippledata.RIPPLE_STATE,
+							PreviousFields: &rippledata.RippleState{
+								Balance: &rippledata.Amount{Value: convertStringToRippleValue(t, prev, false), Currency: currency},
+							},
+							FinalFields: &rippledata.RippleState{
+								LowLimit:  &rippledata.Amount{Issuer: holder, Currency: currency},
+								HighLimit: &rippledata.Amount{Issuer: issuer, Currency: currency},
+								Balance:   &rippledata.Amount{Value: convertStringToRippleValue(t, final, false), Currency: currency},
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+
+	t.Run("real_burn_is_accepted", func(t *testing.T) {
+		t.Parallel()
+		ok, err := receivedAtLeastDeliveredAmount(burnTx("999", "0"), issuer, issuedAmount("999"))
+		require.NoError(t, err)
+		require.True(t, ok)
+	})
+
+	t.Run("no_obligation_drop_is_rejected", func(t *testing.T) {
+		t.Parallel()
+		// no balance change: nothing was burned
+		ok, err := receivedAtLeastDeliveredAmount(burnTx("0", "0"), issuer, issuedAmount("999"))
+		require.NoError(t, err)
+		require.False(t, ok)
+	})
+
+	t.Run("partial_burn_is_rejected", func(t *testing.T) {
+		t.Parallel()
+		// only 500 was returned, but the claim is 999
+		ok, err := receivedAtLeastDeliveredAmount(burnTx("500", "0"), issuer, issuedAmount("999"))
+		require.NoError(t, err)
+		require.False(t, ok)
+	})
+
+	t.Run("full_burn_within_rounding_tolerance_is_accepted", func(t *testing.T) {
+		t.Parallel()
+		// A full burn ends the trust line at 0, and the issuer received 0.999999999999999 vs a claimed 1
+		// (a sub-epsilon rounding shortfall). The tolerance must still cover it even though the final
+		// balance is 0.
+		ok, err := receivedAtLeastDeliveredAmount(burnTx("0.999999999999999", "0"), issuer, issuedAmount("1"))
+		require.NoError(t, err)
+		require.True(t, ok)
+	})
 }

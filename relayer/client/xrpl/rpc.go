@@ -74,8 +74,9 @@ type SubmitResult struct {
 
 //nolint:tagliatelle //contract spec
 type metaRes struct {
-	DeliveredAmount   rippledata.Amount `json:"delivered_amount"`
-	TransactionResult string            `json:"TransactionResult"`
+	DeliveredAmount   rippledata.Amount      `json:"delivered_amount"`
+	TransactionResult string                 `json:"TransactionResult"`
+	AffectedNodes     rippledata.NodeEffects `json:"AffectedNodes"`
 }
 
 //nolint:tagliatelle //contract spec
@@ -201,6 +202,7 @@ func convertTxInfoToTransaction(
 		Sequence:          txn.Sequence,
 		Date:              convertXRPLDateToTime(txn.Date),
 		Validated:         validated,
+		AffectedNodes:     meta.AffectedNodes,
 	}, true, nil
 }
 
