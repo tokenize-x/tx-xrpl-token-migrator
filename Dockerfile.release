@@ -1,0 +1,6 @@
+# Runtime image: packages the already-built static relayer binary.
+# No source build / private modules needed - the binary is copied in.
+FROM alpine:3.20
+RUN apk add --no-cache ca-certificates
+COPY relayer-linux-amd64 /usr/local/bin/relayer
+ENTRYPOINT ["relayer"]
