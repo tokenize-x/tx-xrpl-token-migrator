@@ -57,6 +57,8 @@ jobs:
             echo -e "[url \"git@tx-crust-private:tokenize-x/tx-crust\"]\n        insteadOf = \"git@github.com:tokenize-x/tx-crust\""
             echo -e "[url \"git@tx-crust-private:tokenize-x/tx-crust\"]\n        insteadOf = \"https://github.com/tokenize-x/tx-crust\""
           } > ~/.gitconfig
+      - name: Clean stale checkout dirs (self-hosted runner)
+        run: rm -rf "${{ github.workspace }}/${{ matrix.ci_step }}" || true
       - name: Checkout xrpl bridge
         uses: actions/checkout@v4
         with:
