@@ -3,4 +3,5 @@
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates
 COPY relayer-linux-amd64 /usr/local/bin/relayer
+RUN chmod +x /usr/local/bin/relayer
 ENTRYPOINT ["relayer"]
